@@ -242,8 +242,9 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Database File</label>
                         <div
-                            onClick={handleFileBoxClick}
-                            className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${file ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-gray-400'}`}
+                            onClick={!initialVaultInfo ? handleFileBoxClick : undefined}
+                            className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center transition-colors ${file ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-gray-400'
+                                } ${!initialVaultInfo ? 'cursor-pointer' : 'cursor-default'}`}
                         >
                             {file ? (
                                 <>
