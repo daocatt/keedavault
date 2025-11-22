@@ -1,52 +1,38 @@
 import kdbxweb from 'kdbxweb';
-import * as hashwasmModule from 'hash-wasm';
+import { argon2d, argon2i, argon2id } from 'hash-wasm';
 import { VaultGroup, VaultEntry, EntryFormData } from '../types';
 
 // --- Argon2 Polyfill Setup ---
-const getArgon2 = () => {
-    // @ts-ignore
-    if (typeof hashwasmModule.argon2 === 'function') return hashwasmModule.argon2;
-    // @ts-ignore
-    if (hashwasmModule.default && typeof hashwasmModule.default.argon2 === 'function') return hashwasmModule.default.argon2;
-    // @ts-ignore
-    if (window.hashwasm && typeof window.hashwasm.argon2 === 'function') return window.hashwasm.argon2;
-    return null;
-};
+kdbxweb.CryptoEngine.setArgon2Impl(async (password: any, salt: any, memory: any, iterations: any, length: any, parallelism: any, type: any, version: any) => {
+    const passwordArr = new Uint8Array(password);
+    const saltArr = new Uint8Array(salt);
 
-const argon2Impl = getArgon2();
+    const params = {
+        password: passwordArr,
+        salt: saltArr,
+        parallelism: Math.round(parallelism),
+        iterations: Math.round(iterations),
+        memorySize: Math.round(memory),
+        hashLength: Math.round(length),
+        outputType: 'binary' as const,
+        version: version || 0x13
+    };
 
-if (!argon2Impl) {
-    console.warn("Argon2 implementation not found. KDBX4 files using Argon2 will fail to open.");
-} else {
-    kdbxweb.CryptoEngine.setArgon2Impl(async (password: any, salt: any, memory: any, iterations: any, length: any, parallelism: any, type: any, version: any) => {
-        if (!argon2Impl) throw new Error("Argon2 algorithm is not available.");
-
-        let typeStr: 'Argon2d' | 'Argon2id' | 'Argon2i' = 'Argon2d';
-        if (type === 1) typeStr = 'Argon2id';
-        if (type === 2) typeStr = 'Argon2i';
-
-        const passwordArr = new Uint8Array(password);
-        const saltArr = new Uint8Array(salt);
-
-        try {
-            const result = await argon2Impl({
-                password: passwordArr,
-                salt: saltArr,
-                parallelism: Math.round(parallelism),
-                iterations: Math.round(iterations),
-                memorySize: Math.round(memory),
-                hashLength: Math.round(length),
-                outputType: 'Binary',
-                type: typeStr,
-                version: version || 0x13
-            });
-            return result.slice(0).buffer;
-        } catch (e) {
-            console.error("Argon2 KDF failed:", e);
-            throw new Error("Failed to derive master key using Argon2.");
+    try {
+        let result: Uint8Array;
+        if (type === 1) {
+            result = await argon2id(params);
+        } else if (type === 2) {
+            result = await argon2i(params);
+        } else {
+            result = await argon2d(params);
         }
-    });
-}
+        return result.slice(0).buffer;
+    } catch (e) {
+        console.error("Argon2 KDF failed:", e);
+        throw new Error("Failed to derive master key using Argon2.");
+    }
+});
 
 // --- Helper: Robust UUID Comparison ---
 const uuidsEqual = (a: any, b: any): boolean => {
