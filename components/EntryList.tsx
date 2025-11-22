@@ -354,10 +354,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             }
 
             {/* Column Headers */}
-            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 py-2 text-xs font-semibold text-gray-500 flex uppercase tracking-wider select-none">
+            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 h-6 flex items-center text-xs text-gray-500 uppercase tracking-wider select-none">
                 {visibleColumns.title && (
                     <div
-                        className="relative flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        className="relative flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
                         onClick={() => changeSort('title')}
                     >
@@ -373,7 +373,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.username && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-2 overflow-hidden whitespace-nowrap border-r border-gray-200"
                         style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
                         onClick={() => changeSort('username')}
                     >
@@ -389,7 +389,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.email && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
                     >
                         <span className="flex-1 truncate">Email</span>
@@ -401,7 +401,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.password && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
                     >
                         <span className="flex-1 truncate">Password</span>
@@ -413,7 +413,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.url && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
                     >
                         <span className="flex-1 truncate">URL</span>
@@ -425,7 +425,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.created && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
                         onClick={() => changeSort('created')}
                     >
@@ -441,7 +441,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.modified && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
                         style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
                         onClick={() => changeSort('modified')}
                     >
@@ -476,25 +476,22 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     </div>
                 )}
 
-                <div className="divide-y divide-gray-100">
+                <div className="">
                     {sortedEntries.map(entry => (
                         <div
                             key={entry.uuid}
                             onClick={() => onSelectEntry(entry.uuid)}
                             onContextMenu={(e) => handleContextMenu(e, entry)}
-                            className={`px-4 py-2 flex items-center hover:bg-gray-50 cursor-pointer transition-colors group ${selectedEntryId === entry.uuid ? 'bg-indigo-50 hover:bg-indigo-50 ring-1 ring-inset ring-indigo-500/20' : ''}`}
+                            className={`py-0.5 flex items-center cursor-pointer transition-colors group even:bg-gray-50 ${selectedEntryId === entry.uuid ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900' : 'hover:bg-gray-100 text-gray-700'}`}
                         >
                             {/* Title Column */}
                             {visibleColumns.title && (
-                                <div className="flex items-center min-w-0 justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="flex items-center min-w-0 justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
                                     title={entry.title}>
                                     <div className="min-w-0 flex-1">
-                                        <p className={`text-xs font-medium truncate whitespace-nowrap ${selectedEntryId === entry.uuid ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
+                                        <p className={`text-xs truncate whitespace-nowrap ${selectedEntryId === entry.uuid ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
                                             {entry.title}
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate md:hidden" title={entry.username}>
-                                            {entry.username}
                                         </p>
                                     </div>
                                 </div>
@@ -502,7 +499,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Username Column */}
                             {visibleColumns.username && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
                                     title={entry.username}>
                                     <span className="truncate" title={entry.username}>{entry.username}</span>
@@ -511,7 +508,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Email Column */}
                             {visibleColumns.email && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
                                     title={entry.email || entry.fields?.Email || ''}>
                                     <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
@@ -520,7 +517,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Password Column */}
                             {visibleColumns.password && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
                                     title={entry.password ? '••••••' : ''}>
                                     <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
@@ -529,7 +526,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* URL Column */}
                             {visibleColumns.url && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
                                     title={entry.url}>
                                     <span className="truncate" title={entry.url}>{entry.url}</span>
@@ -538,7 +535,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Created Column */}
                             {visibleColumns.created && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
@@ -547,7 +544,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Modified Column */}
                             {visibleColumns.modified && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-400 px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-400 px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
