@@ -156,7 +156,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     };
 
     return (
-        <div className={`flex flex-col ${className}`}>
+        <div className={`flex flex-col ${className}`} onContextMenu={(e) => e.preventDefault()}>
             {allowModeSwitch && (
                 <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-4">
                     <button

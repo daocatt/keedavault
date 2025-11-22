@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WebviewWindow } from '@tauri-apps/api/window';
-import { open } from '@tauri-apps/api/dialog';
+import { open, message } from '@tauri-apps/api/dialog';
+import { exists } from '@tauri-apps/api/fs';
 import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
@@ -41,11 +42,32 @@ export const Launcher: React.FC = () => {
         }
     };
 
-    const handleOpenRecent = (vault: SavedVaultInfo) => {
-        // Update timestamp
-        saveRecentVault({ ...vault, lastOpened: Date.now() });
-        setRecentVaults(getRecentVaults()); // Refresh list
-        openVaultWindow(vault.path, 'unlock');
+    const handleOpenRecent = async (vault: SavedVaultInfo) => {
+        try {
+            // Check if the file exists
+            const fileExists = await exists(vault.path);
+            if (!fileExists) {
+                await message(
+                    `The file "${vault.path}" no longer exists.\nIt may have been moved or deleted.`,
+                    { title: 'File Not Found', type: 'error' }
+                );
+                // Remove from recent list since the file doesn't exist
+                removeRecentVault(vault.path, vault.filename);
+                setRecentVaults(getRecentVaults());
+                return;
+            }
+            
+            // Update timestamp
+            saveRecentVault({ ...vault, lastOpened: Date.now() });
+            setRecentVaults(getRecentVaults()); // Refresh list
+            openVaultWindow(vault.path, 'unlock');
+        } catch (e) {
+            console.error("Error checking file or opening vault", e);
+            await message(
+                `Error accessing file: ${e}`,
+                { title: 'Error', type: 'error' }
+            );
+        }
     };
 
     const handleCreateNew = () => {
@@ -97,26 +119,39 @@ export const Launcher: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col items-center justify-center relative" onContextMenu={(e) => e.preventDefault()}>
-            <div className="w-full max-w-2xl p-8 flex flex-col items-center">
+        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col relative" onContextMenu={(e) => e.preventDefault()}>
+            {/* macOS Title Bar with drag region */}
+            <div
+                className="h-12 bg-gray-50/80 backdrop-blur-sm flex items-center px-4 flex-shrink-0 border-b border-gray-200/50"
+                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                data-tauri-drag-region
+            >
+                <div className="flex-1 flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
+                    <span className="font-semibold text-sm text-gray-700 tracking-tight">KeedaVault</span>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col items-center justify-center overflow-auto">
+                <div className="w-full max-w-2xl p-8 flex flex-col items-center">
 
                 {/* Header */}
                 <div className="mb-10 flex flex-col items-center">
                     <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/10 p-4">
                         <img src={appIcon} alt="KeedaVault Logo" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">KeedaVault</h1>
                     <p className="text-gray-500 text-center max-w-md">
                         Secure, local, and private password manager.
                         <br />Open a database to get started.
                     </p>
                 </div>
 
-                {/* Actions Card */}
-                <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row">
+                {/* Actions Card - Vertical Layout */}
+                <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col">
 
-                    {/* Left: Recent Files */}
-                    <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
+                    {/* Recent Files Section */}
+                    <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                         <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
                             <Clock size={12} className="mr-1.5" />
                             Recent Databases
@@ -154,23 +189,23 @@ export const Launcher: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right: New Actions */}
-                    <div className="w-full md:w-64 p-6 flex flex-col justify-center space-y-3 bg-white">
+                    {/* Action Buttons Section */}
+                    <div className="w-full p-6 flex flex-col space-y-3 bg-white">
                         <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                            Actions
+                            Quick Actions
                         </div>
 
                         <button
                             onClick={handleCreateNew}
-                            className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md shadow-indigo-500/20 flex items-center justify-center transition-all active:scale-95"
+                            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md shadow-indigo-500/20 flex items-center justify-center transition-all active:scale-95"
                         >
                             <Plus size={16} className="mr-2" />
-                            <span className="font-medium text-sm">Create New</span>
+                            <span className="font-medium text-sm">Create New Vault</span>
                         </button>
 
                         <button
                             onClick={handleBrowse}
-                            className="w-full py-2 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg flex items-center justify-center transition-all active:scale-95"
+                            className="w-full py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg flex items-center justify-center transition-all active:scale-95"
                         >
                             <FolderOpen size={16} className="mr-2 text-gray-500" />
                             <span className="font-medium text-sm">Open File...</span>
@@ -180,6 +215,7 @@ export const Launcher: React.FC = () => {
 
                 <div className="mt-8 text-center text-[10px] text-gray-300">
                     <p>KeedaVault v0.1.0 • Local Storage Only</p>
+                </div>
                 </div>
             </div>
         </div>

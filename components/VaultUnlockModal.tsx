@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, ShieldCheck } from 'lucide-react';
 import { VaultAuthForm } from './VaultAuthForm';
 import { SavedVaultInfo } from '../services/storageService';
 
@@ -22,12 +22,18 @@ export const VaultUnlockModal: React.FC = () => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onContextMenu={(e) => e.preventDefault()}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative flex flex-col max-h-[90vh]">
-                <button
-                    onClick={() => setIsOpen(false)}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
-                >
-                    <X size={20} />
-                </button>
+                <div className="h-12 bg-gray-50/80 backdrop-blur-sm flex items-center px-4 border-b border-gray-200/50 justify-between flex-shrink-0">
+                    <div className="flex items-center">
+                        <ShieldCheck className="w-4 h-4 text-indigo-600 mr-2" />
+                        <span className="font-semibold text-sm text-gray-700 tracking-tight">Unlock Vault</span>
+                    </div>
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
 
                 <div className="p-6 overflow-y-auto">
                     <VaultAuthForm
