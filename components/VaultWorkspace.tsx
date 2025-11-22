@@ -155,18 +155,28 @@ const VaultLayout = () => {
     }
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900" onContextMenu={(e) => e.preventDefault()}>
-            {/* Left Sidebar: Vaults and Groups */}
+        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col" onContextMenu={(e) => e.preventDefault()}>
+            {/* macOS Title Bar with drag region */}
+            <div
+                className="h-12 bg-gray-50/80 backdrop-blur-sm flex items-center px-4 flex-shrink-0 border-b border-gray-200/50"
+                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                data-tauri-drag-region
+            >
+                <div className="flex-1 flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
+                    <span className="font-semibold text-sm text-gray-700 tracking-tight">{vaultName}</span>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex flex-1 overflow-hidden">
+                {/* Left Sidebar: Vaults and Groups */}
             <aside
                 className={`${leftSidebarVisible ? 'w-64' : 'w-0'} flexq-shrink-0 border-r border-gray-200 bg-gray-100/80 backdrop-blur-xl flex flex-col transition-all duration-300 overflow-hidden`}
                 style={{ minWidth: leftSidebarVisible ? '256px' : '0px' }}
             >
-                <div className="h-12 flex items-center px-4 border-b border-gray-200/50 draggable-region justify-between">
-                    <div className="flex items-center min-w-0">
-                        <ShieldCheck className="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0" />
-                        <span className="font-semibold text-gray-700 tracking-tight truncate" title={vaultName}>{vaultName}</span>
-                    </div>
-                    <div className="flex items-center space-x-1 ml-2">
+                <div className="h-12 flex items-center px-4 border-b border-gray-200/50 justify-end">
+                    <div className="flex items-center space-x-1">
                         <button
                             onClick={() => activeVaultId && handleAddCategory(activeVaultId)}
                             className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-gray-200 rounded transition-colors"
@@ -239,6 +249,7 @@ const VaultLayout = () => {
             )}
 
             <Toaster />
+            </div>
         </div>
     );
 };

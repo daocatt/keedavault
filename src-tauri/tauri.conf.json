@@ -85,7 +85,10 @@
         "width": 1200,
         "height": 800,
         "minWidth": 900,
-        "center": true
+        "minHeight": 600,
+        "center": true,
+        "hiddenTitle": false,
+        "titleBarStyle": "Overlay"
       }
     ]
   }
