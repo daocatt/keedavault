@@ -58,7 +58,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 setAllowAdd(initialData.allowAdd !== false);
             } else {
                 // New category – default name is "Root"
-                setName('Root');
+                setName('');
                 setIcon(48);
                 setParentGroupId(initialData?.parentGroupId || groups[0]?.uuid || '');
                 setAllowAdd(true);

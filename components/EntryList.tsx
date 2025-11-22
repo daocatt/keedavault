@@ -228,7 +228,9 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar */}
             <div
-                className="h-12 flex items-center px-4 border-b border-gray-200 bg-white space-x-2 relative"
+                className={`h-12 flex items-center px-4 border-b border-gray-200 bg-white space-x-2 relative ${!leftSidebarVisible ? 'pl-20' : ''}`}
+                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                data-tauri-drag-region
                 onContextMenu={(e) => {
                     e.preventDefault();
                     setToolbarContextMenu({ x: e.clientX, y: e.clientY });
@@ -238,6 +240,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onClick={toggleLeftSidebar}
                     className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     {leftSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
                 </button>
@@ -246,6 +249,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onClick={handleCreate}
                     className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     title="New Entry"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <Plus size={18} />
                 </button>
@@ -257,6 +261,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onClick={() => setShowPassGen(!showPassGen)}
                     className={`p-2 rounded-md transition-colors ${showPassGen ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100'}`}
                     title="Password Generator"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <Key size={16} />
                 </button>
@@ -270,13 +275,14 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     disabled={isSyncing}
                     className={`p-2 rounded-md transition-colors ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
                     title="Refresh / Sync"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
                 </button>
 
                 <div className="flex-1"></div>
 
-                <div className="relative w-64">
+                <div className="relative w-64" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                         type="text"
@@ -291,6 +297,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onClick={toggleRightSidebar}
                     className="p-2 hover:bg-gray-100 rounded-md transition-colors ml-2"
                     title={rightSidebarVisible ? "Hide details" : "Show details"}
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     {rightSidebarVisible ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                 </button>

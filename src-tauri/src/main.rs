@@ -66,7 +66,9 @@ fn main() {
             tauri::WindowUrl::App("/".into())
           )
           .title("KeedaVault")
-          .inner_size(900.0, 700.0)
+          .hidden_title(true)
+          .title_bar_style(tauri::TitleBarStyle::Overlay)
+          .inner_size(960.0, 640.0)
           .center()
           .build();
         }
@@ -78,7 +80,9 @@ fn main() {
             tauri::WindowUrl::App("/?mode=vault&action=create".into())
           )
           .title("Create Vault - KeedaVault")
-          .inner_size(900.0, 700.0)
+          .hidden_title(true)
+          .title_bar_style(tauri::TitleBarStyle::Overlay)
+          .inner_size(960.0, 640.0)
           .center()
           .build();
         }

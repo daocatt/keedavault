@@ -82,12 +82,12 @@
         "fullscreen": false,
         "resizable": true,
         "title": "KeedaVault",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 900,
+        "width": 960,
+        "height": 640,
+        "minWidth": 800,
         "minHeight": 600,
         "center": true,
-        "hiddenTitle": false,
+        "hiddenTitle": true,
         "titleBarStyle": "Overlay"
       }
     ]
