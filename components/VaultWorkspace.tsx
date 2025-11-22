@@ -158,7 +158,7 @@ const VaultLayout = () => {
         <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900" onContextMenu={(e) => e.preventDefault()}>
             {/* Left Sidebar: Vaults and Groups */}
             <aside
-                className={`${leftSidebarVisible ? 'w-64' : 'w-0'} flex-shrink-0 border-r border-gray-200 bg-gray-100/80 backdrop-blur-xl flex flex-col transition-all duration-300 overflow-hidden`}
+                className={`${leftSidebarVisible ? 'w-64' : 'w-0'} flexq-shrink-0 border-r border-gray-200 bg-gray-100/80 backdrop-blur-xl flex flex-col transition-all duration-300 overflow-hidden`}
                 style={{ minWidth: leftSidebarVisible ? '256px' : '0px' }}
             >
                 <div className="h-12 flex items-center px-4 border-b border-gray-200/50 draggable-region justify-between">

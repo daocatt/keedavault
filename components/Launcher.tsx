@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WebviewWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/api/dialog';
-import { getRecentVaults, saveRecentVault, SavedVaultInfo } from '../services/storageService';
+import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
 
@@ -20,8 +20,9 @@ export const Launcher: React.FC = () => {
             const webview = new WebviewWindow(label, {
                 url,
                 title: 'KeedaVault',
-                width: 1024,
-                height: 768,
+                width: 1200,
+                height: 800,
+                minWidth: 900,
                 center: true,
                 resizable: true,
             });
@@ -89,8 +90,14 @@ export const Launcher: React.FC = () => {
         // but "Manage" implies it. Let's skip for this exact step to keep it simple.
     };
 
+    const handleRemoveRecent = (e: React.MouseEvent, vault: SavedVaultInfo) => {
+        e.stopPropagation();
+        removeRecentVault(vault.path, vault.filename);
+        setRecentVaults(getRecentVaults());
+    };
+
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col items-center justify-center relative">
+        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col items-center justify-center relative" onContextMenu={(e) => e.preventDefault()}>
             <div className="w-full max-w-2xl p-8 flex flex-col items-center">
 
                 {/* Header */}
@@ -125,7 +132,7 @@ export const Launcher: React.FC = () => {
                                     <button
                                         key={idx}
                                         onClick={() => handleOpenRecent(vault)}
-                                        className="w-full text-left px-3 py-3 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl transition-all flex items-center group"
+                                        className="w-full text-left px-3 py-3 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl transition-all flex items-center group relative"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center mr-3 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
                                             <HardDrive size={16} />
@@ -134,6 +141,13 @@ export const Launcher: React.FC = () => {
                                             <div className="text-sm font-semibold text-gray-900 truncate">{vault.filename}</div>
                                             <div className="text-xs text-gray-400 truncate">{vault.path}</div>
                                         </div>
+                                        <button
+                                            onClick={(e) => handleRemoveRecent(e, vault)}
+                                            className="ml-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Remove from recent"
+                                        >
+                                            <X size={14} />
+                                        </button>
                                     </button>
                                 ))
                             )}
