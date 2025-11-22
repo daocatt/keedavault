@@ -3,7 +3,7 @@ import { useVault } from '../context/VaultContext';
 import {
     ChevronRight, ChevronDown, Folder, Trash2, Edit, Plus, X, Check,
     Database, Lock, Save, Globe, Smartphone, StickyNote, Sparkles, RefreshCw, FolderPlus,
-    AlertTriangle, Server, PenTool, Settings, Home, Star, Wrench, FolderOpen, FileText, Image, Music, Video, Code, Key
+    AlertTriangle, Server, PenTool, Settings, Home, Star, Wrench, FolderOpen, FileText, Image, Music, Video, Code, Key, Copy
 } from 'lucide-react';
 import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/window';
@@ -296,20 +296,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
 
     // Smart View Counts
     const smartCounts = useMemo(() => {
-        const counts = { websites: 0, twoFA: 0, notes: 0 };
+        const counts = { websites: 0, twoFA: 0, notes: 0, duplicated: 0 };
         const activeVault = vaults.find(v => v.id === activeVaultId);
+
+        const passwordMap = new Map<string, number>();
 
         const traverse = (group: VaultGroup) => {
             group.entries.forEach(entry => {
                 if (entry.fields.URL) counts.websites++;
                 if (entry.fields.OTP) counts.twoFA++;
                 if (entry.fields.Notes) counts.notes++;
+
+                if (entry.password) {
+                    passwordMap.set(entry.password, (passwordMap.get(entry.password) || 0) + 1);
+                }
             });
             group.subgroups.forEach(traverse);
         };
 
         if (activeVault) {
             activeVault.groups.forEach(traverse);
+
+            // Calculate duplicates
+            let duplicateCount = 0;
+            passwordMap.forEach((count) => {
+                if (count > 1) duplicateCount += count;
+            });
+            counts.duplicated = duplicateCount;
         }
         return counts;
     }, [vaults, activeVaultId]);
@@ -416,6 +429,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         <StickyNote size={16} className="mr-2 text-yellow-400" />
                                         <span className="flex-1">Notes</span>
                                         <span className="text-[10px] text-gray-400">{smartCounts.notes}</span>
+                                    </div>
+                                    <div
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                                        onClick={() => setActiveGroup('smart-duplicated')}
+                                    >
+                                        <Copy size={16} className="mr-2 text-red-400" />
+                                        <span className="flex-1">Duplicated</span>
+                                        <span className="text-[10px] text-gray-400">{smartCounts.duplicated}</span>
                                     </div>
                                 </div>
                             </div>
