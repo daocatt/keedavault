@@ -77,7 +77,13 @@ const GroupInput: React.FC<{
                 onKeyDown={handleKeyDown}
                 onBlur={() => finish(true)}
                 placeholder={placeholder}
-                className="w-full px-1 py-0.5 text-sm border border-indigo-400 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 h-6"
+                className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 h-6"
+                style={{
+                    borderColor: 'var(--color-accent)',
+                    backgroundColor: 'var(--color-bg-primary)',
+                    color: 'var(--color-text-primary)'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-accent)'}
             />
         </div>
     );
@@ -125,23 +131,40 @@ const GroupItem: React.FC<{
         return (
             <div>
                 <div
-                    className={`flex items-center px-2 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-colors group relative pr-2 ${isActive ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
-                    style={{ paddingLeft: `${depth * 12 + 8}px` }}
+                    className={`flex items-center px-2 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
+                    style={{
+                        paddingLeft: `${depth * 12 + 8}px`,
+                        backgroundColor: isActive ? 'var(--color-accent-light)' : 'transparent',
+                        color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!isActive) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!isActive) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }}
                     onClick={() => onSelect(group.uuid)}
                 >
                     <button
                         onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                        className={`p-0.5 rounded hover:bg-gray-300/50 mr-1 ${hasChildren || isAddingChild ? '' : 'invisible'}`}
+                        className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
+                        style={{ color: 'inherit' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     </button>
 
                     {group.isRecycleBin ? (
-                        <Trash2 size={16} className="mr-2 text-red-400 flex-shrink-0" />
+                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30' }} />
                     ) : (
                         (() => {
                             const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                            return <IconComponent size={16} className={`mr-2 flex-shrink-0 ${expanded ? 'text-indigo-400' : 'text-gray-400'}`} />;
+                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
                         })()
                     )}
 
@@ -156,25 +179,43 @@ const GroupItem: React.FC<{
                     )}
 
                     {!isRenaming && (
-                        <span className={`text-[10px] ml-2 ${isActive ? 'text-indigo-500' : 'text-gray-400'}`}>{entryCount}</span>
+                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
                     {/* Hover Actions - Hide for Recycle Bin and during edits */}
                     {!group.isRecycleBin && !isRenaming && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center space-x-0.5 bg-gray-200/90 backdrop-blur-sm rounded px-1 shadow-sm z-10">
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center space-x-0.5 rounded px-1 z-10" style={{ backgroundColor: 'var(--color-bg-active)', boxShadow: 'var(--shadow-sm)' }}>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onEditCategory(group, parentId);
                                 }}
-                                className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white rounded"
+                                className="p-1 rounded transition-colors"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
+                                    e.currentTarget.style.color = 'var(--color-accent)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                                }}
                                 title="Edit Group"
                             >
                                 <Edit size={12} />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(group.uuid); }}
-                                className="p-1 text-gray-500 hover:text-red-600 hover:bg-white rounded"
+                                className="p-1 rounded transition-colors"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
+                                    e.currentTarget.style.color = '#ff3b30';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                                }}
                                 title="Delete Group"
                             >
                                 <Trash2 size={12} />
@@ -334,7 +375,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
             <div className="flex-1 overflow-y-auto py-2">
                 {/* Vaults List */}
                 {vaults.length === 0 && (
-                    <div className="px-4 py-8 text-center text-gray-400 text-sm">
+                    <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                         <p>No vaults open.</p>
                         <p>Click the + button to open or create a KDBX file.</p>
                     </div>
@@ -383,7 +424,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
 
                                 {/* Recycle Bin (Separated with more spacing) */}
                                 {vault.groups.filter(g => g.isRecycleBin).map(group => (
-                                    <div key={group.uuid} className="mt-6 pt-4 border-t border-gray-200">
+                                    <div key={group.uuid} className="mt-6 pt-4" style={{ borderTop: '1px solid var(--color-border-light)' }}>
                                         <GroupItem
                                             group={group}
                                             depth={1}
@@ -402,41 +443,97 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                 ))}
 
                                 {/* Smart Views */}
-                                <div className="mt-6 pt-2 border-t border-gray-200/50 px-3">
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                                <div className="mt-6 pt-2 px-3" style={{ borderTop: '1px solid var(--color-border-light)' }}>
+                                    <div className="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center" style={{ color: 'var(--color-text-tertiary)' }}>
                                         <Sparkles size={10} className="mr-1" /> Smart Views
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors mb-0.5 ${activeGroupId === 'smart-websites' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-websites' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-websites' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-websites' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-websites') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-websites') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
                                         onClick={() => setActiveGroup('smart-websites')}
                                     >
-                                        <Globe size={16} className="mr-2 text-blue-400" />
+                                        <Globe size={16} className="mr-2" style={{ color: '#007aff' }} />
                                         <span className="flex-1">Websites</span>
-                                        <span className="text-[10px] text-gray-400">{smartCounts.websites}</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.websites}</span>
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors mb-0.5 ${activeGroupId === 'smart-2fa' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-2fa' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-2fa' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-2fa' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-2fa') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-2fa') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
                                         onClick={() => setActiveGroup('smart-2fa')}
                                     >
-                                        <Smartphone size={16} className="mr-2 text-purple-400" />
+                                        <Smartphone size={16} className="mr-2" style={{ color: '#af52de' }} />
                                         <span className="flex-1">2FA Codes</span>
-                                        <span className="text-[10px] text-gray-400">{smartCounts.twoFA}</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.twoFA}</span>
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors mb-0.5 ${activeGroupId === 'smart-notes' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-notes' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-notes' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-notes' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-notes') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-notes') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
                                         onClick={() => setActiveGroup('smart-notes')}
                                     >
-                                        <StickyNote size={16} className="mr-2 text-yellow-400" />
+                                        <StickyNote size={16} className="mr-2" style={{ color: '#ffcc00' }} />
                                         <span className="flex-1">Notes</span>
-                                        <span className="text-[10px] text-gray-400">{smartCounts.notes}</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.notes}</span>
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-duplicated' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-duplicated' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-duplicated') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-duplicated') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
                                         onClick={() => setActiveGroup('smart-duplicated')}
                                     >
-                                        <Copy size={16} className="mr-2 text-red-400" />
+                                        <Copy size={16} className="mr-2" style={{ color: '#ff3b30' }} />
                                         <span className="flex-1">Duplicated</span>
-                                        <span className="text-[10px] text-gray-400">{smartCounts.duplicated}</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.duplicated}</span>
                                     </div>
                                 </div>
                             </div>
@@ -446,9 +543,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
             </div>
 
             {/* Footer Stats & Action */}
-            <div className="border-t border-gray-200 bg-gray-50">
+            <div style={{ borderTop: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-tertiary)' }}>
                 {activeVaultId && (
-                    <div className="px-4 py-2 text-[10px] text-gray-400 flex justify-between border-b border-gray-200/50">
+                    <div className="px-4 py-2 text-[10px] flex justify-between" style={{ color: 'var(--color-text-tertiary)', borderBottom: '1px solid var(--color-border-light)' }}>
                         <span>{stats.totalFolders} Folders</span>
                         <span>{stats.totalEntries} Entries</span>
                     </div>
