@@ -6,7 +6,7 @@ export interface UISettings {
     leftSidebarVisible: boolean;
     rightSidebarVisible: boolean;
     entryColumns?: {
-        name: boolean;
+        title: boolean;
         username: boolean;
         email: boolean;
         password: boolean;
@@ -14,8 +14,17 @@ export interface UISettings {
         created: boolean;
         modified: boolean;
     };
+    entryColumnWidths?: {
+        title: number;
+        username: number;
+        email: number;
+        password: number;
+        url: number;
+        created: number;
+        modified: number;
+    };
     entrySort?: {
-        field: 'name' | 'username' | 'created' | 'modified';
+        field: 'title' | 'username' | 'created' | 'modified';
         asc: boolean;
     };
 }
@@ -25,7 +34,7 @@ const defaultSettings: UISettings = {
     leftSidebarVisible: true,
     rightSidebarVisible: true,
     entryColumns: {
-        name: true,
+        title: true,
         username: true,
         email: true,
         password: true,
@@ -33,8 +42,17 @@ const defaultSettings: UISettings = {
         created: true,
         modified: true,
     },
+    entryColumnWidths: {
+        title: 250,
+        username: 150,
+        email: 180,
+        password: 120,
+        url: 180,
+        created: 140,
+        modified: 140,
+    },
     entrySort: {
-        field: 'name',
+        field: 'title',
         asc: true,
     },
 };
@@ -43,7 +61,21 @@ export const getUISettings = (): UISettings => {
     try {
         const stored = localStorage.getItem(UI_SETTINGS_KEY);
         if (stored) {
-            return { ...defaultSettings, ...JSON.parse(stored) };
+            const parsed = JSON.parse(stored);
+            const settings = { ...defaultSettings, ...parsed };
+
+            // Migration: name -> title in entryColumns
+            if (settings.entryColumns && 'name' in settings.entryColumns) {
+                settings.entryColumns.title = settings.entryColumns.name;
+                delete settings.entryColumns.name;
+            }
+
+            // Migration: name -> title in entrySort
+            if (settings.entrySort && settings.entrySort.field === 'name') {
+                settings.entrySort.field = 'title';
+            }
+
+            return settings;
         }
     } catch (e) {
         console.error('Failed to load UI settings:', e);

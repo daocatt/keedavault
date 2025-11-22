@@ -36,10 +36,14 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const [toolbarContextMenu, setToolbarContextMenu] = useState<{ x: number; y: number } | null>(null);
     const [showPassGen, setShowPassGen] = useState(false);
     // Column visibility state persisted in UI settings
-    const [visibleColumns, setVisibleColumns] = useState({ name: true, username: true, email: true, password: true, url: true, created: true, modified: true });
+    const [visibleColumns, setVisibleColumns] = useState({ title: true, username: true, email: true, password: true, url: true, created: true, modified: true });
+    // Column widths state
+    const [columnWidths, setColumnWidths] = useState({ title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 });
     // Sorting state
-    const [sortField, setSortField] = useState<'name' | 'username' | 'created' | 'modified'>('name');
+    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>('title');
     const [sortAsc, setSortAsc] = useState(true);
+    // Resize state
+    const [resizing, setResizing] = useState<{ column: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
 
     useEffect(() => {
         const settings = getUISettings();
@@ -48,12 +52,55 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         if (settings.entryColumns) {
             setVisibleColumns(settings.entryColumns);
         }
+        // Load column widths if saved
+        if (settings.entryColumnWidths) {
+            setColumnWidths(settings.entryColumnWidths);
+        }
         // Load sorting preferences
         if (settings.entrySort) {
             setSortField(settings.entrySort.field);
             setSortAsc(settings.entrySort.asc);
         }
     }, []);
+
+    // Handle column resize
+    useEffect(() => {
+        if (!resizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!resizing) return;
+            const delta = e.clientX - resizing.startX;
+            const newWidth = Math.max(80, resizing.startWidth + delta);
+            setColumnWidths(prev => ({ ...prev, [resizing.column]: newWidth }));
+        };
+
+        const handleMouseUp = () => {
+            if (resizing) {
+                // Save to settings
+                const settings = getUISettings();
+                saveUISettings({ ...settings, entryColumnWidths: columnWidths });
+                setResizing(null);
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [resizing, columnWidths]);
+
+    const startResize = (column: keyof typeof columnWidths, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setResizing({
+            column,
+            startX: e.clientX,
+            startWidth: columnWidths[column]
+        });
+    };
 
     const handleSetToolbarMode = (mode: 'icon' | 'text' | 'both') => {
         setToolbarMode(mode);
@@ -87,7 +134,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             let bVal: any;
 
             switch (sortField) {
-                case 'name':
+                case 'title':
                     aVal = a.title.toLowerCase();
                     bVal = b.title.toLowerCase();
                     break;
@@ -178,7 +225,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     };
 
     return (
-        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)}>
+        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar */}
             <div
                 className="h-12 flex items-center px-4 border-b border-gray-200 bg-white space-x-2 relative"
@@ -300,56 +347,105 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             }
 
             {/* Column Headers */}
-            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 py-2 text-xs font-semibold text-gray-500 flex uppercase tracking-wider">
-                {visibleColumns.name && (
+            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 py-2 text-xs font-semibold text-gray-500 flex uppercase tracking-wider select-none">
+                {visibleColumns.title && (
                     <div
-                        className="flex-1 flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border border-gray-200"
-                        style={{ resize: 'horizontal', overflow: 'hidden' }}
-                        onClick={() => changeSort('name')}
+                        className="relative flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
+                        onClick={() => changeSort('title')}
                     >
-                        <span>Title</span>
-                        {sortField === 'name' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />
+                        <span className="flex-1 truncate">Title</span>
+                        {sortField === 'title' && (
+                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
                         )}
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('title', e)}
+                        />
                     </div>
                 )}
                 {visibleColumns.username && (
                     <div
-                        className="w-1/3 hidden sm:flex items-center justify-start text-left cursor-pointer hover:text-gray-700 transition-colors px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                        style={{ resize: 'horizontal', overflow: 'hidden' }}
+                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                        style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
                         onClick={() => changeSort('username')}
                     >
-                        <span>Username</span>
+                        <span className="flex-1 truncate">Username</span>
                         {sortField === 'username' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />
+                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
                         )}
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('username', e)}
+                        />
                     </div>
                 )}
-                {visibleColumns.email && <div className="flex-1 hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border border-gray-200" style={{ resize: 'horizontal', overflow: 'hidden' }}>Email</div>}
-                {visibleColumns.password && <div className="flex-1 hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border border-gray-200" style={{ resize: 'horizontal', overflow: 'hidden' }}>Password</div>}
-                {visibleColumns.url && <div className="flex-1 hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border border-gray-200" style={{ resize: 'horizontal', overflow: 'hidden' }}>URL</div>}
+                {visibleColumns.email && (
+                    <div
+                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
+                    >
+                        <span className="flex-1 truncate">Email</span>
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('email', e)}
+                        />
+                    </div>
+                )}
+                {visibleColumns.password && (
+                    <div
+                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
+                    >
+                        <span className="flex-1 truncate">Password</span>
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('password', e)}
+                        />
+                    </div>
+                )}
+                {visibleColumns.url && (
+                    <div
+                        className="relative hidden sm:flex items-center justify-start text-left px-4 overflow-hidden whitespace-nowrap border-r border-gray-200 hover:bg-gray-100"
+                        style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
+                    >
+                        <span className="flex-1 truncate">URL</span>
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('url', e)}
+                        />
+                    </div>
+                )}
                 {visibleColumns.created && (
                     <div
-                        className="w-32 hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border border-gray-200"
-                        style={{ resize: 'horizontal', overflow: 'hidden' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
                         onClick={() => changeSort('created')}
                     >
-                        <span>Created</span>
+                        <span className="flex-1 truncate">Created</span>
                         {sortField === 'created' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />
+                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
                         )}
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('created', e)}
+                        />
                     </div>
                 )}
                 {visibleColumns.modified && (
                     <div
-                        className="w-32 hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border border-gray-200"
-                        style={{ resize: 'horizontal', overflow: 'hidden' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200 cursor-pointer hover:bg-gray-100"
+                        style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
                         onClick={() => changeSort('modified')}
                     >
-                        <span>Modified</span>
+                        <span className="flex-1 truncate">Modified</span>
                         {sortField === 'modified' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />
+                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
                         )}
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('modified', e)}
+                        />
                     </div>
                 )}
             </div>
@@ -381,16 +477,13 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             onContextMenu={(e) => handleContextMenu(e, entry)}
                             className={`px-4 py-2 flex items-center hover:bg-gray-50 cursor-pointer transition-colors group ${selectedEntryId === entry.uuid ? 'bg-indigo-50 hover:bg-indigo-50 ring-1 ring-inset ring-indigo-500/20' : ''}`}
                         >
-                            {/* Name Column */}
-                            {visibleColumns.name && (
-                                <div className="flex-1 flex items-center min-w-0 justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                            {/* Title Column */}
+                            {visibleColumns.title && (
+                                <div className="flex items-center min-w-0 justify-start text-left px-4 text-xs overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
                                     title={entry.title}>
-                                    <div className="flex-shrink-0 mr-3 p-2 bg-gray-100 rounded-lg">
-                                        {getIcon(entry.url)}
-                                    </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className={`text-xs font-medium truncate ${selectedEntryId === entry.uuid ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
+                                        <p className={`text-xs font-medium truncate whitespace-nowrap ${selectedEntryId === entry.uuid ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
                                             {entry.title}
                                         </p>
                                         <p className="text-xs text-gray-500 truncate md:hidden" title={entry.username}>
@@ -402,18 +495,17 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Username Column */}
                             {visibleColumns.username && (
-                                <div className="flex-1 hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
                                     title={entry.username}>
-                                    {entry.username && <User size={12} className="mr-1.5 text-gray-400" />}
                                     <span className="truncate" title={entry.username}>{entry.username}</span>
                                 </div>
                             )}
 
                             {/* Email Column */}
                             {visibleColumns.email && (
-                                <div className="flex-1 hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
                                     title={entry.email || entry.fields?.Email || ''}>
                                     <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
                                 </div>
@@ -421,8 +513,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Password Column */}
                             {visibleColumns.password && (
-                                <div className="flex-1 hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
                                     title={entry.password ? '••••••' : ''}>
                                     <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
                                 </div>
@@ -430,8 +522,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* URL Column */}
                             {visibleColumns.url && (
-                                <div className="flex-1 hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
                                     title={entry.url}>
                                     <span className="truncate" title={entry.url}>{entry.url}</span>
                                 </div>
@@ -439,37 +531,21 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Created Column */}
                             {visibleColumns.created && (
-                                <div className="w-32 hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
                                 </div>
                             )}
 
-                            {/* Modified Column with action buttons */}
+                            {/* Modified Column */}
                             {visibleColumns.modified && (
-                                <div className="w-32 hidden sm:flex items-center justify-start text-left text-xs text-gray-400 px-4 overflow-hidden whitespace-nowrap border border-gray-200"
-                                    style={{ resize: 'horizontal', overflow: 'hidden' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-400 px-4 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                                    style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
-                                    <span className="group-hover:hidden" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
+                                    <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
                                         {formatDistanceToNow(entry.lastModTime, { addSuffix: true })}
                                     </span>
-                                    <div className="hidden group-hover:flex items-center space-x-1">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleEdit(entry); }}
-                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
-                                            title="Edit"
-                                        >
-                                            <Edit size={14} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleDelete(e, entry.uuid)}
-                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                                            title="Delete"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
                                 </div>
                             )}
                         </div>

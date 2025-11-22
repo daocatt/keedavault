@@ -4,7 +4,7 @@ import appIcon from '../app-icon.png';
 
 export const WelcomeScreen: React.FC = () => {
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col items-center justify-center relative">
+        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col items-center justify-center relative" onContextMenu={(e) => e.preventDefault()}>
             <div className="flex flex-col items-center justify-center w-full max-w-md p-6 z-10">
                 <div className="mb-6 flex flex-col items-center">
                     <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/10 p-3">

@@ -117,6 +117,25 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const all = getAllEntries(activeVault.groups);
             return all.filter(e => e.fields.Notes);
         }
+        if (activeGroupId === 'smart-duplicated') {
+            const all = getAllEntries(activeVault.groups);
+            // Group by password
+            const passwordMap = new Map<string, VaultEntry[]>();
+            all.forEach(e => {
+                if (e.password) {
+                    const existing = passwordMap.get(e.password) || [];
+                    passwordMap.set(e.password, [...existing, e]);
+                }
+            });
+            // Filter only those with duplicates
+            const duplicates: VaultEntry[] = [];
+            passwordMap.forEach((entries) => {
+                if (entries.length > 1) {
+                    duplicates.push(...entries);
+                }
+            });
+            return duplicates;
+        }
 
         return getGroupEntries(activeVault.groups, activeGroupId);
     }, [activeVault, activeGroupId, searchQuery, getAllEntries, getGroupEntries]);
