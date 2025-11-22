@@ -1,0 +1,5 @@
+{
+  "name": "KeedaVault",
+  "description": "A secure, local-first password manager compatible with KDBX files, featuring TOTP support and AI-powered passphrase generation.",
+  "requestFramePermissions": []
+}
