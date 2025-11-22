@@ -228,8 +228,12 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar */}
             <div
-                className={`h-12 flex items-center px-4 border-b border-gray-200 bg-white space-x-2 relative ${!leftSidebarVisible ? 'pl-20' : ''}`}
-                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                className={`h-12 flex items-center px-4 space-x-2 relative ${!leftSidebarVisible ? 'pl-20' : ''}`}
+                style={{
+                    WebkitAppRegion: 'drag',
+                    borderBottom: '1px solid var(--color-border-light)',
+                    backgroundColor: 'var(--color-bg-primary)'
+                } as React.CSSProperties}
                 data-tauri-drag-region
                 onContextMenu={(e) => {
                     e.preventDefault();
@@ -238,44 +242,75 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             >
                 <button
                     onClick={toggleLeftSidebar}
-                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                    className="p-2 rounded-md transition-all duration-200"
+                    style={{
+                        WebkitAppRegion: 'no-drag',
+                        color: 'var(--color-text-secondary)'
+                    } as React.CSSProperties}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     {leftSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
                 </button>
 
                 <button
                     onClick={handleCreate}
-                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                    className="p-2 rounded-md transition-all duration-200"
+                    style={{
+                        WebkitAppRegion: 'no-drag',
+                        color: 'var(--color-text-secondary)'
+                    } as React.CSSProperties}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title="New Entry"
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <Plus size={18} />
                 </button>
-
-
-
                 {/* Password Generator Icon */}
                 <button
                     onClick={() => setShowPassGen(!showPassGen)}
-                    className={`p-2 rounded-md transition-colors ${showPassGen ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100'}`}
+                    className={`p-2 rounded-md transition-all duration-200`}
+                    style={{
+                        WebkitAppRegion: 'no-drag',
+                        backgroundColor: showPassGen ? 'var(--color-accent-light)' : 'transparent',
+                        color: showPassGen ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                    } as React.CSSProperties}
+                    onMouseEnter={(e) => {
+                        if (!showPassGen) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!showPassGen) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }}
                     title="Password Generator"
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <Key size={16} />
                 </button>
-
-                <div className="h-6 w-px bg-gray-200 mx-2"></div>
-
-
+                <div className="h-6 w-px mx-2" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
 
                 <button
                     onClick={handleRefresh}
                     disabled={isSyncing}
-                    className={`p-2 rounded-md transition-colors ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
+                    className={`p-2 rounded-md transition-all duration-200 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{
+                        WebkitAppRegion: 'no-drag',
+                        color: 'var(--color-text-secondary)'
+                    } as React.CSSProperties}
+                    onMouseEnter={(e) => {
+                        if (!isSyncing) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!isSyncing) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }}
                     title="Refresh / Sync"
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
                 </button>
@@ -283,28 +318,46 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 <div className="flex-1"></div>
 
                 <div className="relative w-64" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: 'var(--color-text-placeholder)' }} />
                     <input
                         type="text"
                         placeholder="Search entries..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-2 py-1.5 bg-white border border-gray-300 rounded-md text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-150 shadow-sm"
+                        className="w-full pl-9 pr-2 py-1.5 rounded-md text-xs focus:outline-none transition-all duration-150"
+                        style={{
+                            backgroundColor: 'var(--color-bg-secondary)',
+                            border: '1px solid var(--color-border-light)',
+                            color: 'var(--color-text-primary)'
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--color-accent)';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-accent-light)';
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
                     />
                 </div>
 
                 <button
                     onClick={toggleRightSidebar}
-                    className="p-2 hover:bg-gray-100 rounded-md transition-colors ml-2"
+                    className="p-2 rounded-md transition-all duration-200 ml-2"
+                    style={{
+                        WebkitAppRegion: 'no-drag',
+                        color: 'var(--color-text-secondary)'
+                    } as React.CSSProperties}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={rightSidebarVisible ? "Hide details" : "Show details"}
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                     {rightSidebarVisible ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                 </button>
 
                 {/* Password Generator Popover - Positioned relative to the toolbar container */}
                 {showPassGen && (
-                    <div className="absolute top-12 left-20 z-20 p-2 bg-white rounded-lg shadow-xl border border-gray-200 w-80">
+                    <div className="absolute top-12 left-20 z-20 p-2 rounded-lg w-80" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-light)' }}>
                         <PasswordGenerator
                             isOpen={true}
                             onClose={() => setShowPassGen(false)}
@@ -354,12 +407,14 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             }
 
             {/* Column Headers */}
-            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 h-6 flex items-center text-xs text-gray-500 uppercase tracking-wider select-none">
+            <div className="sticky top-0 z-10 h-6 flex items-center text-xs uppercase tracking-wider select-none" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderBottom: '1px solid var(--color-border-light)', color: 'var(--color-text-secondary)' }}>
                 {visibleColumns.title && (
                     <div
-                        className="relative flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
+                        className="relative flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer transition-colors"
+                        style={{ width: `${columnWidths.title}px`, minWidth: '80px', borderRight: '1px solid var(--color-border-light)' }}
                         onClick={() => changeSort('title')}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Title</span>
                         {sortField === 'title' && (
