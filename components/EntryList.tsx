@@ -2,7 +2,7 @@ import { RefreshCw, Settings, Search, PanelLeftClose, PanelLeftOpen, PanelRightC
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 import { PasswordGenerator } from './PasswordGenerator';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useVault } from '../context/VaultContext';
 import { Globe, Key, FileText, User, Plus, Trash2, Copy, Edit, Link, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -32,36 +32,21 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
     const [editingEntry, setEditingEntry] = useState<VaultEntry | null>(null);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-    const [toolbarMode, setToolbarMode] = useState<'icon' | 'text' | 'both'>('icon');
+    const [toolbarMode, setToolbarMode] = useState<'icon' | 'text' | 'both'>(() => getUISettings().toolbarStyle);
     const [toolbarContextMenu, setToolbarContextMenu] = useState<{ x: number; y: number } | null>(null);
+    const [columnMenuOpen, setColumnMenuOpen] = useState(false);
     const [showPassGen, setShowPassGen] = useState(false);
     // Column visibility state persisted in UI settings
-    const [visibleColumns, setVisibleColumns] = useState({ title: true, username: true, email: true, password: true, url: true, created: true, modified: true });
+    const [visibleColumns, setVisibleColumns] = useState(() => getUISettings().entryColumns || { title: true, username: true, email: true, password: true, url: true, created: true, modified: true });
     // Column widths state
-    const [columnWidths, setColumnWidths] = useState({ title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 });
+    const [columnWidths, setColumnWidths] = useState(() => getUISettings().entryColumnWidths || { title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 });
     // Sorting state
-    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>('title');
-    const [sortAsc, setSortAsc] = useState(true);
+    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>(() => getUISettings().entrySort?.field || 'title');
+    const [sortAsc, setSortAsc] = useState(() => getUISettings().entrySort?.asc ?? true);
     // Resize state
     const [resizing, setResizing] = useState<{ column: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
 
-    useEffect(() => {
-        const settings = getUISettings();
-        setToolbarMode(settings.toolbarStyle);
-        // Load column visibility if saved
-        if (settings.entryColumns) {
-            setVisibleColumns(settings.entryColumns);
-        }
-        // Load column widths if saved
-        if (settings.entryColumnWidths) {
-            setColumnWidths(settings.entryColumnWidths);
-        }
-        // Load sorting preferences
-        if (settings.entrySort) {
-            setSortField(settings.entrySort.field);
-            setSortAsc(settings.entrySort.asc);
-        }
-    }, []);
+
 
     // Handle column resize
     useEffect(() => {
@@ -208,24 +193,37 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     };
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const syncInProgressRef = useRef(false);
 
-    const handleRefresh = async () => {
-        if (activeVaultId && !isSyncing) {
-            setIsSyncing(true);
-            addToast({ title: 'Syncing vault...', type: 'info' });
-            try {
-                await saveVault(activeVaultId);
-                addToast({ title: 'Vault synced', type: 'success' });
-            } catch (e) {
-                addToast({ title: 'Sync failed', type: 'error' });
-            } finally {
-                setIsSyncing(false);
-            }
+    const handleRefresh = async (e?: React.MouseEvent) => {
+        // Prevent event bubbling
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
+        // Use ref to immediately prevent multiple calls
+        if (syncInProgressRef.current || !activeVaultId) {
+            return;
+        }
+
+        syncInProgressRef.current = true;
+        setIsSyncing(true);
+        addToast({ title: 'Syncing vault...', type: 'info' });
+
+        try {
+            await saveVault(activeVaultId);
+            addToast({ title: 'Vault synced', type: 'success' });
+        } catch (e) {
+            addToast({ title: 'Sync failed', type: 'error' });
+        } finally {
+            syncInProgressRef.current = false;
+            setIsSyncing(false);
         }
     };
 
     return (
-        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
+        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => { setToolbarContextMenu(null); setColumnMenuOpen(false); }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
             <div
                 className="h-12 flex items-center px-3 space-x-1.5 relative"
@@ -245,32 +243,34 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                 <button
                     onClick={toggleLeftSidebar}
-                    className="p-1.5 rounded-md transition-all duration-200"
+                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                     style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
                 >
                     {leftSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Sidebar</span>}
                 </button>
 
                 <div className="h-6 w-px" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
 
                 <button
                     onClick={handleCreate}
-                    className="p-1.5 rounded-md transition-all duration-200"
+                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                     style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title="New Entry"
                 >
                     <Plus size={16} />
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">New Entry</span>}
                 </button>
 
                 {/* Password Generator Icon */}
                 <button
                     onClick={() => setShowPassGen(!showPassGen)}
-                    className={`p-1.5 rounded-md transition-all duration-200`}
+                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                     style={{
                         WebkitAppRegion: 'no-drag',
                         backgroundColor: showPassGen ? 'var(--color-accent-light)' : 'transparent',
@@ -289,6 +289,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     title="Password Generator"
                 >
                     <Key size={14} />
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Generator</span>}
                 </button>
 
                 <div className="h-5 w-px mx-1" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
@@ -296,7 +297,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 <button
                     onClick={handleRefresh}
                     disabled={isSyncing}
-                    className={`p-1.5 rounded-md transition-all duration-200 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''} ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => {
                         if (!isSyncing) {
@@ -311,6 +312,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     title="Refresh / Sync"
                 >
                     <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Sync</span>}
                 </button>
 
                 <div className="flex-1"></div>
@@ -341,28 +343,28 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                 <button
                     onClick={toggleRightSidebar}
-                    className="p-1.5 rounded-md transition-all duration-200 ml-2"
+                    className={`p-1.5 rounded-md transition-all duration-200 ml-2 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                     style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={rightSidebarVisible ? "Hide details" : "Show details"}
                 >
                     {rightSidebarVisible ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Details</span>}
                 </button>
 
                 {/* Password Generator Popover - Positioned relative to the toolbar container */}
                 {showPassGen && (
-                    <div className="absolute top-12 left-20 z-20 p-2 rounded-lg w-80" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-light)' }}>
-                        <PasswordGenerator
-                            isOpen={true}
-                            onClose={() => setShowPassGen(false)}
-                            onGenerate={(pwd) => {
-                                navigator.clipboard.writeText(pwd);
-                                addToast({ title: 'Password copied', type: 'success' });
-                                setShowPassGen(false);
-                            }}
-                        />
-                    </div>
+                    <PasswordGenerator
+                        isOpen={true}
+                        onClose={() => setShowPassGen(false)}
+                        onGenerate={(pwd) => {
+                            navigator.clipboard.writeText(pwd);
+                            addToast({ title: 'Password copied', type: 'success' });
+                            setShowPassGen(false);
+                        }}
+                        className="absolute top-12 left-20 z-50 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-5"
+                    />
                 )}
             </div>
 
@@ -372,7 +374,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-2 w-48"
                     style={{ top: toolbarContextMenu.y, left: toolbarContextMenu.x }}
                 >
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Toolbar Display</div>
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Toolbar</div>
                     <button onClick={() => handleSetToolbarMode('icon')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between">
                         <span>Icon Only</span>
                         {toolbarMode === 'icon' && <Check size={14} className="text-indigo-600" />}
@@ -385,18 +387,6 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                         <Settings size={14} className="mr-2 text-gray-400" /> Customize...
                     </button>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    {/* Column visibility toggles */}
-                    {Object.entries(visibleColumns).map(([col, visible]) => (
-                        <button
-                            key={col}
-                            onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
-                        >
-                            <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
-                            {visible && <Check size={14} className="text-indigo-600" />}
-                        </button>
-                    ))}
                 </div>
             )
             }
@@ -503,6 +493,36 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
                             onMouseDown={(e) => startResize('modified', e)}
                         />
+                    </div>
+                )}
+
+                {/* Column Settings Button - Frozen on Right */}
+                <div className="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-center bg-[var(--color-bg-tertiary)] border-l border-[var(--color-border-light)] z-20">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setColumnMenuOpen(!columnMenuOpen); }}
+                        className="p-0.5 hover:bg-gray-200 rounded transition-colors text-gray-500"
+                    >
+                        <Settings size={12} />
+                    </button>
+                </div>
+
+                {/* Column Settings Menu */}
+                {columnMenuOpen && (
+                    <div
+                        className="absolute top-6 right-0 z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Columns</div>
+                        {['title', 'username', 'email', 'password', 'url', 'created', 'modified'].map((col) => (
+                            <button
+                                key={col}
+                                onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                            >
+                                <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
+                                {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} className="text-indigo-600" />}
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
