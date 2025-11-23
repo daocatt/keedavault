@@ -135,7 +135,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     );
 
     return (
-        <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', borderLeft: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-xl)' }}>
+        <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', boxShadow: 'var(--shadow-xl)' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
             <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}>
                 <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Entry Details</h2>

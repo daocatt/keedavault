@@ -133,7 +133,7 @@ const GroupItem: React.FC<{
         return (
             <div>
                 <div
-                    className={`flex items-center px-2 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
+                    className={`flex items-center px-0 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
                     style={{
                         paddingLeft: `${depth * 12 + 8}px`,
                         backgroundColor: isActive ? 'var(--color-accent-light)' : 'transparent',
@@ -468,7 +468,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto pb-2">
                 {/* Vaults List */}
                 {vaults.length === 0 && (
                     <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
