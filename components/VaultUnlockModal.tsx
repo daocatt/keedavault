@@ -32,12 +32,12 @@ export const VaultUnlockModal: React.FC = () => {
                     <div className="w-full max-w-md px-4">
                         {/* Database Info - Inline */}
                         {initialVaultInfo && (
-                            <div className="mb-8 flex items-center gap-3 px-6 py-3 bg-white rounded-xl shadow-sm border border-gray-200">
-                                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-accent-light)' }}>
-                                    <HardDrive size={20} style={{ color: 'var(--color-accent)' }} />
+                            <div className="mb-6 flex items-center gap-3 px-3 py-2">
+                                <div className="w-10 h-10 rounded-lg bg-white/80 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-gray-200/50">
+                                    <HardDrive size={20} className="text-blue-500" />
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                    <span className="text-sm font-medium text-gray-800 truncate">{initialVaultInfo.filename}</span>
+                                    <span className="text-sm font-semibold text-gray-800 truncate">{initialVaultInfo.filename}</span>
                                     {initialVaultInfo.path && (
                                         <span className="text-xs text-gray-500 truncate">{initialVaultInfo.path}</span>
                                     )}

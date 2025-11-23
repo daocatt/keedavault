@@ -166,7 +166,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     </div>
 
                     {/* Parent Group Selector */}
-                    <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                    <div className="bg-transparent">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Location</label>
                         <CategorySelector
                             groups={groups}
