@@ -103,7 +103,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     const FieldRow: React.FC<{ label: string, value: string, isSecret?: boolean, type?: 'link' | 'text' }> = ({ label, value, isSecret, type = 'text' }) => (
         <div className="mb-3 group">
             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
-            <div className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm group-hover:border-indigo-300 transition-colors relative">
+            <div className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative">
                 {type === 'link' && value ? (
                     <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-xs">
                         {value}
@@ -177,14 +177,14 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
-                <div className="max-w-xl mx-auto">
+                <div className="max-w-md mx-auto">
                     <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-3 flex-shrink-0">
                             <span className="text-lg font-bold">{entry.title.charAt(0).toUpperCase()}</span>
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-gray-900 break-all leading-tight">{entry.title}</h1>
-                            <p className="text-xs text-gray-500">{entry.username}</p>
+                            {/* <p className="text-xs text-gray-500">{entry.username}</p> */}
                         </div>
                     </div>
 
@@ -219,7 +219,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
             {/* Meta Information */}
             <div className="px-4 pb-4 pt-2">
-                <div className="max-w-xl mx-auto pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
+                <div className="max-w-md mx-auto pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
                     <div className="flex justify-between items-center">
                         <span className="uppercase tracking-wider font-semibold">Created</span>
                         <span>{entry.creationTime.toLocaleString()}</span>
