@@ -111,8 +111,8 @@ export const addGroupToDb = (db: kdbxweb.Kdbx, parentGroupUuid: string, name: st
 
     const newGroup = db.createGroup(parent, name);
     if (icon !== undefined) {
-        // @ts-ignore - kdbxweb uses iconId property
-        newGroup.iconId = icon;
+        // @ts-ignore - kdbxweb icon property
+        newGroup.icon = icon;
     }
     if (allowAdd !== undefined) {
         // @ts-ignore - customData may need initialization
@@ -140,8 +140,8 @@ export const updateGroupInDb = (db: kdbxweb.Kdbx, groupUuid: string, newName: st
 
     group.name = newName;
     if (icon !== undefined) {
-        // @ts-ignore - kdbxweb uses iconId property
-        group.iconId = icon;
+        // @ts-ignore - kdbxweb icon property
+        group.icon = icon;
     }
 
     if (allowAdd !== undefined) {
@@ -317,8 +317,8 @@ export const parseKdbxStructure = (db: kdbxweb.Kdbx): VaultGroup[] => {
         return {
             uuid: group.uuid.id,
             name: group.name || 'Unnamed Group',
-            // @ts-ignore - kdbxweb uses iconId property
-            icon: group.iconId || 0,
+            // @ts-ignore - kdbxweb icon property
+            icon: group.icon || 0,
             entries: group.entries.map((entry: any) => parseEntry(entry)),
             // Recursively parse subgroups, THEN sort them to put Recycle Bin last
             subgroups: group.groups
