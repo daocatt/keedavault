@@ -62,8 +62,8 @@ export const Launcher: React.FC = () => {
                     `The file "${vault.path}" no longer exists.\nIt may have been moved or deleted.`,
                     { title: 'File Not Found', type: 'error' }
                 );
-                removeRecentVault(vault.path, vault.filename);
-                setRecentVaults(getRecentVaults());
+                // removeRecentVault(vault.path, vault.filename);
+                // setRecentVaults(getRecentVaults());
                 return;
             }
 

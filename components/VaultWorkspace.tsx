@@ -6,6 +6,7 @@ import { EntryDetail } from './EntryDetail';
 import { VaultUnlockModal } from './VaultUnlockModal';
 import { Toaster } from './ui/Toaster';
 import { VaultAuthForm } from './VaultAuthForm';
+import { VaultCreateForm } from './VaultCreateForm';
 import { ShieldCheck, Lock, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Plus, Save } from 'lucide-react';
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 import { CategoryModal } from './CategoryModal';
@@ -197,20 +198,16 @@ const VaultLayout = () => {
                     />
 
                     <div className="w-full max-w-sm relative z-10">
-                        <div className="rounded-2xl p-8" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-light)' }}>
+                        <div className="rounded-2xl p-8 bg-primary">
                             {initMode === 'create' ? (
-                                <VaultAuthForm
+                                <VaultCreateForm
                                     hideHeader={false}
-                                    initialMode="create"
-                                    allowModeSwitch={false}
                                     onSuccess={handleSuccess}
                                 />
                             ) : (
                                 <VaultAuthForm
                                     hideHeader={false}
                                     initialVaultInfo={initPath ? { path: initPath, filename: initPath.split(/[/\\]/).pop() || '', lastOpened: 0 } : undefined}
-                                    initialMode="open"
-                                    allowModeSwitch={false}
                                     onSuccess={handleSuccess}
                                 />
                             )}

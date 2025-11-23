@@ -211,9 +211,9 @@ const GroupItem: React.FC<{
                             </button>
                             {!isRootCategory && (
                                 <button
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.stopPropagation();
-                                        onDelete(group.uuid);
+                                        await onDelete(group.uuid);
                                     }}
                                     className="p-1 rounded transition-all duration-200"
                                     style={{ color: 'var(--color-text-tertiary)' }}
