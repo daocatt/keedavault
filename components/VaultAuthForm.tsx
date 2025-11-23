@@ -172,15 +172,34 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
         <div className={`flex flex-col ${className}`} onContextMenu={(e) => e.preventDefault()}>
             {!hideHeader && (
                 <div className="flex flex-col items-center mb-6 text-center">
-                    <div className="w-14 h-14 bg-neutral-200/75 rounded-full flex items-center justify-center mb-4">
-                        {mode === 'open' ? <Lock size={28} className="text-neutral-600" /> : <PlusCircle size={28} className="text-neutral-600" />}
-                    </div>
-                    <h2 className="text-xl font-bold text-neutral-800">{mode === 'open' ? 'Unlock Vault' : 'New Database'}</h2>
-                    <p className="text-sm text-neutral-500 mt-1.5 max-w-xs">
-                        {mode === 'open'
-                            ? 'Select a local .kdbx file to access your passwords.'
-                            : 'Create a secure database and save it to your device or cloud folder.'}
-                    </p>
+                    {/* Show simplified header when a file is selected */}
+                    {(file || path) ? (
+                        <>
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+                                <HardDrive size={24} style={{ color: 'var(--color-accent)' }} />
+                            </div>
+                            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                                {file?.name || 'Database'}
+                            </h2>
+                            {path && (
+                                <p className="text-xs mt-1 truncate max-w-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                                    {path}
+                                </p>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-hover)' }}>
+                                {mode === 'open' ? <Lock size={28} style={{ color: 'var(--color-text-secondary)' }} /> : <PlusCircle size={28} style={{ color: 'var(--color-text-secondary)' }} />}
+                            </div>
+                            <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{mode === 'open' ? 'Unlock Vault' : 'New Database'}</h2>
+                            <p className="text-sm mt-1.5 max-w-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                                {mode === 'open'
+                                    ? 'Select a local .kdbx file to access your passwords.'
+                                    : 'Create a secure database and save it to your device or cloud folder.'}
+                            </p>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -234,33 +253,32 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                     className="hidden"
                 />
 
-                {mode === 'open' && (
+                {mode === 'open' && !file && !path && (
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-600 uppercase mb-1.5 tracking-wider">Database File</label>
+                        <label className="block text-xs font-semibold uppercase mb-1.5 tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Database File</label>
                         <div
                             onClick={!initialVaultInfo ? handleFileBoxClick : undefined}
-                            className={`bg-neutral-100/80 border border-neutral-200/75 rounded-lg p-4 flex flex-col items-center justify-center transition-all ${file ? 'border-blue-500/50 bg-blue-50/50' : 'hover:border-neutral-400/50 hover:bg-neutral-200/50'
-                                } ${!initialVaultInfo ? 'cursor-pointer' : 'cursor-default'}`}
+                            className={`rounded-lg p-4 flex flex-col items-center justify-center transition-all ${!initialVaultInfo ? 'cursor-pointer' : 'cursor-default'}`}
+                            style={{
+                                backgroundColor: 'var(--color-bg-tertiary)',
+                                border: '1px solid var(--color-border-light)'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!initialVaultInfo) {
+                                    e.currentTarget.style.borderColor = 'var(--color-border-medium)';
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!initialVaultInfo) {
+                                    e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)';
+                                }
+                            }}
                         >
-                            {file ? (
-                                <>
-                                    <HardDrive size={24} className="text-blue-600 mb-2" />
-                                    <span className="text-sm font-medium text-blue-900/80 truncate max-w-[250px]">{file.name}</span>
-                                    {path ? (
-                                        <span className="text-xs text-green-600 mt-1.5 flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>Native File System</span>
-                                    ) : fileHandle ? (
-                                        <span className="text-xs text-green-600 mt-1.5 flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>Native Sync Ready</span>
-                                    ) : (
-                                        <span className="text-xs text-amber-600 mt-1.5 flex items-center"><span className="w-2 h-2 bg-amber-500 rounded-full mr-1.5"></span>Read Only / Manual Save</span>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <Upload size={24} className="text-neutral-400 mb-2" />
-                                    <span className="text-sm text-neutral-500">Click to browse files</span>
-                                    <span className="text-xs text-neutral-400 mt-1.5 text-center">Supports iCloud, Dropbox, or local files</span>
-                                </>
-                            )}
+                            <Upload size={24} className="mb-2" style={{ color: 'var(--color-text-tertiary)' }} />
+                            <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Click to browse files</span>
+                            <span className="text-xs mt-1.5 text-center" style={{ color: 'var(--color-text-tertiary)' }}>Supports iCloud, Dropbox, or local files</span>
                         </div>
                     </div>
                 )}
