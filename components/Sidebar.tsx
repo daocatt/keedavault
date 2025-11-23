@@ -543,7 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                 )}
 
                 {vaults.map(vault => (
-                    <div key={vault.id} className="mb-4">
+                    <div key={vault.id} className="mb-2">
                         <div
                             className={`px-3 py-1.5 flex items-center justify-between group cursor-pointer ${activeVaultId === vault.id ? '' : 'hover:bg-gray-100'}`}
                             onClick={(e) => { e.stopPropagation(); setActiveVault(vault.id); }}
