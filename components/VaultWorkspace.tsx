@@ -136,19 +136,18 @@ const VaultLayout = () => {
     if (vaults.length === 0 && !vaultLoaded) {
         return (
             <div className="flex h-screen w-screen overflow-hidden flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)' }} onContextMenu={(e) => e.preventDefault()}>
-                {/* Unified title bar and content area */}
+                {/* Content area with traffic lights fusion */}
                 <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-                    {/* Drag Region and Traffic Lights Placeholder */}
+                    {/* macOS Unified Toolbar - Fusion Style with Extended Drag Region */}
+                    {/* Draggable Top Region */}
                     <div
-                        className="absolute top-0 left-0 w-full h-12"
+                        className="absolute top-0 left-0 w-full h-12 z-20"
                         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
                         data-tauri-drag-region
-                    >
-                        {/* You can add a subtle background or leave it transparent */}
-                    </div>
+                    />
 
-                    <div className="w-full max-w-sm">
-                        <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-8 border" style={{ boxShadow: 'var(--shadow-xl)', borderColor: 'var(--color-border-light)' }}>
+                    <div className="w-full max-w-sm relative z-10">
+                        <div className="rounded-2xl p-8" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-light)' }}>
                             {initMode === 'create' ? (
                                 <VaultAuthForm
                                     hideHeader={false}
@@ -175,81 +174,18 @@ const VaultLayout = () => {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }} onContextMenu={(e) => e.preventDefault()}>
-            {/* Main Content */}
+
+            {/* Main Content - Headers are the unified toolbar */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Left Sidebar: Vaults and Groups */}
                 <aside
                     className={`${leftSidebarVisible ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
-                    style={{ 
+                    style={{
                         minWidth: leftSidebarVisible ? '256px' : '0px',
                         backgroundColor: 'var(--color-bg-sidebar)',
                         borderRight: '1px solid var(--color-border-light)'
                     }}
                 >
-                    <div
-                        className="h-12 flex items-center px-4 justify-between flex-shrink-0"
-                        style={{ 
-                            WebkitAppRegion: 'drag',
-                            borderBottom: '1px solid var(--color-border-light)'
-                        } as React.CSSProperties}
-                        data-tauri-drag-region
-                    >
-                        {/* Traffic Lights Placeholder / Vault Name */}
-                        <div className="pl-14 flex items-center pointer-events-none">
-                            <span className="font-semibold text-sm tracking-tight truncate" style={{ color: 'var(--color-text-primary)', opacity: 0.9 }}>{vaultName}</span>
-                        </div>
-
-                        <div className="flex items-center space-x-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-                            <button
-                                onClick={() => activeVaultId && handleAddCategory(activeVaultId)}
-                                className="p-1.5 rounded transition-all duration-200"
-                                style={{ color: 'var(--color-text-tertiary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                                    e.currentTarget.style.color = 'var(--color-accent)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                }}
-                                title="Add Category"
-                            >
-                                <Plus size={16} />
-                            </button>
-                            <button
-                                onClick={() => activeVaultId && saveVault(activeVaultId)}
-                                className="p-1.5 rounded transition-all duration-200"
-                                style={{ color: 'var(--color-text-tertiary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                                    e.currentTarget.style.color = 'var(--color-accent)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                }}
-                                title="Save Vault"
-                            >
-                                <Save size={16} />
-                            </button>
-                            <button
-                                onClick={() => activeVaultId && removeVault(activeVaultId)}
-                                className="p-1.5 rounded transition-all duration-200"
-                                style={{ color: 'var(--color-text-tertiary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                                    e.currentTarget.style.color = '#ff3b30';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                }}
-                                title="Lock Vault"
-                            >
-                                <Lock size={16} />
-                            </button>
-                        </div>
-                    </div>
                     <Sidebar
                         onOpenVault={handleOpenVault}
                         onAddCategory={handleAddCategory}
@@ -266,8 +202,8 @@ const VaultLayout = () => {
 
                         {/* Right Panel: Details */}
                         {selectedEntryId && rightSidebarVisible ? (
-                            <div className="flex-1 md:w-[450px] md:flex-none" style={{ 
-                                minWidth: '320px', 
+                            <div className="flex-1 md:w-[450px] md:flex-none" style={{
+                                minWidth: '320px',
                                 maxWidth: '500px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
@@ -278,7 +214,7 @@ const VaultLayout = () => {
                                 />
                             </div>
                         ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="hidden md:flex flex-1 items-center justify-center flex-col" style={{ 
+                            <div className="hidden md:flex flex-1 items-center justify-center flex-col" style={{
                                 minWidth: '320px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'

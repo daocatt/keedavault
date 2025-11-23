@@ -226,9 +226,9 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
     return (
         <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => setToolbarContextMenu(null)} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
-            {/* Header Toolbar */}
+            {/* Header Toolbar - Aligned with Traffic Lights */}
             <div
-                className={`h-12 flex items-center px-4 space-x-2 relative ${!leftSidebarVisible ? 'pl-20' : ''}`}
+                className="h-12 flex items-center px-3 space-x-1.5 relative"
                 style={{
                     WebkitAppRegion: 'drag',
                     borderBottom: '1px solid var(--color-border-light)',
@@ -240,13 +240,13 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     setToolbarContextMenu({ x: e.clientX, y: e.clientY });
                 }}
             >
+                {/* Left spacing for traffic lights - Only when sidebar is hidden */}
+                {!leftSidebarVisible && <div className="w-16"></div>}
+
                 <button
                     onClick={toggleLeftSidebar}
-                    className="p-2 rounded-md transition-all duration-200"
-                    style={{
-                        WebkitAppRegion: 'no-drag',
-                        color: 'var(--color-text-secondary)'
-                    } as React.CSSProperties}
+                    className="p-1.5 rounded-md transition-all duration-200"
+                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
@@ -254,23 +254,23 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     {leftSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
                 </button>
 
+                <div className="h-6 w-px" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
+
                 <button
                     onClick={handleCreate}
-                    className="p-2 rounded-md transition-all duration-200"
-                    style={{
-                        WebkitAppRegion: 'no-drag',
-                        color: 'var(--color-text-secondary)'
-                    } as React.CSSProperties}
+                    className="p-1.5 rounded-md transition-all duration-200"
+                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title="New Entry"
                 >
-                    <Plus size={18} />
+                    <Plus size={16} />
                 </button>
+
                 {/* Password Generator Icon */}
                 <button
                     onClick={() => setShowPassGen(!showPassGen)}
-                    className={`p-2 rounded-md transition-all duration-200`}
+                    className={`p-1.5 rounded-md transition-all duration-200`}
                     style={{
                         WebkitAppRegion: 'no-drag',
                         backgroundColor: showPassGen ? 'var(--color-accent-light)' : 'transparent',
@@ -288,18 +288,16 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     }}
                     title="Password Generator"
                 >
-                    <Key size={16} />
+                    <Key size={14} />
                 </button>
-                <div className="h-6 w-px mx-2" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
+
+                <div className="h-5 w-px mx-1" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
 
                 <button
                     onClick={handleRefresh}
                     disabled={isSyncing}
-                    className={`p-2 rounded-md transition-all duration-200 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    style={{
-                        WebkitAppRegion: 'no-drag',
-                        color: 'var(--color-text-secondary)'
-                    } as React.CSSProperties}
+                    className={`p-1.5 rounded-md transition-all duration-200 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => {
                         if (!isSyncing) {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
@@ -312,19 +310,19 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     }}
                     title="Refresh / Sync"
                 >
-                    <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                    <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                 </button>
 
                 <div className="flex-1"></div>
 
-                <div className="relative w-64" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: 'var(--color-text-placeholder)' }} />
+                <div className="relative w-56" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--color-text-placeholder)' }} />
                     <input
                         type="text"
                         placeholder="Search entries..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-2 py-1.5 rounded-md text-xs focus:outline-none transition-all duration-150"
+                        className="w-full pl-8 pr-2 py-1 rounded-md text-xs focus:outline-none transition-all duration-150"
                         style={{
                             backgroundColor: 'var(--color-bg-secondary)',
                             border: '1px solid var(--color-border-light)',
@@ -332,7 +330,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         }}
                         onFocus={(e) => {
                             e.currentTarget.style.borderColor = 'var(--color-accent)';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-accent-light)';
+                            e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-accent-light)';
                         }}
                         onBlur={(e) => {
                             e.currentTarget.style.borderColor = 'var(--color-border-light)';
@@ -343,11 +341,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                 <button
                     onClick={toggleRightSidebar}
-                    className="p-2 rounded-md transition-all duration-200 ml-2"
-                    style={{
-                        WebkitAppRegion: 'no-drag',
-                        color: 'var(--color-text-secondary)'
-                    } as React.CSSProperties}
+                    className="p-1.5 rounded-md transition-all duration-200 ml-2"
+                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={rightSidebarVisible ? "Hide details" : "Show details"}

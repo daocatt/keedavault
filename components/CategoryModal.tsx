@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Folder, Check, ChevronDown, Key, Globe, AlertTriangle, Server, PenTool, Settings, Home, Star, Lock, Wrench, FolderOpen, FileText, Image, Music, Video, Code } from 'lucide-react';
 import { VaultGroup } from '../types';
+import { CategorySelector } from './CategorySelector';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -80,18 +81,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
     if (!isOpen) return null;
 
-    const flattenGroups = (gs: VaultGroup[], depth = 0): { id: string, name: string, depth: number }[] => {
-        let res: { id: string, name: string, depth: number }[] = [];
-        gs.forEach(g => {
-            if (!g.isRecycleBin) {
-                res.push({ id: g.uuid, name: g.name, depth });
-                res = res.concat(flattenGroups(g.subgroups, depth + 1));
-            }
-        });
-        return res;
-    };
 
-    const flatGroups = flattenGroups(groups);
 
     const handleSave = () => {
         if (!name.trim()) return;
@@ -117,23 +107,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     {/* Parent Group - Moved to Top */}
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Parent Category</label>
-                        <div className="relative">
-                            <select
-                                value={parentGroupId}
-                                onChange={e => setParentGroupId(e.target.value)}
-                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none appearance-none transition-all text-sm font-medium text-gray-700"
-                                disabled={mode === 'edit' && (!initialData?.parentGroupId)}
-                            >
-                                {flatGroups.map(g => (
-                                    <option key={g.id} value={g.id}>
-                                        {'\u00A0'.repeat(g.depth * 4)}{g.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                <ChevronDown size={16} />
-                            </div>
-                        </div>
+                        <CategorySelector
+                            groups={groups}
+                            selectedGroupId={parentGroupId}
+                            onSelect={setParentGroupId}
+                            disabled={mode === 'edit' && (!initialData?.parentGroupId)}
+                            placeholder="Select Parent Category"
+                        />
                     </div>
 
                     {/* Icon & Name - Side by Side */}

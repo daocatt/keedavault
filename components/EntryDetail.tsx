@@ -135,21 +135,42 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     );
 
     return (
-        <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200 shadow-xl">
-            {/* Toolbar */}
-            <div className="h-12 border-b border-gray-200 bg-white flex items-center justify-between px-4 flex-shrink-0">
-                <h2 className="text-sm font-semibold text-gray-700">Entry Details</h2>
-                <div className="flex items-center space-x-2">
+        <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', borderLeft: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-xl)' }}>
+            {/* Header Toolbar - Aligned with Traffic Lights */}
+            <div className="h-12 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}>
+                <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Entry Details</h2>
+                <div className="flex items-center space-x-1">
                     <button
                         onClick={() => setIsEditModalOpen(true)}
-                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-full hover:text-indigo-600"
+                        className="p-1.5 rounded-md transition-all duration-200"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-secondary)';
+                        }}
                         title="Edit Entry"
                     >
-                        <Edit size={18} />
+                        <Edit size={16} />
                     </button>
 
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full md:hidden">
-                        <X size={18} />
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 rounded-md transition-all duration-200 md:hidden"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-text-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-secondary)';
+                        }}
+                    >
+                        <X size={16} />
                     </button>
                 </div>
             </div>

@@ -283,6 +283,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
         onAddGroup, onRenameGroup, onDeleteGroup, onUpdateGroup
     } = useVault();
 
+    const activeVault = vaults.find(v => v.id === activeVaultId);
+
     const [actionState, setActionState] = useState<ActionState | null>(null);
     const [vaultContextMenu, setVaultContextMenu] = useState<{ x: number; y: number; vaultId: string } | null>(null);
 
@@ -372,6 +374,89 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
         <div className="flex-1 flex flex-col overflow-hidden" onClick={() => {
             if (actionState) setActionState(null);
         }}>
+            {/* Row 1: Traffic Lights & Settings */}
+            <div
+                className="h-10 flex items-center justify-between px-3 flex-shrink-0"
+                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                data-tauri-drag-region
+            >
+                <div className="w-16"></div>
+                <button
+                    className="p-1.5 rounded-md transition-all duration-200"
+                    style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                        e.currentTarget.style.color = 'var(--color-accent)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                    }}
+                    title="Settings"
+                >
+                    <Settings size={16} />
+                </button>
+            </div>
+
+            {/* Row 2: Database Name & Actions */}
+            <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                <div className="flex items-center font-medium text-sm text-gray-700 truncate flex-1 mr-2 select-none">
+                    <Database size={14} className="mr-2 opacity-50 flex-shrink-0" />
+                    <span className="truncate">{activeVault ? activeVault.name : 'KeedaVault'}</span>
+                </div>
+
+                <div className="flex items-center space-x-0.5">
+                    <button
+                        onClick={() => activeVaultId && onAddCategory(activeVaultId)}
+                        className="p-1.5 rounded transition-all duration-200"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                        }}
+                        title="Add Category"
+                    >
+                        <Plus size={16} />
+                    </button>
+                    <button
+                        onClick={() => activeVaultId && saveVault(activeVaultId)}
+                        className="p-1.5 rounded transition-all duration-200"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                        }}
+                        title="Save Vault"
+                    >
+                        <Save size={16} />
+                    </button>
+                    <button
+                        onClick={() => activeVaultId && removeVault(activeVaultId)}
+                        className="p-1.5 rounded transition-all duration-200"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = '#ff3b30';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                        }}
+                        title="Lock Vault"
+                    >
+                        <Lock size={16} />
+                    </button>
+                </div>
+            </div>
+
             <div className="flex-1 overflow-y-auto py-2">
                 {/* Vaults List */}
                 {vaults.length === 0 && (

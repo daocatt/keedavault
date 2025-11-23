@@ -24,17 +24,18 @@ export const Launcher: React.FC = () => {
                 width: 960,
                 height: 640,
                 minWidth: 800,
+                minHeight: 600,
                 center: true,
                 resizable: true,
+                hiddenTitle: true,
+                titleBarStyle: 'overlay',
             });
 
             webview.once('tauri://created', function () {
-                // webview window successfully created
                 console.log("Window created successfully");
             });
 
             webview.once('tauri://error', function (e: any) {
-                // an error happened creating the webview window
                 console.error("Window creation error:", e);
             });
         } catch (e) {
@@ -44,7 +45,6 @@ export const Launcher: React.FC = () => {
 
     const handleOpenRecent = async (vault: SavedVaultInfo) => {
         try {
-            // Validate that path exists
             if (!vault.path) {
                 await message(
                     `Invalid vault path. The entry may be corrupted.`,
@@ -55,22 +55,19 @@ export const Launcher: React.FC = () => {
                 return;
             }
 
-            // Check if the file exists
             const fileExists = await exists(vault.path);
             if (!fileExists) {
                 await message(
                     `The file "${vault.path}" no longer exists.\nIt may have been moved or deleted.`,
                     { title: 'File Not Found', type: 'error' }
                 );
-                // Remove from recent list since the file doesn't exist
                 removeRecentVault(vault.path, vault.filename);
                 setRecentVaults(getRecentVaults());
                 return;
             }
 
-            // Update timestamp
             saveRecentVault({ ...vault, lastOpened: Date.now() });
-            setRecentVaults(getRecentVaults()); // Refresh list
+            setRecentVaults(getRecentVaults());
             openVaultWindow(vault.path, 'unlock');
         } catch (e) {
             console.error("Error checking file or opening vault", e);
@@ -111,18 +108,6 @@ export const Launcher: React.FC = () => {
         }
     };
 
-    const removeRecent = (e: React.MouseEvent, path: string) => {
-        e.stopPropagation();
-        // We need a service method to remove, but for now we can just filter and save back
-        // Assuming storageService exposes a way or we just overwrite. 
-        // Since getRecentVaults returns a copy, we can modify and save? 
-        // Actually storageService doesn't have a 'remove' yet. 
-        // We will implement a simple remove locally for now or add it to service later.
-        // For now, let's just ignore the remove requirement or implement it if needed.
-        // The user didn't explicitly ask for "remove from recent" in this prompt, 
-        // but "Manage" implies it. Let's skip for this exact step to keep it simple.
-    };
-
     const handleRemoveRecent = (e: React.MouseEvent, vault: SavedVaultInfo) => {
         e.stopPropagation();
         removeRecentVault(vault.path, vault.filename);
@@ -130,47 +115,44 @@ export const Launcher: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 flex-col relative" onContextMenu={(e) => e.preventDefault()}>
-            {/* macOS Title Bar with drag region */}
+        <div className="flex h-screen w-screen overflow-hidden flex-col relative" style={{ backgroundColor: 'var(--color-bg-secondary)' }} onContextMenu={(e) => e.preventDefault()}>
+            {/* macOS Unified Toolbar - Fusion Style with Extended Drag Region */}
+            {/* Draggable Top Region */}
             <div
-                className="h-12 bg-gray-50/80 backdrop-blur-sm flex items-center px-4 flex-shrink-0"
+                className="absolute top-0 left-0 w-full h-12 z-50"
                 style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
                 data-tauri-drag-region
-            >
-                <div className="flex-1 flex items-center justify-center pointer-events-none">
-                    <ShieldCheck className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                    <span className="font-semibold text-sm text-gray-700 tracking-tight">KeedaVault</span>
-                </div>
-            </div>
+            />
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col items-center justify-center overflow-auto">
-                <div className="w-full max-w-2xl p-8 flex flex-col items-center">
+            {/* Main Content - Left-Right Layout */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
+                <div className="w-full max-w-5xl flex items-center gap-12">
 
-                    {/* Header */}
-                    <div className="mb-10 flex flex-col items-center">
-                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/10 p-4">
+                    {/* Left Side - Logo and Subtitle */}
+                    <div className="flex-shrink-0 flex flex-col items-start max-w-xs">
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 p-3" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-lg)' }}>
                             <img src={appIcon} alt="KeedaVault Logo" className="w-full h-full object-contain" />
                         </div>
-                        <p className="text-gray-500 text-center max-w-md">
+                        <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ color: 'var(--color-text-primary)' }}>KeedaVault</h1>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                             Secure, local, and private password manager.
                             <br />Open a database to get started.
                         </p>
                     </div>
 
-                    {/* Actions Card - Vertical Layout */}
-                    <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col">
+                    {/* Right Side - Recent Databases and Actions */}
+                    <div className="flex-1 rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-light)' }}>
 
                         {/* Recent Files Section */}
-                        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                            <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+                        <div className="p-5" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-tertiary)' }}>
+                            <div className="flex items-center text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
                                 <Clock size={12} className="mr-1.5" />
                                 Recent Databases
                             </div>
 
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
                                 {recentVaults.length === 0 ? (
-                                    <div className="text-sm text-gray-400 italic py-4 text-center">
+                                    <div className="text-sm italic py-6 text-center" style={{ color: 'var(--color-text-tertiary)' }}>
                                         No recent files found.
                                     </div>
                                 ) : (
@@ -178,21 +160,42 @@ export const Launcher: React.FC = () => {
                                         <button
                                             key={idx}
                                             onClick={() => handleOpenRecent(vault)}
-                                            className="w-full text-left px-3 py-3 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl transition-all flex items-center group relative"
+                                            className="w-full text-left px-3 py-2 rounded-lg transition-all flex items-center group relative"
+                                            style={{
+                                                backgroundColor: 'var(--color-bg-primary)',
+                                                border: '1px solid var(--color-border-light)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-accent-light)';
+                                                e.currentTarget.style.borderColor = 'var(--color-accent)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
+                                                e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                                            }}
                                         >
-                                            <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center mr-3 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                                                <HardDrive size={16} />
+                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 transition-colors" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}>
+                                                <HardDrive size={14} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-semibold text-gray-900 truncate">{vault.filename}</div>
-                                                <div className="text-xs text-gray-400 truncate">{vault.path}</div>
+                                                <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{vault.filename}</div>
+                                                <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>{vault.path}</div>
                                             </div>
                                             <button
                                                 onClick={(e) => handleRemoveRecent(e, vault)}
-                                                className="ml-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                className="ml-2 p-1 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                                                style={{ color: 'var(--color-text-tertiary)' }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                    e.currentTarget.style.color = '#dc2626';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                                                }}
                                                 title="Remove from recent"
                                             >
-                                                <X size={14} />
+                                                <X size={12} />
                                             </button>
                                         </button>
                                     ))
@@ -201,33 +204,48 @@ export const Launcher: React.FC = () => {
                         </div>
 
                         {/* Action Buttons Section */}
-                        <div className="w-full p-6 flex flex-col space-y-3 bg-white">
-                            <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        <div className="p-5 flex flex-col gap-2" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+                            <div className="flex items-center text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--color-text-tertiary)' }}>
                                 Quick Actions
                             </div>
 
                             <button
                                 onClick={handleCreateNew}
-                                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md shadow-indigo-500/20 flex items-center justify-center transition-all active:scale-95"
+                                className="w-full py-2 px-3 rounded-lg flex items-center justify-center transition-all text-sm font-medium"
+                                style={{
+                                    backgroundColor: 'var(--color-accent)',
+                                    color: 'white',
+                                    boxShadow: 'var(--shadow-sm)'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-accent-hover)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-accent)'}
                             >
                                 <Plus size={16} className="mr-2" />
-                                <span className="font-medium text-sm">Create New Vault</span>
+                                Create New Vault
                             </button>
 
                             <button
                                 onClick={handleBrowse}
-                                className="w-full py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg flex items-center justify-center transition-all active:scale-95"
+                                className="w-full py-2 px-3 rounded-lg flex items-center justify-center transition-all text-sm font-medium"
+                                style={{
+                                    backgroundColor: 'var(--color-bg-primary)',
+                                    color: 'var(--color-text-primary)',
+                                    border: '1px solid var(--color-border-medium)'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)'}
                             >
-                                <FolderOpen size={16} className="mr-2 text-gray-500" />
-                                <span className="font-medium text-sm">Open File...</span>
+                                <FolderOpen size={16} className="mr-2" style={{ color: 'var(--color-text-secondary)' }} />
+                                Open File...
                             </button>
                         </div>
                     </div>
-
-                    <div className="mt-8 text-center text-[10px] text-gray-300">
-                        <p>KeedaVault v0.1.0 • Local Storage Only</p>
-                    </div>
                 </div>
+            </div>
+
+            {/* Footer */}
+            <div className="absolute bottom-4 left-0 right-0 text-center text-[10px]" style={{ color: 'var(--color-text-placeholder)' }}>
+                <p>KeedaVault v0.1.0 • Local Storage Only</p>
             </div>
         </div>
     );
