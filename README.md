@@ -1,20 +1,56 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# KeeDaVault
 
-# Run and deploy your AI Studio app
+A secure and intelligent password manager.
 
-This contains everything you need to run your app locally.
+KeeDaVault is a desktop password manager application that helps you securely store and manage your passwords. It uses the KeePass `kdbx` file format, ensuring compatibility with other KeePass clients.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1UO-cd__wvXI2KUP7kVm2b6mdo4BbxaC1
+Built with a modern tech stack, KeeDaVault provides a fast and responsive user experience. It also integrates AI features to help you with your password management.
 
-## Run Locally
+## Getting Started
 
-**Prerequisites:**  Node.js
+### Prerequisites
 
+- Node.js
+- Rust
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Local Development
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/your-username/keedavault.git
+    cd keedavault
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Run the app in development mode:
+    ```bash
+    npm run dev
+    ```
+    This will start the Vite development server for the frontend and the Tauri application.
+
+## Build
+
+To build the application for your platform, run the following command:
+
+```bash
+npm run tauri build
+```
+
+The build artifacts will be located in `src-tauri/target/release/`.
+
+## Tech Stack
+
+-   **Frontend**:
+    -   React
+    -   TypeScript
+    -   Vite
+    -   Tailwind CSS
+-   **Backend**:
+    -   Rust
+    -   Tauri
+-   **Password Management**:
+    -   kdbxweb
+-   **AI Features**:
+    -   Google Gemini
