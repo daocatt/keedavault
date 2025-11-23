@@ -12,6 +12,8 @@ import {
     updateEntryInDb,
     updateGroupInDb,
     deleteGroupFromDb,
+    findGroup,
+    findEntryParent,
     deleteEntryFromDb,
     moveEntryInDb,
     restoreEntryFromRecycleBin,
@@ -50,6 +52,9 @@ interface VaultContextType {
     onEditEntry: (data: EntryFormData) => Promise<void>;
     onDeleteEntry: (entryId: string) => Promise<void>;
     onMoveEntry: (entryId: string, targetGroupId: string) => Promise<void>;
+    onRestoreEntry: (entryId: string) => Promise<void>;
+    isRecycleBinGroup: (groupId: string) => boolean;
+    isEntryInRecycleBin: (entryId: string) => boolean;
     onEmptyRecycleBin: () => Promise<void>;
     lockVault: (id: string) => void;
 }
@@ -265,6 +270,39 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 console.error(e);
                 addToast({ title: e.message || "Failed to delete group", type: "error" });
             }
+        }
+    };
+
+    const isRecycleBinGroup = (groupId: string): boolean => {
+        const activeVault = vaults.find(v => v.id === activeVaultId);
+        if (!activeVault) return false;
+        const root = activeVault.db.getDefaultGroup();
+        if (!root) return false;
+        const group = findGroup(root, groupId);
+        return !!group?.isRecycleBin;
+    };
+
+    const isEntryInRecycleBin = (entryId: string): boolean => {
+        const activeVault = vaults.find(v => v.id === activeVaultId);
+        if (!activeVault) return false;
+        const root = activeVault.db.getDefaultGroup();
+        if (!root) return false;
+        const result = findEntryParent(root, entryId);
+        if (!result) return false;
+        const { group } = result;
+        return !!group?.isRecycleBin;
+    };
+
+    const onRestoreEntry = async (entryId: string) => {
+        if (!activeVault) return;
+        try {
+            const { groupName, groupIcon } = restoreEntryFromRecycleBin(activeVault.db, entryId);
+            refreshVault(activeVault.id);
+            await saveVault(activeVault.id, true);
+            addToast({ title: `Restored to ${groupName}`, type: 'success' });
+        } catch (e: any) {
+            console.error(e);
+            addToast({ title: e.message || 'Failed to restore entry', type: 'error' });
         }
     };
 
