@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { readBinaryFile, writeBinaryFile } from '@tauri-apps/api/fs';
-import { save } from '@tauri-apps/api/dialog';
+import { save, ask } from '@tauri-apps/api/dialog';
 import kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
 import {
@@ -32,6 +32,7 @@ interface VaultContextType {
     setSearchQuery: (query: string) => void;
     activeEntries: VaultEntry[];
     getEntry: (uuid: string) => VaultEntry | undefined;
+    getActiveGroup: () => VaultGroup | undefined;
     refreshVault: (vaultId: string) => void;
     isUnlocking: boolean;
     unlockError: string | null;
@@ -45,6 +46,7 @@ interface VaultContextType {
     onAddEntry: (data: EntryFormData) => Promise<void>;
     onEditEntry: (data: EntryFormData) => Promise<void>;
     onDeleteEntry: (entryId: string) => Promise<void>;
+    onEmptyRecycleBin: () => Promise<void>;
     lockVault: (id: string) => void;
 }
 
@@ -211,7 +213,44 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const onDeleteGroup = async (groupId: string) => {
         if (!activeVault) return;
-        if (confirm("Are you sure you want to delete this group and all its contents?")) {
+
+        // Helper to find group
+        const findGroupById = (groups: VaultGroup[], id: string): VaultGroup | undefined => {
+            for (const group of groups) {
+                if (group.uuid === id) return group;
+                const found = findGroupById(group.subgroups, id);
+                if (found) return found;
+            }
+            return undefined;
+        };
+
+        // Helper to count entries recursively
+        const countEntriesInGroup = (group: VaultGroup): number => {
+            let count = group.entries.length;
+            for (const sub of group.subgroups) {
+                count += countEntriesInGroup(sub);
+            }
+            return count;
+        };
+
+        const groupToDelete = findGroupById(activeVault.groups, groupId);
+        if (groupToDelete) {
+            const totalEntries = countEntriesInGroup(groupToDelete);
+            if (totalEntries > 0) {
+                addToast({
+                    title: `Cannot delete: Category contains ${totalEntries} items`,
+                    type: "error"
+                });
+                return;
+            }
+        }
+
+        const confirmed = await ask("Are you sure you want to delete this group?", {
+            title: 'Delete Group',
+            type: 'warning'
+        });
+
+        if (confirmed) {
             try {
                 deleteGroupFromDb(activeVault.db, groupId);
                 refreshVault(activeVault.id);
@@ -256,12 +295,18 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const onDeleteEntry = async (entryId: string) => {
         if (!activeVault) return;
-        if (confirm("Are you sure you want to delete this entry?")) {
+
+        const confirmed = await ask("Move this entry to the Recycle Bin?", {
+            title: 'Delete Entry',
+            type: 'warning'
+        });
+
+        if (confirmed) {
             try {
                 deleteEntryFromDb(activeVault.db, entryId);
                 refreshVault(activeVault.id);
                 await saveVault(activeVault.id, true);
-                addToast({ title: "Entry deleted", type: "success" });
+                addToast({ title: "Entry moved to Recycle Bin", type: "success" });
             } catch (e: any) {
                 console.error(e);
                 addToast({ title: e.message || "Failed to delete entry", type: "error" });
@@ -450,6 +495,21 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return all.find(e => e.uuid === uuid);
     }, [activeVault, getAllEntries]);
 
+    const getActiveGroup = useCallback((): VaultGroup | undefined => {
+        if (!activeVault || !activeGroupId) return undefined;
+
+        const findGroupRecursive = (groups: VaultGroup[]): VaultGroup | undefined => {
+            for (const group of groups) {
+                if (group.uuid === activeGroupId) return group;
+                const found = findGroupRecursive(group.subgroups);
+                if (found) return found;
+            }
+            return undefined;
+        };
+
+        return findGroupRecursive(activeVault.groups);
+    }, [activeVault, activeGroupId]);
+
     const onRenameGroup = async (groupId: string, newName: string) => {
         return onUpdateGroup(groupId, newName);
     };
@@ -464,6 +524,35 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e: any) {
             console.error(e);
             addToast({ title: e.message || "Failed to update group", type: "error" });
+        }
+    };
+
+    const onEmptyRecycleBin = async () => {
+        if (!activeVault) return;
+        const currentGroup = getActiveGroup();
+        if (!currentGroup || !currentGroup.isRecycleBin) {
+            addToast({ title: "Not in Recycle Bin", type: "error" });
+            return;
+        }
+
+        const confirmed = await ask(`Permanently delete all ${currentGroup.entries.length} entries from the Recycle Bin? This cannot be undone.`, {
+            title: 'Empty Recycle Bin',
+            type: 'warning'
+        });
+
+        if (confirmed) {
+            try {
+                // Delete all entries in the recycle bin
+                for (const entry of currentGroup.entries) {
+                    deleteEntryFromDb(activeVault.db, entry.uuid);
+                }
+                refreshVault(activeVault.id);
+                await saveVault(activeVault.id, true);
+                addToast({ title: "Recycle Bin emptied", type: "success" });
+            } catch (e: any) {
+                console.error(e);
+                addToast({ title: e.message || "Failed to empty Recycle Bin", type: "error" });
+            }
         }
     };
 
@@ -482,6 +571,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setSearchQuery,
             activeEntries,
             getEntry,
+            getActiveGroup,
             refreshVault,
             isUnlocking,
             unlockError,
@@ -493,6 +583,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             onAddEntry,
             onEditEntry,
             onDeleteEntry,
+            onEmptyRecycleBin,
             lockVault: (id: string) => {
                 const vault = vaults.find(v => v.id === id);
                 if (vault) {

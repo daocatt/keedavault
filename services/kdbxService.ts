@@ -296,9 +296,45 @@ export const deleteEntryFromDb = (db: kdbxweb.Kdbx, entryUuid: string) => {
     if (!result) throw new Error("Entry not found");
 
     const { group, entry } = result;
-    const index = group.entries.indexOf(entry);
-    if (index > -1) {
-        group.entries.splice(index, 1);
+
+    // Check if the entry is already in the Recycle Bin
+    const recycleBinUuid = db.meta.recycleBinEnabled ? db.meta.recycleBinUuid : null;
+    const isInRecycleBin = recycleBinUuid && uuidsEqual(group.uuid, recycleBinUuid);
+
+    if (isInRecycleBin) {
+        // Permanently delete if already in Recycle Bin
+        const index = group.entries.indexOf(entry);
+        if (index > -1) {
+            group.entries.splice(index, 1);
+        }
+    } else {
+        // Move to Recycle Bin
+        let recycleBin: kdbxweb.KdbxGroup | null = null;
+
+        if (recycleBinUuid) {
+            recycleBin = findGroup(root, recycleBinUuid.id);
+        }
+
+        // Create Recycle Bin if it doesn't exist
+        if (!recycleBin) {
+            db.createRecycleBin();
+            // After creating, retrieve it from metadata
+            if (db.meta.recycleBinUuid) {
+                recycleBin = findGroup(root, db.meta.recycleBinUuid.id);
+            }
+        }
+
+        if (recycleBin) {
+            // Remove from current group
+            const index = group.entries.indexOf(entry);
+            if (index > -1) {
+                group.entries.splice(index, 1);
+            }
+
+            // Add to Recycle Bin
+            recycleBin.entries.push(entry);
+            entry.times.update();
+        }
     }
 };
 

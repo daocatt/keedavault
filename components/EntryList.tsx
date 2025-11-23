@@ -26,7 +26,7 @@ interface ContextMenuState {
 }
 
 export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryId, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
-    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId } = useVault();
+    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin } = useVault();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -155,6 +155,40 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         return () => document.removeEventListener('click', handleClick);
     }, []);
 
+    // Keyboard shortcut for Delete key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Esc key - Close modal if open
+            if (e.key === 'Escape' && isModalOpen) {
+                e.preventDefault();
+                setIsModalOpen(false);
+                setEditingEntry(null);
+                return;
+            }
+
+            // Enter key - Edit selected entry
+            if (e.key === 'Enter' && selectedEntryId && !isModalOpen) {
+                e.preventDefault();
+                const entry = getEntry(selectedEntryId);
+                if (entry) {
+                    handleEdit(entry);
+                }
+                return;
+            }
+
+            // Delete or Backspace key - Delete selected entry
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEntryId && !isModalOpen) {
+                // Prevent default behavior (like navigating back in browser)
+                e.preventDefault();
+                // Trigger delete
+                handleDelete(e as any, selectedEntryId);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedEntryId, isModalOpen]);
+
     const getIcon = (url: string) => {
         if (url && url.includes('http')) return <Globe size={18} className="text-blue-500" />;
         return <Key size={18} className="text-gray-400" />;
@@ -169,7 +203,30 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         e.preventDefault();
         e.stopPropagation();
         onSelectEntry(entry.uuid);
-        setContextMenu({ x: e.clientX, y: e.clientY, entry });
+
+        // Calculate menu dimensions (approximate)
+        const menuHeight = 240; // Approximate height of the context menu
+        const menuWidth = 192; // w-48 = 12rem = 192px
+
+        // Get viewport dimensions
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+
+        // Calculate position
+        let x = e.clientX;
+        let y = e.clientY;
+
+        // Adjust Y position if menu would go off bottom of screen
+        if (y + menuHeight > viewportHeight) {
+            y = viewportHeight - menuHeight - 10; // 10px margin from bottom
+        }
+
+        // Adjust X position if menu would go off right of screen
+        if (x + menuWidth > viewportWidth) {
+            x = viewportWidth - menuWidth - 10; // 10px margin from right
+        }
+
+        setContextMenu({ x, y, entry });
     };
 
     const copyToClipboard = (text: string, label: string) => {
@@ -283,7 +340,25 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Sidebar</span>}
                 </button>
 
-                <div className="h-6 w-px" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
+                {/* Empty Recycle Bin Button - Only show when in Recycle Bin */}
+                {getActiveGroup()?.isRecycleBin && activeEntries.length > 0 && (
+                    <>
+                        <button
+                            onClick={onEmptyRecycleBin}
+                            className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                            style={{
+                                WebkitAppRegion: 'no-drag',
+                                color: '#dc2626'
+                            } as React.CSSProperties}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            title="Empty Recycle Bin"
+                        >
+                            <Trash2 size={16} />
+                            {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Empty</span>}
+                        </button>
+                    </>
+                )}
 
                 <button
                     onClick={handleCreate}
@@ -561,7 +636,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             key={entry.uuid}
                             onClick={() => onSelectEntry(entry.uuid)}
                             onContextMenu={(e) => handleContextMenu(e, entry)}
-                            className={`py-1.5 flex items-center cursor-pointer transition-colors group even:bg-gray-50 ${selectedEntryId === entry.uuid ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900' : 'hover:bg-gray-100 text-gray-700'}`}
+                            className={`py-1.5 flex items-center cursor-pointer transition-colors group ${selectedEntryId === entry.uuid
+                                ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
+                                : 'even:bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                }`}
                         >
                             {/* Title Column */}
                             {visibleColumns.title && (
