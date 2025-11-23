@@ -115,10 +115,15 @@ export const addGroupToDb = (db: kdbxweb.Kdbx, parentGroupUuid: string, name: st
         newGroup.iconId = icon;
     }
     if (allowAdd !== undefined) {
-        // @ts-ignore - customData is available on Group
-        newGroup.customData.set('keedavault_allow_add', allowAdd.toString());
+        // @ts-ignore - customData may need initialization
+        if (!newGroup.customData) {
+            newGroup.customData = new Map();
+        }
+        // kdbxweb expects a KdbxCustomDataItem object
+        newGroup.customData.set('keedavault_allow_add', { value: allowAdd.toString() });
     }
 
+    newGroup.times.update();
     return newGroup;
 };
 
@@ -140,8 +145,12 @@ export const updateGroupInDb = (db: kdbxweb.Kdbx, groupUuid: string, newName: st
     }
 
     if (allowAdd !== undefined) {
-        // @ts-ignore
-        group.customData.set('keedavault_allow_add', allowAdd.toString());
+        // @ts-ignore - customData may need initialization
+        if (!group.customData) {
+            group.customData = new Map();
+        }
+        // kdbxweb expects a KdbxCustomDataItem object
+        group.customData.set('keedavault_allow_add', { value: allowAdd.toString() });
     }
 
     // Handle Move

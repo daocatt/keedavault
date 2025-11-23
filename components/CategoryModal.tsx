@@ -49,9 +49,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     const [allowAdd, setAllowAdd] = useState(true);
     const [showIconPicker, setShowIconPicker] = useState(false);
     const iconPickerRef = useRef<HTMLDivElement>(null);
+    const prevIsOpenRef = useRef(false);
 
     useEffect(() => {
-        if (isOpen) {
+        // Only initialize when modal is first opened (transition from closed to open)
+        if (isOpen && !prevIsOpenRef.current) {
             if (mode === 'edit' && initialData) {
                 setName(initialData.name);
                 setIcon(initialData.icon);
@@ -66,7 +68,9 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             }
             setShowIconPicker(false);
         }
-    }, [isOpen, mode, initialData, groups]);
+        prevIsOpenRef.current = isOpen;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, mode, initialData]); // Removed 'groups' from dependencies
 
     // Close icon picker when clicking outside
     useEffect(() => {

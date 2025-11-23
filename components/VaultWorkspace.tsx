@@ -196,15 +196,15 @@ const VaultLayout = () => {
                 {/* Main Content Area: Entry List */}
                 <main className="flex-1 flex flex-col min-w-0 relative" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
                     <div className="flex-1 overflow-hidden flex">
-                        <div className={`${selectedEntryId && !rightSidebarVisible ? 'flex' : selectedEntryId ? 'hidden md:flex' : 'flex'} flex-1 flex-col`} style={{ borderRight: '1px solid var(--color-border-light)' }}>
+                        <div className={`${selectedEntryId && !rightSidebarVisible ? 'flex' : selectedEntryId ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
                             <EntryList onSelectEntry={setSelectedEntryId} selectedEntryId={selectedEntryId} leftSidebarVisible={leftSidebarVisible} rightSidebarVisible={rightSidebarVisible} toggleLeftSidebar={toggleLeftSidebar} toggleRightSidebar={toggleRightSidebar} />
                         </div>
 
                         {/* Right Panel: Details */}
                         {selectedEntryId && rightSidebarVisible ? (
-                            <div className="w-[300px] flex-none" style={{
-                                minWidth: '300px',
-                                maxWidth: '300px',
+                            <div className="w-[350px] flex-none" style={{
+                                minWidth: '350px',
+                                maxWidth: '350px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
@@ -214,9 +214,9 @@ const VaultLayout = () => {
                                 />
                             </div>
                         ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="hidden md:flex flex-1 md:w-[300px] md:flex-none items-center justify-center flex-col" style={{
-                                minWidth: '300px',
-                                maxWidth: '300px',
+                            <div className="flex w-[350px] flex-none items-center justify-center flex-col" style={{
+                                minWidth: '350px',
+                                maxWidth: '350px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
