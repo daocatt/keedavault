@@ -23,6 +23,7 @@ const VaultLayout = () => {
     // UI Settings
     const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
     const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
+    const [rightSidebarWidth, setRightSidebarWidth] = useState(350);
 
     useEffect(() => {
         // Parse URL params
@@ -41,6 +42,7 @@ const VaultLayout = () => {
         const settings = getUISettings();
         setLeftSidebarVisible(settings.leftSidebarVisible);
         setRightSidebarVisible(settings.rightSidebarVisible);
+        setRightSidebarWidth(settings.rightSidebarWidth || 350);
     }, []);
 
     // Auto-select first entry when category changes
@@ -202,9 +204,10 @@ const VaultLayout = () => {
 
                         {/* Right Panel: Details */}
                         {selectedEntryId && rightSidebarVisible ? (
-                            <div className="w-[350px] flex-none" style={{
-                                minWidth: '350px',
-                                maxWidth: '350px',
+                            <div className="flex-none" style={{
+                                width: `${rightSidebarWidth}px`,
+                                minWidth: `${rightSidebarWidth}px`,
+                                maxWidth: `${rightSidebarWidth}px`,
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
@@ -214,9 +217,10 @@ const VaultLayout = () => {
                                 />
                             </div>
                         ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="flex w-[350px] flex-none items-center justify-center flex-col" style={{
-                                minWidth: '350px',
-                                maxWidth: '350px',
+                            <div className="flex flex-none items-center justify-center flex-col" style={{
+                                width: `${rightSidebarWidth}px`,
+                                minWidth: `${rightSidebarWidth}px`,
+                                maxWidth: `${rightSidebarWidth}px`,
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
