@@ -107,35 +107,29 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     </button>
                 </div>
 
-                <div className="px-4 py-3 space-y-3 border-t border-gray-100">
-                    {/* Parent Group - Moved to Top */}
-                    <div>
-                        <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Parent Category</label>
-                        <CategorySelector
-                            groups={groups}
-                            selectedGroupId={parentGroupId}
-                            onSelect={setParentGroupId}
-                            disabled={mode === 'edit' && (!initialData?.parentGroupId)}
-                            placeholder="Select Parent Category"
-                        />
-                    </div>
-
-                    {/* Icon & Name - Side by Side */}
-                    <div className="flex space-x-2.5">
-                        {/* Icon Picker */}
-                        <div className="flex-shrink-0 relative" ref={iconPickerRef}>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Icon</label>
+                <div className="p-5 space-y-6">
+                    {/* Fusion Header: Icon & Name */}
+                    <div className="flex items-center space-x-5">
+                        {/* Large Icon Picker */}
+                        <div className="relative flex-shrink-0" ref={iconPickerRef}>
                             <button
                                 type="button"
                                 onClick={() => setShowIconPicker(!showIconPicker)}
-                                className="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group relative"
                             >
-                                <SelectedIcon size={18} className="text-indigo-600" />
+                                <SelectedIcon size={32} className="text-indigo-500 group-hover:scale-110 transition-transform duration-200" strokeWidth={1.5} />
+
+                                {/* Edit Badge */}
+                                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-gray-100">
+                                    <div className="bg-gray-50 rounded-full p-1">
+                                        <ChevronDown size={10} className="text-gray-400" />
+                                    </div>
+                                </div>
                             </button>
 
                             {/* Popover Icon Grid */}
                             {showIconPicker && (
-                                <div className="absolute top-full left-0 mt-1.5 p-2.5 bg-white rounded-lg shadow-lg border border-gray-200 w-60 z-50 grid grid-cols-5 gap-1.5 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="absolute top-full left-0 mt-2 p-3 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 w-72 z-50 grid grid-cols-6 gap-2 animate-in fade-in zoom-in-95 duration-100">
                                     {ICONS.map(ic => (
                                         <button
                                             key={ic.id}
@@ -144,13 +138,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                                                 setIcon(ic.id);
                                                 setShowIconPicker(false);
                                             }}
-                                            className={`w-10 h-10 flex items-center justify-center rounded-md transition-all ${icon === ic.id
-                                                ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-500/50'
-                                                : 'hover:bg-gray-100 text-gray-600'
+                                            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${icon === ic.id
+                                                ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                                                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
                                                 }`}
                                             title={ic.label}
                                         >
-                                            <ic.icon size={16} />
+                                            <ic.icon size={18} strokeWidth={2} />
                                         </button>
                                     ))}
                                 </div>
@@ -159,16 +153,28 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
                         {/* Name Input */}
                         <div className="flex-1">
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Name</label>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Category Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
-                                placeholder="Category Name"
+                                className="w-full text-xl font-semibold text-gray-900 bg-transparent border-b-2 border-gray-100 hover:border-gray-300 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-300 pb-1"
+                                placeholder="Enter Name"
                                 autoFocus
                             />
                         </div>
+                    </div>
+
+                    {/* Parent Group Selector */}
+                    <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Location</label>
+                        <CategorySelector
+                            groups={groups}
+                            selectedGroupId={parentGroupId}
+                            onSelect={setParentGroupId}
+                            disabled={mode === 'edit' && (!initialData?.parentGroupId)}
+                            placeholder="Select Parent Category"
+                        />
                     </div>
                 </div>
 
