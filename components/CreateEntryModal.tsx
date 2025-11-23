@@ -81,178 +81,177 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-200/60" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                {/* Header */}
-                <div className="px-4 py-2.5 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
-                    <h2 className="text-sm font-medium text-gray-700">
-                        {editEntry ? 'Edit' : 'Create'}
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
-                        <X size={14} />
+            <div className="bg-white rounded-xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden border border-gray-200/60 shadow-2xl transform transition-all">
+
+                {/* Header / Title Area */}
+                <div className="px-6 pt-6 pb-2 flex justify-between items-start">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                            {editEntry ? 'Edit Entry' : 'New Entry'}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            {editEntry ? 'Update your credential details.' : 'Add a new credential to your vault.'}
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full">
+                        <X size={16} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto px-4 py-3">
-                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-3">
-                        {/* Group selector */}
-                        <div>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Group</label>
-                            {activeVault && (
-                                <CategorySelector
-                                    groups={activeVault.groups}
-                                    selectedGroupId={groupUuid}
-                                    onSelect={setGroupUuid}
-                                    placeholder="Select a Group"
-                                />
-                            )}
-                        </div>
+                <div className="flex-1 overflow-y-auto px-6 py-2">
+                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Title */}
-                        <div>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Title</label>
-                            <div className="relative">
-                                <FileText className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        {/* Title & Group Block */}
+                        <div className="space-y-3">
+                            <div>
                                 <input
                                     type="text"
                                     required
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-400"
-                                    placeholder="e.g., Google, Amazon"
+                                    className="w-full text-xl font-semibold text-gray-900 bg-transparent border-b-2 border-gray-100 hover:border-gray-300 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-300 pb-1"
+                                    placeholder="Title (e.g. Google)"
+                                    autoFocus
                                 />
                             </div>
+                            <div className="bg-transparent">
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Location</label>
+                                {activeVault && (
+                                    <CategorySelector
+                                        groups={activeVault.groups}
+                                        selectedGroupId={groupUuid}
+                                        onSelect={setGroupUuid}
+                                        placeholder="Select Group"
+                                    />
+                                )}
+                            </div>
                         </div>
 
-                        {/* Two‑column fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Credentials Grid */}
+                        <div className="grid grid-cols-1 gap-3">
                             {/* Username */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Username</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={username}
-                                        onChange={e => setUsername(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
-                                        placeholder="username"
-                                    />
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <User size={16} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                                 </div>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={e => setUsername(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-gray-400"
+                                    placeholder="Username"
+                                />
                             </div>
-                            {/* Email */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Email</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={e => setEmail(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
-                                        placeholder="email@example.com"
-                                    />
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* URL & TOTP */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* URL */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Website URL</label>
-                                <div className="relative">
-                                    <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={url}
-                                        onChange={e => setUrl(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
-                                        placeholder="https://..."
-                                    />
+                            {/* Email - Moved Here & Styled to match */}
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Mail size={16} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                                 </div>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-gray-400"
+                                    placeholder="Email (Optional)"
+                                />
                             </div>
-                            {/* TOTP */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">TOTP Secret (2FA)</label>
-                                <div className="relative">
-                                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={totpSecret}
-                                        onChange={e => setTotpSecret(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
-                                        placeholder={editEntry ? "(Unchanged)" : "Base32 Secret Key"}
-                                    />
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Password with generator */}
-                        <div>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            {/* Password */}
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock size={16} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                </div>
                                 <input
                                     type="text"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
-                                    className="w-full pl-9 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400 font-mono"
-                                    placeholder="Secret password"
+                                    className="block w-full pl-10 pr-10 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-gray-400 font-mono"
+                                    placeholder="Password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowGen(!showGen)}
-                                    className={`absolute right-2 top-1.5 p-1 rounded-md transition-colors ${showGen ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                                    className={`absolute right-2 top-2 p-1 rounded-md transition-colors ${showGen ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
                                     title="Generate Password"
                                 >
                                     <Wand2 size={16} />
                                 </button>
                             </div>
+
+                            {/* Password Generator Panel */}
                             {showGen && (
-                                <div className="mt-2 relative">
+                                <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <PasswordGenerator
                                         isOpen={showGen}
                                         onClose={() => setShowGen(false)}
                                         onGenerate={pwd => setPassword(pwd)}
                                         showCopyButton={false}
-                                        className="w-full bg-gray-50 rounded-lg border border-gray-200 p-4"
+                                        className="w-full"
                                     />
                                 </div>
                             )}
+
+                            {/* URL */}
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Globe size={16} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={url}
+                                    onChange={e => setUrl(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-gray-400"
+                                    placeholder="Website URL"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Additional Info (TOTP only now) */}
+                        <div className="grid grid-cols-1 gap-3">
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Clock size={16} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={totpSecret}
+                                    onChange={e => setTotpSecret(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
+                                    placeholder="TOTP Secret (Optional)"
+                                />
+                            </div>
                         </div>
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Notes</label>
                             <textarea
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
-                                rows={3}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
-                                placeholder="Additional details..."
+                                rows={2}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-400 resize-none"
+                                placeholder="Notes..."
                             />
                         </div>
                     </form>
                 </div>
 
                 {/* Footer actions */}
-                <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-2">
+                <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex justify-end space-x-3">
                     <button
                         onClick={onClose}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"
+                        className="px-4 py-2 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-lg transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         form="entry-form"
                         type="submit"
-                        className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm transition-colors flex items-center"
+                        className="px-6 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm hover:shadow transition-all flex items-center transform active:scale-95"
                     >
-                        <Save size={14} className="mr-1.5" />
-                        {editEntry ? 'Update Entry' : 'Save Entry'}
+                        <Save size={14} className="mr-2" />
+                        {editEntry ? 'Update' : 'Save'}
                     </button>
                 </div>
             </div>

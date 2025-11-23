@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Launcher } from './components/Launcher';
 import { VaultWorkspace } from './components/VaultWorkspace';
+import { AboutModal } from './components/AboutModal';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<'launcher' | 'vault'>('launcher');
@@ -16,11 +17,12 @@ const App: React.FC = () => {
     }
   }, []);
 
-  if (mode === 'vault') {
-    return <VaultWorkspace />;
-  }
-
-  return <Launcher />;
+  return (
+    <>
+      <AboutModal />
+      {mode === 'vault' ? <VaultWorkspace /> : <Launcher />}
+    </>
+  );
 };
 
 export default App;
