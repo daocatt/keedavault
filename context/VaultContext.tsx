@@ -45,6 +45,7 @@ interface VaultContextType {
     onAddEntry: (data: EntryFormData) => Promise<void>;
     onEditEntry: (data: EntryFormData) => Promise<void>;
     onDeleteEntry: (entryId: string) => Promise<void>;
+    lockVault: (id: string) => void;
 }
 
 // ...
@@ -491,7 +492,22 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             onDeleteGroup,
             onAddEntry,
             onEditEntry,
-            onDeleteEntry
+            onDeleteEntry,
+            lockVault: (id: string) => {
+                const vault = vaults.find(v => v.id === id);
+                if (vault) {
+                    // Trigger the unlock modal with current vault info
+                    document.dispatchEvent(new CustomEvent('open-unlock-modal', {
+                        detail: {
+                            path: vault.path,
+                            filename: vault.filename,
+                            lastOpened: Date.now()
+                        }
+                    }));
+                    // Remove the vault from active state (effectively locking it)
+                    removeVault(id);
+                }
+            }
         }}>
             {children}
         </VaultContext.Provider>
