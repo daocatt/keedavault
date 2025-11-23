@@ -3,6 +3,7 @@ import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder } from '
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
+import { CategorySelector } from './CategorySelector';
 
 interface CreateEntryModalProps {
     isOpen: boolean;
@@ -74,21 +75,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
         onClose();
     };
 
-    // Helper to render group options recursively
-    const renderGroupOptions = (groups: VaultGroup[], depth = 0) => {
-        return groups.map(g => {
-            if (g.isRecycleBin) return null;
 
-            const prefix = depth > 0 ? '\u00A0'.repeat(depth * 4) + '└─ ' : '';
-
-            return (
-                <React.Fragment key={g.uuid}>
-                    <option value={g.uuid}>{prefix}{g.name}</option>
-                    {g.subgroups.length > 0 && renderGroupOptions(g.subgroups, depth + 1)}
-                </React.Fragment>
-            );
-        });
-    };
 
     if (!isOpen) return null;
 
@@ -111,17 +98,14 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                         {/* Group selector */}
                         <div>
                             <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Group</label>
-                            <div className="relative">
-                                <Folder className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                <select
-                                    value={groupUuid}
-                                    onChange={e => setGroupUuid(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all appearance-none"
-                                >
-                                    <option value="" disabled>Select a Group</option>
-                                    {activeVault && renderGroupOptions(activeVault.groups)}
-                                </select>
-                            </div>
+                            {activeVault && (
+                                <CategorySelector
+                                    groups={activeVault.groups}
+                                    selectedGroupId={groupUuid}
+                                    onSelect={setGroupUuid}
+                                    placeholder="Select a Group"
+                                />
+                            )}
                         </div>
 
                         {/* Title */}
