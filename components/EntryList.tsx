@@ -168,6 +168,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const handleContextMenu = (e: React.MouseEvent, entry: VaultEntry) => {
         e.preventDefault();
         e.stopPropagation();
+        onSelectEntry(entry.uuid);
         setContextMenu({ x: e.clientX, y: e.clientY, entry });
     };
 
