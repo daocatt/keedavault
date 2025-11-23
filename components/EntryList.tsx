@@ -636,6 +636,11 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             key={entry.uuid}
                             onClick={() => onSelectEntry(entry.uuid)}
                             onContextMenu={(e) => handleContextMenu(e, entry)}
+                            draggable
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', entry.uuid);
+                                e.dataTransfer.effectAllowed = 'move';
+                            }}
                             className={`py-1.5 flex items-center cursor-pointer transition-colors group ${selectedEntryId === entry.uuid
                                 ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
                                 : 'even:bg-gray-50 hover:bg-gray-100 text-gray-700'
