@@ -109,13 +109,15 @@ const GroupItem: React.FC<{
     getEntryCount: (group: VaultGroup) => number;
     parentId?: string;
     onEditCategory: (group: VaultGroup, parentId?: string) => void;
+    onMoveEntry: (entryId: string, targetGroupId: string) => void;
 }> = ({
     group, depth, activeGroupId, actionState,
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
-    parentId, onEditCategory
+    parentId, onEditCategory, onMoveEntry
 }) => {
         const [expanded, setExpanded] = useState(true);
         const [isHovered, setIsHovered] = useState(false);
+        const [isDragOver, setIsDragOver] = useState(false);
         const hasChildren = group.subgroups.length > 0;
         const isActive = activeGroupId === group.uuid;
         const entryCount = getEntryCount(group);
@@ -131,28 +133,60 @@ const GroupItem: React.FC<{
         const isAddingChild = actionState?.type === 'add' && actionState.nodeId === group.uuid;
         const isRootCategory = depth === 1;
 
+        const handleDragOver = (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!group.isRecycleBin) {
+                setIsDragOver(true);
+                e.dataTransfer.dropEffect = 'move';
+            }
+        };
+
+        const handleDragLeave = (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(false);
+        };
+
+        const handleDrop = (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(false);
+
+            if (group.isRecycleBin) return;
+
+            const entryId = e.dataTransfer.getData('text/plain');
+            if (entryId) {
+                onMoveEntry(entryId, group.uuid);
+            }
+        };
+
         return (
             <div>
                 <div
                     className={`flex items-center px-0 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
                     style={{
                         paddingLeft: `${depth * 12 + 8}px`,
-                        backgroundColor: isActive ? 'var(--color-accent-light)' : 'transparent',
-                        color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                        backgroundColor: isDragOver ? 'var(--color-accent-light)' : (isActive ? 'var(--color-accent-light)' : 'transparent'),
+                        color: isDragOver ? 'var(--color-accent)' : (isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'),
+                        border: isDragOver ? '1px dashed var(--color-accent)' : '1px solid transparent'
                     }}
                     onMouseEnter={(e) => {
                         setIsHovered(true);
-                        if (!isActive) {
+                        if (!isActive && !isDragOver) {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                         }
                     }}
                     onMouseLeave={(e) => {
                         setIsHovered(false);
-                        if (!isActive) {
+                        if (!isActive && !isDragOver) {
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }}
                     onClick={() => onSelect(group.uuid)}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                 >
                     <button
                         onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
@@ -254,6 +288,7 @@ const GroupItem: React.FC<{
                                 getEntryCount={getEntryCount}
                                 parentId={group.uuid}
                                 onEditCategory={onEditCategory}
+                                onMoveEntry={onMoveEntry}
                             />
                         ))}
 
@@ -291,7 +326,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
         activeGroupId, setActiveGroup,
         removeVault, saveVault, lockVault,
         isUnlocking,
-        onAddGroup, onRenameGroup, onDeleteGroup, onUpdateGroup
+        onAddGroup, onRenameGroup, onDeleteGroup, onUpdateGroup, onMoveEntry
     } = useVault();
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
@@ -575,6 +610,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         onDelete={onDeleteGroup}
                                         getEntryCount={getEntryCount}
                                         onEditCategory={(g, pid) => onEditCategory(vault.id, g, pid)}
+                                        onMoveEntry={onMoveEntry}
                                     />
                                 ))}
 
@@ -594,6 +630,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                             onDelete={onDeleteGroup}
                                             getEntryCount={getEntryCount}
                                             onEditCategory={(g, pid) => onEditCategory(vault.id, g, pid)}
+                                            onMoveEntry={onMoveEntry}
                                         />
                                     </div>
                                 ))}

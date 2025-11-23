@@ -12,7 +12,10 @@ import {
     updateEntryInDb,
     updateGroupInDb,
     deleteGroupFromDb,
-    deleteEntryFromDb
+    deleteEntryFromDb,
+    moveEntryInDb,
+    restoreEntryFromRecycleBin,
+    getOriginalGroupInfo
 } from '../services/kdbxService';
 import { useToast } from '../components/ui/Toaster';
 import { saveRecentVault, getRecentVaults } from '../services/storageService';
@@ -46,6 +49,7 @@ interface VaultContextType {
     onAddEntry: (data: EntryFormData) => Promise<void>;
     onEditEntry: (data: EntryFormData) => Promise<void>;
     onDeleteEntry: (entryId: string) => Promise<void>;
+    onMoveEntry: (entryId: string, targetGroupId: string) => Promise<void>;
     onEmptyRecycleBin: () => Promise<void>;
     lockVault: (id: string) => void;
 }
@@ -311,6 +315,19 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 console.error(e);
                 addToast({ title: e.message || "Failed to delete entry", type: "error" });
             }
+        }
+    };
+
+    const onMoveEntry = async (entryId: string, targetGroupId: string) => {
+        if (!activeVault) return;
+        try {
+            moveEntryInDb(activeVault.db, entryId, targetGroupId);
+            refreshVault(activeVault.id);
+            await saveVault(activeVault.id, true);
+            addToast({ title: "Entry moved", type: "success" });
+        } catch (e: any) {
+            console.error(e);
+            addToast({ title: e.message || "Failed to move entry", type: "error" });
         }
     };
 
@@ -583,6 +600,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             onAddEntry,
             onEditEntry,
             onDeleteEntry,
+            onMoveEntry,
             onEmptyRecycleBin,
             lockVault: (id: string) => {
                 const vault = vaults.find(v => v.id === id);
