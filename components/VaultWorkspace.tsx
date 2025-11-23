@@ -21,9 +21,16 @@ const VaultLayout = () => {
     const [vaultLoaded, setVaultLoaded] = useState(false);
 
     // UI Settings
-    const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
-    const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
-    const [rightSidebarWidth, setRightSidebarWidth] = useState(350);
+    const [leftSidebarVisible, setLeftSidebarVisible] = useState(() => getUISettings().leftSidebarVisible);
+    const [rightSidebarVisible, setRightSidebarVisible] = useState(() => getUISettings().rightSidebarVisible);
+    const [rightSidebarWidth, setRightSidebarWidth] = useState(() => getUISettings().rightSidebarWidth || 350);
+    const [isResizing, setIsResizing] = useState(false);
+    const rightSidebarWidthRef = useRef(rightSidebarWidth);
+
+    // Keep ref in sync
+    useEffect(() => {
+        rightSidebarWidthRef.current = rightSidebarWidth;
+    }, [rightSidebarWidth]);
 
     useEffect(() => {
         // Parse URL params
@@ -37,13 +44,37 @@ const VaultLayout = () => {
             setInitMode('unlock');
             if (path) setInitPath(path);
         }
-
-        // Load UI settings
-        const settings = getUISettings();
-        setLeftSidebarVisible(settings.leftSidebarVisible);
-        setRightSidebarVisible(settings.rightSidebarVisible);
-        setRightSidebarWidth(settings.rightSidebarWidth || 350);
     }, []);
+
+    // Handle resizing
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = window.innerWidth - e.clientX;
+            // Min 250px, Max 800px
+            if (newWidth >= 250 && newWidth <= 800) {
+                setRightSidebarWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            saveUISettings({ rightSidebarWidth: rightSidebarWidthRef.current });
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing]);
 
     // Auto-select first entry when category changes
     const prevGroupIdRef = useRef<string | null | undefined>(undefined);
@@ -203,33 +234,49 @@ const VaultLayout = () => {
                         </div>
 
                         {/* Right Panel: Details */}
-                        {selectedEntryId && rightSidebarVisible ? (
-                            <div className="flex-none" style={{
-                                width: `${rightSidebarWidth}px`,
-                                minWidth: `${rightSidebarWidth}px`,
-                                maxWidth: `${rightSidebarWidth}px`,
-                                backgroundColor: 'var(--color-bg-sidebar)',
-                                borderLeft: '1px solid var(--color-border-light)'
-                            }}>
-                                <EntryDetail
-                                    entryId={selectedEntryId}
-                                    onClose={() => setSelectedEntryId(null)}
-                                />
-                            </div>
-                        ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="flex flex-none items-center justify-center flex-col" style={{
-                                width: `${rightSidebarWidth}px`,
-                                minWidth: `${rightSidebarWidth}px`,
-                                maxWidth: `${rightSidebarWidth}px`,
-                                backgroundColor: 'var(--color-bg-sidebar)',
-                                borderLeft: '1px solid var(--color-border-light)'
-                            }}>
-                                <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-hover)' }}>
-                                    <Lock className="w-10 h-10" style={{ color: 'var(--color-text-placeholder)', opacity: 0.5 }} />
+                        {/* Right Panel: Details */}
+                        {rightSidebarVisible && (
+                            <>
+                                {/* Resize Handle */}
+                                <div
+                                    className="cursor-col-resize flex-none transition-colors delay-150 z-10 relative flex items-center justify-center"
+                                    style={{
+                                        backgroundColor: isResizing ? 'var(--color-accent)' : 'var(--color-border-light)',
+                                        width: '1px'
+                                    }}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setIsResizing(true);
+                                    }}
+                                >
+                                    {/* Invisible wider hit area */}
+                                    <div className="absolute inset-y-0 -left-1 -right-1 cursor-col-resize bg-transparent z-20" />
                                 </div>
-                                <p style={{ color: 'var(--color-text-tertiary)' }}>Select an item to view details</p>
-                            </div>
-                        ) : null}
+
+                                <div className="flex-none flex flex-col" style={{
+                                    width: `${rightSidebarWidth}px`,
+                                    minWidth: `${rightSidebarWidth}px`,
+                                    maxWidth: `${rightSidebarWidth}px`,
+                                    backgroundColor: 'var(--color-bg-sidebar)'
+                                }}>
+                                    {selectedEntryId ? (
+                                        <div className="h-full w-full">
+                                            <EntryDetail
+                                                entryId={selectedEntryId}
+                                                onClose={() => setSelectedEntryId(null)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-1 items-center justify-center flex-col h-full">
+                                            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-hover)' }}>
+                                                <Lock className="w-10 h-10" style={{ color: 'var(--color-text-placeholder)', opacity: 0.5 }} />
+                                            </div>
+                                            <p style={{ color: 'var(--color-text-tertiary)' }}>Select an item to view details</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </main>
 
