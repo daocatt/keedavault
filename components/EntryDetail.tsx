@@ -177,47 +177,49 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
-                <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-3">
-                        <span className="text-lg font-bold">{entry.title.charAt(0).toUpperCase()}</span>
+                <div className="max-w-xl mx-auto">
+                    <div className="flex items-center mb-4">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-3">
+                            <span className="text-lg font-bold">{entry.title.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold text-gray-900 break-all leading-tight">{entry.title}</h1>
+                            <p className="text-xs text-gray-500">{entry.username}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-lg font-bold text-gray-900 break-all leading-tight">{entry.title}</h1>
-                        <p className="text-xs text-gray-500">{entry.username}</p>
+
+                    <FieldRow label="Username" value={entry.username} />
+                    {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
+                    <FieldRow label="Password" value={entry.password || ''} isSecret />
+                    <FieldRow label="Website" value={entry.url} type="link" />
+
+                    {/* TOTP Section */}
+                    {entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
+
+                    {/* Notes */}
+                    <div className="mt-4">
+                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Notes</label>
+                        <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-700 min-h-[60px] whitespace-pre-wrap">
+                            {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
+                        </div>
                     </div>
+
+                    {/* Custom Fields */}
+                    {Object.keys(entry.fields).length > 0 && (
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase mb-4">Attributes</h3>
+                            {Object.entries(entry.fields).map(([k, v]) => {
+                                if (['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'Email'].includes(k)) return null;
+                                return <FieldRow key={k} label={k} value={v} />;
+                            })}
+                        </div>
+                    )}
                 </div>
-
-                <FieldRow label="Username" value={entry.username} />
-                {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
-                <FieldRow label="Password" value={entry.password || ''} isSecret />
-                <FieldRow label="Website" value={entry.url} type="link" />
-
-                {/* TOTP Section */}
-                {entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
-
-                {/* Notes */}
-                <div className="mt-4">
-                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Notes</label>
-                    <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-700 min-h-[60px] whitespace-pre-wrap">
-                        {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
-                    </div>
-                </div>
-
-                {/* Custom Fields */}
-                {Object.keys(entry.fields).length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-gray-200">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-4">Attributes</h3>
-                        {Object.entries(entry.fields).map(([k, v]) => {
-                            if (['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'Email'].includes(k)) return null;
-                            return <FieldRow key={k} label={k} value={v} />;
-                        })}
-                    </div>
-                )}
             </div>
 
             {/* Meta Information */}
             <div className="px-4 pb-4 pt-2">
-                <div className="pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
+                <div className="max-w-xl mx-auto pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
                     <div className="flex justify-between items-center">
                         <span className="uppercase tracking-wider font-semibold">Created</span>
                         <span>{entry.creationTime.toLocaleString()}</span>

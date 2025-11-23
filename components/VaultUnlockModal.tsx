@@ -27,12 +27,6 @@ export const VaultUnlockModal: React.FC = () => {
                         <ShieldCheck className="w-4 h-4 text-indigo-600 mr-2" />
                         <span className="font-semibold text-sm text-gray-700 tracking-tight">Unlock Vault</span>
                     </div>
-                    <button
-                        onClick={() => setIsOpen(false)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X size={20} />
-                    </button>
                 </div>
 
                 <div className="p-6 overflow-y-auto">
