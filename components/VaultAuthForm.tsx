@@ -182,7 +182,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                                 {file?.name || 'Database'}
                             </h2>
                             {path && (
-                                <p className="text-xs mt-1 truncate max-w-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                                <p className="text-xs mt-1 truncate max-w-xs" style={{ color: 'var(--color-text-tertiary)' }}>
                                     {path}
                                 </p>
                             )}
