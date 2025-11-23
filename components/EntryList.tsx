@@ -256,7 +256,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => { setToolbarContextMenu(null); setColumnMenuOpen(false); }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
             <div
-                className="h-12 flex items-center px-3 space-x-1.5 relative"
+                className="h-10 flex items-center px-3 space-x-1.5 relative"
                 style={{
                     WebkitAppRegion: 'drag',
                     borderBottom: '1px solid var(--color-border-light)',
@@ -291,10 +291,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    title="New Entry"
+                    title="New"
                 >
                     <Plus size={16} />
-                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">New Entry</span>}
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">New</span>}
                 </button>
 
                 {/* Password Generator Icon */}
@@ -322,28 +322,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Generator</span>}
                 </button>
 
-                <div className="h-5 w-px mx-1" style={{ backgroundColor: 'var(--color-border-light)' }}></div>
 
-                <button
-                    onClick={handleRefresh}
-                    disabled={isSyncing}
-                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''} ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
-                    onMouseEnter={(e) => {
-                        if (!isSyncing) {
-                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        if (!isSyncing) {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                    }}
-                    title="Refresh / Sync"
-                >
-                    <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Sync</span>}
-                </button>
 
                 <div className="flex-1"></div>
 

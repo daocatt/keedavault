@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder } from 'lucide-react';
+import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2 } from 'lucide-react';
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
@@ -85,7 +85,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 {/* Header */}
                 <div className="px-4 py-2.5 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
                     <h2 className="text-sm font-medium text-gray-700">
-                        {editEntry ? 'Edit Entry' : 'Create New Entry'}
+                        {editEntry ? 'Edit' : 'Create'}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
                         <X size={14} />
@@ -190,15 +190,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                         {/* Password with generator */}
                         <div>
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide flex justify-between">
-                                <span>Password</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowGen(!showGen)}
-                                    className="text-indigo-600 hover:text-indigo-800 text-[10px] font-bold flex items-center"
-                                >
-                                    <Key size={10} className="mr-1" /> {showGen ? 'HIDE GEN' : 'GENERATE'}
-                                </button>
+                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">
+                                Password
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -206,9 +199,17 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                     type="text"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400 font-mono"
+                                    className="w-full pl-9 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400 font-mono"
                                     placeholder="Secret password"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGen(!showGen)}
+                                    className={`absolute right-2 top-1.5 p-1 rounded-md transition-colors ${showGen ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                                    title="Generate Password"
+                                >
+                                    <Wand2 size={16} />
+                                </button>
                             </div>
                             {showGen && (
                                 <div className="mt-2 relative">

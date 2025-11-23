@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
+import { useToast } from './ui/Toaster';
 import {
     ChevronRight, ChevronDown, Folder, Trash2, Edit, Plus, X, Check,
     Database, Lock, Save, Globe, Smartphone, StickyNote, Sparkles, RefreshCw, FolderPlus,
@@ -321,6 +322,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
         setActionState(null);
     };
 
+    // Sync Logic
+    const { addToast } = useToast();
+    const [isSyncing, setIsSyncing] = useState(false);
+    const syncInProgressRef = useRef(false);
+    const lastSyncTimeRef = useRef(0);
+
+    const handleRefresh = React.useCallback(async (e?: React.MouseEvent) => {
+        // Prevent event bubbling
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
+        const now = Date.now();
+        // Debounce: prevent clicks within 500ms
+        if (now - lastSyncTimeRef.current < 500) {
+            return;
+        }
+
+        // Use ref to immediately prevent multiple calls
+        if (syncInProgressRef.current || !activeVaultId) {
+            return;
+        }
+
+        lastSyncTimeRef.current = now;
+        syncInProgressRef.current = true;
+        setIsSyncing(true);
+        addToast({ title: 'Syncing vault...', type: 'info' });
+
+        try {
+            // Pass isAutoSave=true to suppress saveVault's toast
+            await saveVault(activeVaultId, true);
+            addToast({ title: 'Vault synced', type: 'success' });
+        } catch (e) {
+            addToast({ title: 'Sync failed', type: 'error' });
+        } finally {
+            syncInProgressRef.current = false;
+            setIsSyncing(false);
+        }
+    }, [activeVaultId, saveVault, addToast]);
+
     // Helper to count entries recursively
     const getEntryCount = (group: VaultGroup): number => {
         let count = group.entries.length;
@@ -391,22 +433,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                 data-tauri-drag-region
             >
                 <div className="w-16"></div>
-                <button
-                    onClick={() => setShowSettings(true)}
-                    className="p-1.5 rounded-md transition-all duration-200"
-                    style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                        e.currentTarget.style.color = 'var(--color-accent)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                    }}
-                    title="Settings"
-                >
-                    <Settings size={16} />
-                </button>
+                <div className="flex items-center space-x-0.5">
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        className="p-1.5 rounded-md transition-all duration-200"
+                        style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                        }}
+                        title="Settings"
+                    >
+                        <Settings size={16} />
+                    </button>
+                    <button
+                        onClick={() => activeVaultId && lockVault(activeVaultId)}
+                        className="p-1.5 rounded-md transition-all duration-200"
+                        style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = '#ff3b30';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                        }}
+                        title="Lock Vault"
+                    >
+                        <Lock size={16} />
+                    </button>
+                </div>
             </div>
 
             {/* Row 2: Database Name & Actions */}
@@ -450,20 +510,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                         <Save size={16} />
                     </button>
                     <button
-                        onClick={() => activeVaultId && lockVault(activeVaultId)}
-                        className="p-1.5 rounded transition-all duration-200"
+                        onClick={handleRefresh}
+                        disabled={isSyncing}
+                        className={`p-1.5 rounded transition-all duration-200 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                         style={{ color: 'var(--color-text-tertiary)' }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                            e.currentTarget.style.color = '#ff3b30';
+                            if (!isSyncing) {
+                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                e.currentTarget.style.color = 'var(--color-accent)';
+                            }
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                            if (!isSyncing) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                            }
                         }}
-                        title="Lock Vault"
+                        title="Sync Vault"
                     >
-                        <Lock size={16} />
+                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                     </button>
                 </div>
             </div>

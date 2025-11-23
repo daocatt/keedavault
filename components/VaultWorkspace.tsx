@@ -23,7 +23,24 @@ const VaultLayout = () => {
     // UI Settings
     const [leftSidebarVisible, setLeftSidebarVisible] = useState(() => getUISettings().leftSidebarVisible);
     const [rightSidebarVisible, setRightSidebarVisible] = useState(() => getUISettings().rightSidebarVisible);
-    const [rightSidebarWidth, setRightSidebarWidth] = useState(() => getUISettings().rightSidebarWidth || 350);
+    const [rightSidebarWidth, setRightSidebarWidth] = useState(() => {
+        const settings = getUISettings();
+        let width: any = settings.rightSidebarWidth;
+
+        // Robustly handle potential string values from storage
+        if (typeof width === 'string') {
+            width = parseInt(width, 10);
+        }
+
+        // Check if we have a valid number
+        if (typeof width === 'number' && !isNaN(width)) {
+            // Clamp between 250 and 800. 
+            // Using 250 as min to allow user flexibility, but ensuring it's not too small.
+            return Math.max(250, Math.min(width, 800));
+        }
+
+        return 350; // Default if no valid setting found
+    });
     const [isResizing, setIsResizing] = useState(false);
     const rightSidebarWidthRef = useRef(rightSidebarWidth);
 
@@ -229,7 +246,7 @@ const VaultLayout = () => {
                 {/* Main Content Area: Entry List */}
                 <main className="flex-1 flex flex-col min-w-0 relative" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
                     <div className="flex-1 overflow-hidden flex">
-                        <div className={`${selectedEntryId && !rightSidebarVisible ? 'flex' : selectedEntryId ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
+                        <div className={`${selectedEntryId && !rightSidebarVisible ? 'flex' : selectedEntryId ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0`}>
                             <EntryList onSelectEntry={setSelectedEntryId} selectedEntryId={selectedEntryId} leftSidebarVisible={leftSidebarVisible} rightSidebarVisible={rightSidebarVisible} toggleLeftSidebar={toggleLeftSidebar} toggleRightSidebar={toggleRightSidebar} />
                         </div>
 
