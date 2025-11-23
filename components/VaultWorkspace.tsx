@@ -202,9 +202,9 @@ const VaultLayout = () => {
 
                         {/* Right Panel: Details */}
                         {selectedEntryId && rightSidebarVisible ? (
-                            <div className="flex-1 md:w-[450px] md:flex-none" style={{
-                                minWidth: '320px',
-                                maxWidth: '500px',
+                            <div className="w-[300px] flex-none" style={{
+                                minWidth: '300px',
+                                maxWidth: '300px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
@@ -214,9 +214,9 @@ const VaultLayout = () => {
                                 />
                             </div>
                         ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="hidden md:flex flex-1 md:w-[450px] md:flex-none items-center justify-center flex-col" style={{
-                                minWidth: '320px',
-                                maxWidth: '500px',
+                            <div className="hidden md:flex flex-1 md:w-[300px] md:flex-none items-center justify-center flex-col" style={{
+                                minWidth: '300px',
+                                maxWidth: '300px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>
