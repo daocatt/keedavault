@@ -178,7 +178,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'var(--color-accent-light)' }}>
                                 <HardDrive size={24} style={{ color: 'var(--color-accent)' }} />
                             </div>
-                            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                            <h2 className="text-lg font-semibold truncate max-w-xs" style={{ color: 'var(--color-text-primary)' }} title={file?.name || 'Database'}>
                                 {file?.name || 'Database'}
                             </h2>
                             {path && (
@@ -193,11 +193,11 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                                 {mode === 'open' ? <Lock size={28} style={{ color: 'var(--color-text-secondary)' }} /> : <PlusCircle size={28} style={{ color: 'var(--color-text-secondary)' }} />}
                             </div>
                             <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{mode === 'open' ? 'Unlock Vault' : 'New Database'}</h2>
-                            <p className="text-sm mt-1.5 max-w-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                                {mode === 'open'
-                                    ? 'Select a local .kdbx file to access your passwords.'
-                                    : 'Create a secure database and save it to your device or cloud folder.'}
-                            </p>
+                            {mode === 'open' && (
+                                <p className="text-sm mt-1.5 max-w-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                                    Select a local .kdbx file to access your passwords.
+                                </p>
+                            )}
                         </>
                     )}
                 </div>

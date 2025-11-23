@@ -103,10 +103,10 @@ const VaultLayout = () => {
 
     const onSaveCategory = async (name: string, icon: number, parentGroupId: string, allowAdd: boolean) => {
         if (categoryModal.mode === 'add') {
-            onAddGroup(name, parentGroupId, icon, allowAdd);
+            await onAddGroup(name, parentGroupId, icon, allowAdd);
         } else {
             if (categoryModal.initialData?.uuid) {
-                onUpdateGroup(categoryModal.initialData.uuid, name, icon, parentGroupId, allowAdd);
+                await onUpdateGroup(categoryModal.initialData.uuid, name, icon, parentGroupId, allowAdd);
             }
         }
         setCategoryModal(prev => ({ ...prev, isOpen: false }));
@@ -179,9 +179,9 @@ const VaultLayout = () => {
             <div className="flex flex-1 overflow-hidden">
                 {/* Left Sidebar: Vaults and Groups */}
                 <aside
-                    className={`${leftSidebarVisible ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
+                    className={`${leftSidebarVisible ? 'w-56' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
                     style={{
-                        minWidth: leftSidebarVisible ? '256px' : '0px',
+                        minWidth: leftSidebarVisible ? '224px' : '0px',
                         backgroundColor: 'var(--color-bg-sidebar)',
                         borderRight: '1px solid var(--color-border-light)'
                     }}
@@ -214,8 +214,9 @@ const VaultLayout = () => {
                                 />
                             </div>
                         ) : !selectedEntryId && rightSidebarVisible ? (
-                            <div className="hidden md:flex flex-1 items-center justify-center flex-col" style={{
+                            <div className="hidden md:flex flex-1 md:w-[450px] md:flex-none items-center justify-center flex-col" style={{
                                 minWidth: '320px',
+                                maxWidth: '500px',
                                 backgroundColor: 'var(--color-bg-sidebar)',
                                 borderLeft: '1px solid var(--color-border-light)'
                             }}>

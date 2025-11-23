@@ -182,46 +182,7 @@ const GroupItem: React.FC<{
                         <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
-                    {/* Hover Actions - Hide for Recycle Bin and during edits */}
-                    {!group.isRecycleBin && !isRenaming && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center space-x-0.5 rounded px-1 z-10" style={{ backgroundColor: 'var(--color-bg-active)', boxShadow: 'var(--shadow-sm)' }}>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditCategory(group, parentId);
-                                }}
-                                className="p-1 rounded transition-colors"
-                                style={{ color: 'var(--color-text-secondary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
-                                    e.currentTarget.style.color = 'var(--color-accent)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-secondary)';
-                                }}
-                                title="Edit Group"
-                            >
-                                <Edit size={12} />
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onDelete(group.uuid); }}
-                                className="p-1 rounded transition-colors"
-                                style={{ color: 'var(--color-text-secondary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
-                                    e.currentTarget.style.color = '#ff3b30';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-secondary)';
-                                }}
-                                title="Delete Group"
-                            >
-                                <Trash2 size={12} />
-                            </button>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Render Subgroups */}
@@ -278,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
-        removeVault, saveVault,
+        removeVault, saveVault, lockVault,
         isUnlocking,
         onAddGroup, onRenameGroup, onDeleteGroup, onUpdateGroup
     } = useVault();
@@ -287,6 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
 
     const [actionState, setActionState] = useState<ActionState | null>(null);
     const [vaultContextMenu, setVaultContextMenu] = useState<{ x: number; y: number; vaultId: string } | null>(null);
+    const [showSettings, setShowSettings] = useState(false);
 
     const handleStartAdd = (groupId: string) => {
         setActionState({ type: 'add', nodeId: groupId });
@@ -382,6 +344,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
             >
                 <div className="w-16"></div>
                 <button
+                    onClick={() => setShowSettings(true)}
                     className="p-1.5 rounded-md transition-all duration-200"
                     style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     onMouseEnter={(e) => {
@@ -439,7 +402,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                         <Save size={16} />
                     </button>
                     <button
-                        onClick={() => activeVaultId && removeVault(activeVaultId)}
+                        onClick={() => activeVaultId && lockVault(activeVaultId)}
                         className="p-1.5 rounded transition-all duration-200"
                         style={{ color: 'var(--color-text-tertiary)' }}
                         onMouseEnter={(e) => {
@@ -533,26 +496,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         <Sparkles size={10} className="mr-1" /> Smart Views
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-websites' ? 'font-medium' : ''}`}
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
                                         style={{
-                                            backgroundColor: activeGroupId === 'smart-websites' ? 'var(--color-accent-light)' : 'transparent',
-                                            color: activeGroupId === 'smart-websites' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                            backgroundColor: activeGroupId === 'smart-duplicated' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-duplicated' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
                                         }}
                                         onMouseEnter={(e) => {
-                                            if (activeGroupId !== 'smart-websites') {
+                                            if (activeGroupId !== 'smart-duplicated') {
                                                 e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                                             }
                                         }}
                                         onMouseLeave={(e) => {
-                                            if (activeGroupId !== 'smart-websites') {
+                                            if (activeGroupId !== 'smart-duplicated') {
                                                 e.currentTarget.style.backgroundColor = 'transparent';
                                             }
                                         }}
-                                        onClick={() => setActiveGroup('smart-websites')}
+                                        onClick={() => setActiveGroup('smart-duplicated')}
                                     >
-                                        <Globe size={16} className="mr-2" style={{ color: '#007aff' }} />
-                                        <span className="flex-1">Websites</span>
-                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.websites}</span>
+                                        <Copy size={16} className="mr-2" style={{ color: '#ff3b30' }} />
+                                        <span className="flex-1">Duplicated</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.duplicated}</span>
                                     </div>
                                     <div
                                         className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-2fa' ? 'font-medium' : ''}`}
@@ -577,6 +540,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.twoFA}</span>
                                     </div>
                                     <div
+                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-websites' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-websites' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-websites' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-websites') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-websites') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
+                                        onClick={() => setActiveGroup('smart-websites')}
+                                    >
+                                        <Globe size={16} className="mr-2" style={{ color: '#007aff' }} />
+                                        <span className="flex-1">Websites</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.websites}</span>
+                                    </div>
+                                    <div
                                         className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-notes' ? 'font-medium' : ''}`}
                                         style={{
                                             backgroundColor: activeGroupId === 'smart-notes' ? 'var(--color-accent-light)' : 'transparent',
@@ -598,28 +583,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         <span className="flex-1">Notes</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.notes}</span>
                                     </div>
-                                    <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
-                                        style={{
-                                            backgroundColor: activeGroupId === 'smart-duplicated' ? 'var(--color-accent-light)' : 'transparent',
-                                            color: activeGroupId === 'smart-duplicated' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (activeGroupId !== 'smart-duplicated') {
-                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (activeGroupId !== 'smart-duplicated') {
-                                                e.currentTarget.style.backgroundColor = 'transparent';
-                                            }
-                                        }}
-                                        onClick={() => setActiveGroup('smart-duplicated')}
-                                    >
-                                        <Copy size={16} className="mr-2" style={{ color: '#ff3b30' }} />
-                                        <span className="flex-1">Duplicated</span>
-                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.duplicated}</span>
-                                    </div>
                                 </div>
                             </div>
                         )}
@@ -636,6 +599,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                     </div>
                 )}
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-64 text-center border border-gray-100 transform scale-100 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                            <Settings size={24} />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Settings</h3>
+                        <p className="text-sm text-gray-500 mb-4">Coming Soon</p>
+                        <button
+                            onClick={() => setShowSettings(false)}
+                            className="w-full py-2 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Vault Context Menu */}
             {vaultContextMenu && (

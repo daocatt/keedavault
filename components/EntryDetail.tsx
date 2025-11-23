@@ -101,15 +101,15 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     if (!entry) return null;
 
     const FieldRow: React.FC<{ label: string, value: string, isSecret?: boolean, type?: 'link' | 'text' }> = ({ label, value, isSecret, type = 'text' }) => (
-        <div className="mb-4 group">
-            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">{label}</label>
-            <div className="flex items-center bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm group-hover:border-indigo-300 transition-colors relative">
+        <div className="mb-3 group">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
+            <div className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm group-hover:border-indigo-300 transition-colors relative">
                 {type === 'link' && value ? (
-                    <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-sm">
+                    <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-xs">
                         {value}
                     </a>
                 ) : (
-                    <div className="flex-1 text-sm text-gray-800 truncate font-mono">
+                    <div className="flex-1 text-xs text-gray-800 truncate font-mono">
                         {isSecret && !showPassword ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
                     </div>
                 )}
@@ -137,7 +137,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', borderLeft: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-xl)' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
-            <div className="h-12 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}>
+            <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}>
                 <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Entry Details</h2>
                 <div className="flex items-center space-x-1">
                     <button
@@ -176,14 +176,14 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-                <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 mr-4">
-                        <span className="text-xl font-bold">{entry.title.charAt(0).toUpperCase()}</span>
+            <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-3">
+                        <span className="text-lg font-bold">{entry.title.charAt(0).toUpperCase()}</span>
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900 break-all">{entry.title}</h1>
-                        <p className="text-sm text-gray-500">{entry.username}</p>
+                        <h1 className="text-lg font-bold text-gray-900 break-all leading-tight">{entry.title}</h1>
+                        <p className="text-xs text-gray-500">{entry.username}</p>
                     </div>
                 </div>
 
@@ -196,9 +196,9 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                 {entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
 
                 {/* Notes */}
-                <div className="mt-6">
+                <div className="mt-4">
                     <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Notes</label>
-                    <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-3 text-sm text-gray-700 min-h-[100px] whitespace-pre-wrap">
+                    <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-700 min-h-[60px] whitespace-pre-wrap">
                         {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
                     </div>
                 </div>
@@ -216,8 +216,8 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
             </div>
 
             {/* Meta Information */}
-            <div className="px-6 pb-6 pt-2">
-                <div className="pt-4 border-t border-gray-200 text-[10px] text-gray-400 space-y-1.5 font-mono">
+            <div className="px-4 pb-4 pt-2">
+                <div className="pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
                     <div className="flex justify-between items-center">
                         <span className="uppercase tracking-wider font-semibold">Created</span>
                         <span>{entry.creationTime.toLocaleString()}</span>
