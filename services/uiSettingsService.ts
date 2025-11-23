@@ -5,6 +5,7 @@ export interface UISettings {
     toolbarStyle: 'icon' | 'text' | 'both';
     leftSidebarVisible: boolean;
     rightSidebarVisible: boolean;
+    rightSidebarWidth?: number;
     entryColumns?: {
         title: boolean;
         username: boolean;
@@ -33,6 +34,7 @@ const defaultSettings: UISettings = {
     toolbarStyle: 'icon',
     leftSidebarVisible: true,
     rightSidebarVisible: true,
+    rightSidebarWidth: 350,
     entryColumns: {
         title: true,
         username: true,
