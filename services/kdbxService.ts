@@ -325,6 +325,9 @@ export const deleteEntryFromDb = (db: kdbxweb.Kdbx, entryUuid: string) => {
         }
 
         if (recycleBin) {
+            // Save original group UUID
+            entry.fields.set('KeedaVault_OriginalGroup', group.uuid.id);
+
             // Remove from current group
             const index = group.entries.indexOf(entry);
             if (index > -1) {
@@ -336,6 +339,88 @@ export const deleteEntryFromDb = (db: kdbxweb.Kdbx, entryUuid: string) => {
             entry.times.update();
         }
     }
+};
+
+export const restoreEntryFromRecycleBin = (db: kdbxweb.Kdbx, entryUuid: string): { groupName: string, groupIcon: number } => {
+    const root = db.getDefaultGroup();
+    if (!root) throw new Error("Root group not found");
+
+    const result = findEntryParent(root, entryUuid);
+    if (!result) throw new Error("Entry not found");
+    const { group: currentGroup, entry } = result;
+
+    const originalGroupId = entry.fields.get('KeedaVault_OriginalGroup');
+    let targetGroup: kdbxweb.KdbxGroup | null = null;
+
+    if (originalGroupId && typeof originalGroupId === 'string') {
+        targetGroup = findGroup(root, originalGroupId);
+    }
+
+    // Fallback to root if original group not found
+    if (!targetGroup) {
+        targetGroup = root;
+    }
+
+    // Move entry
+    const index = currentGroup.entries.indexOf(entry);
+    if (index > -1) {
+        currentGroup.entries.splice(index, 1);
+    }
+    targetGroup.entries.push(entry);
+
+    // Clean up custom field
+    if (entry.fields.has('KeedaVault_OriginalGroup')) {
+        entry.fields.delete('KeedaVault_OriginalGroup');
+    }
+
+    entry.times.update();
+
+    return { groupName: targetGroup.name || 'Root', groupIcon: targetGroup.icon || 48 };
+};
+
+export const getOriginalGroupInfo = (db: kdbxweb.Kdbx, entryUuid: string): { name: string, icon: number } | null => {
+    const root = db.getDefaultGroup();
+    if (!root) return null;
+
+    const result = findEntryParent(root, entryUuid);
+    if (!result) return null;
+    const { entry } = result;
+
+    const originalGroupId = entry.fields.get('KeedaVault_OriginalGroup');
+    if (originalGroupId && typeof originalGroupId === 'string') {
+        const group = findGroup(root, originalGroupId);
+        if (group) {
+            return { name: group.name || 'Root', icon: group.icon || 48 };
+        }
+    }
+    // Default to root if not found but we want to show something? 
+    // Or return null to imply "Unknown" or "Root"
+    return { name: root.name || 'Root', icon: root.icon || 48 };
+};
+
+export const moveEntryInDb = (db: kdbxweb.Kdbx, entryUuid: string, targetGroupUuid: string) => {
+    const root = db.getDefaultGroup();
+    if (!root) throw new Error("Root group not found");
+
+    const result = findEntryParent(root, entryUuid);
+    if (!result) throw new Error("Entry not found");
+    const { group: currentGroup, entry } = result;
+
+    // If already in target group, do nothing
+    if (uuidsEqual(currentGroup.uuid, targetGroupUuid)) return;
+
+    const targetGroup = findGroup(root, targetGroupUuid);
+    if (!targetGroup) throw new Error("Target group not found");
+
+    // Remove from current
+    const index = currentGroup.entries.indexOf(entry);
+    if (index > -1) {
+        currentGroup.entries.splice(index, 1);
+    }
+
+    // Add to target
+    targetGroup.entries.push(entry);
+    entry.times.update();
 };
 
 // --- Parsing ---
