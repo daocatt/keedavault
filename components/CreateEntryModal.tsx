@@ -80,24 +80,24 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden relative transition-transform transform-gpu hover:scale-105">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+            <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-200/60" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 {/* Header */}
-                <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50">
-                    <h2 className="text-base font-semibold text-gray-800">
+                <div className="px-4 py-2.5 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
+                    <h2 className="text-sm font-medium text-gray-700">
                         {editEntry ? 'Edit Entry' : 'Create New Entry'}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <X size={18} />
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
+                        <X size={14} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex-1 overflow-y-auto px-4 py-3">
+                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-3">
                         {/* Group selector */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Group</label>
+                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Group</label>
                             {activeVault && (
                                 <CategorySelector
                                     groups={activeVault.groups}
@@ -110,7 +110,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                         {/* Title */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Title</label>
+                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Title</label>
                             <div className="relative">
                                 <FileText className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                 <input
@@ -118,7 +118,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                     required
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white focus:outline-none transition-all placeholder:text-gray-400"
+                                    className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-400"
                                     placeholder="e.g., Google, Amazon"
                                 />
                             </div>
@@ -128,7 +128,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Username */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Username</label>
+                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Username</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
@@ -142,7 +142,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                             </div>
                             {/* Email */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Email</label>
+                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Email</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
@@ -160,7 +160,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* URL */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Website URL</label>
+                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Website URL</label>
                                 <div className="relative">
                                     <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
@@ -174,7 +174,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                             </div>
                             {/* TOTP */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">TOTP Secret (2FA)</label>
+                                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">TOTP Secret (2FA)</label>
                                 <div className="relative">
                                     <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
@@ -190,7 +190,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                         {/* Password with generator */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase mb-1 flex justify-between">
+                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide flex justify-between">
                                 <span>Password</span>
                                 <button
                                     type="button"
@@ -225,7 +225,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Notes</label>
+                            <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1 ml-0.5 tracking-wide">Notes</label>
                             <textarea
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
@@ -238,19 +238,19 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 </div>
 
                 {/* Footer actions */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3">
+                <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-2">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         form="entry-form"
                         type="submit"
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors flex items-center"
+                        className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm transition-colors flex items-center"
                     >
-                        <Save size={16} className="mr-2" />
+                        <Save size={14} className="mr-1.5" />
                         {editEntry ? 'Update Entry' : 'Save Entry'}
                     </button>
                 </div>
