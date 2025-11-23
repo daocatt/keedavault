@@ -133,7 +133,7 @@ export const Launcher: React.FC = () => {
 
                     {/* Left Side - Logo and Subtitle */}
                     <div className="flex-shrink-0 flex flex-col items-start max-w-xs">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 p-3" style={{ backgroundColor: 'var(--color-bg-primary)', boxShadow: 'var(--shadow-lg)' }}>
+                        <div className="w-16 h-16 flex items-center justify-center mb-4 bg-transparent">
                             <img src={appIcon} alt="KeedaVault Logo" className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ color: 'var(--color-text-primary)' }}>KeedaVault</h1>
