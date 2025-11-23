@@ -76,7 +76,7 @@ const generateOtpUrl = (secret: string, label: string, issuer: string = 'KeedaVa
     return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(label)}?secret=${clean}&issuer=${encodeURIComponent(issuer)}`;
 };
 
-const findGroup = (group: kdbxweb.KdbxGroup, uuid: string): kdbxweb.KdbxGroup | null => {
+export const findGroup = (group: kdbxweb.KdbxGroup, uuid: string): kdbxweb.KdbxGroup | null => {
     if (uuidsEqual(group.uuid, uuid)) return group;
 
     for (const g of group.groups) {
@@ -86,7 +86,7 @@ const findGroup = (group: kdbxweb.KdbxGroup, uuid: string): kdbxweb.KdbxGroup | 
     return null;
 };
 
-const findEntryParent = (group: kdbxweb.KdbxGroup, entryUuid: string): { group: kdbxweb.KdbxGroup, entry: kdbxweb.KdbxEntry } | null => {
+export const findEntryParent = (group: kdbxweb.KdbxGroup, entryUuid: string): { group: kdbxweb.KdbxGroup, entry: kdbxweb.KdbxEntry } | null => {
     for (const entry of group.entries) {
         if (uuidsEqual(entry.uuid, entryUuid)) {
             return { group, entry };
