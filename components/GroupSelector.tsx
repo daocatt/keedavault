@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronDown, Search, Folder, FolderOpen, Check, ChevronRight } from 'lucide-react';
 import { VaultGroup } from '../types';
 
-interface CategorySelectorProps {
+interface GroupSelectorProps {
     groups: VaultGroup[];
     selectedGroupId: string;
     onSelect: (groupId: string) => void;
@@ -21,12 +21,12 @@ interface FlatGroup {
     path: string[]; // Array of group names for search context
 }
 
-export const CategorySelector: React.FC<CategorySelectorProps> = ({
+export const GroupSelector: React.FC<GroupSelectorProps> = ({
     groups,
     selectedGroupId,
     onSelect,
     disabled = false,
-    placeholder = "Select Category",
+    placeholder = "Select Group",
     excludeRecycleBin = true,
     className = ""
 }) => {

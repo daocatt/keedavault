@@ -108,12 +108,12 @@ const GroupItem: React.FC<{
     onDelete: (id: string) => void;
     getEntryCount: (group: VaultGroup) => number;
     parentId?: string;
-    onEditCategory: (group: VaultGroup, parentId?: string) => void;
+    onEditGroup: (group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
 }> = ({
     group, depth, activeGroupId, actionState,
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
-    parentId, onEditCategory, onMoveEntry
+    parentId, onEditGroup, onMoveEntry
 }) => {
         const [expanded, setExpanded] = useState(true);
         const [isHovered, setIsHovered] = useState(false);
@@ -131,7 +131,7 @@ const GroupItem: React.FC<{
 
         const isRenaming = actionState?.type === 'rename' && actionState.nodeId === group.uuid;
         const isAddingChild = actionState?.type === 'add' && actionState.nodeId === group.uuid;
-        const isRootCategory = depth === 1;
+        const isRootGroup = depth === 1;
 
         const handleDragOver = (e: React.DragEvent) => {
             e.preventDefault();
@@ -227,7 +227,7 @@ const GroupItem: React.FC<{
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onEditCategory(group, parentId);
+                                    onEditGroup(group, parentId);
                                 }}
                                 className="p-1 rounded transition-all duration-200"
                                 style={{ color: 'var(--color-text-tertiary)' }}
@@ -239,11 +239,11 @@ const GroupItem: React.FC<{
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                     e.currentTarget.style.color = 'var(--color-text-tertiary)';
                                 }}
-                                title="Edit Category"
+                                title="Edit Group"
                             >
                                 <Edit size={12} />
                             </button>
-                            {!isRootCategory && (
+                            {!isRootGroup && (
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
@@ -259,7 +259,7 @@ const GroupItem: React.FC<{
                                         e.currentTarget.style.backgroundColor = 'transparent';
                                         e.currentTarget.style.color = 'var(--color-text-tertiary)';
                                     }}
-                                    title="Delete Category"
+                                    title="Delete Group"
                                 >
                                     <Trash2 size={12} />
                                 </button>
@@ -287,7 +287,7 @@ const GroupItem: React.FC<{
                                 onDelete={onDelete}
                                 getEntryCount={getEntryCount}
                                 parentId={group.uuid}
-                                onEditCategory={onEditCategory}
+                                onEditGroup={onEditGroup}
                                 onMoveEntry={onMoveEntry}
                             />
                         ))}
@@ -316,11 +316,11 @@ const GroupItem: React.FC<{
 
 interface SidebarProps {
     onOpenVault: () => void;
-    onAddCategory: (vaultId: string, parentId?: string) => void;
-    onEditCategory: (vaultId: string, group: VaultGroup, parentId?: string) => void;
+    onNewGroup: (vaultId: string, parentId?: string) => void;
+    onEditGroup: (vaultId: string, group: VaultGroup, parentId?: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, onEditCategory }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup }) => {
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
@@ -513,7 +513,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
 
                 <div className="flex items-center space-x-0.5">
                     <button
-                        onClick={() => activeVaultId && onAddCategory(activeVaultId)}
+                        onClick={() => activeVaultId && onNewGroup(activeVaultId)}
                         className="p-1.5 rounded transition-all duration-200"
                         style={{ color: 'var(--color-text-tertiary)' }}
                         onMouseEnter={(e) => {
@@ -524,7 +524,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                             e.currentTarget.style.backgroundColor = 'transparent';
                             e.currentTarget.style.color = 'var(--color-text-tertiary)';
                         }}
-                        title="Add Category"
+                        title="Add Group"
                     >
                         <Plus size={16} />
                     </button>
@@ -609,7 +609,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                         onCancelAction={handleCancelAction}
                                         onDelete={onDeleteGroup}
                                         getEntryCount={getEntryCount}
-                                        onEditCategory={(g, pid) => onEditCategory(vault.id, g, pid)}
+                                        onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                         onMoveEntry={onMoveEntry}
                                     />
                                 ))}
@@ -629,7 +629,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                                             onCancelAction={handleCancelAction}
                                             onDelete={onDeleteGroup}
                                             getEntryCount={getEntryCount}
-                                            onEditCategory={(g, pid) => onEditCategory(vault.id, g, pid)}
+                                            onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                             onMoveEntry={onMoveEntry}
                                         />
                                     </div>
