@@ -247,7 +247,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const totalEntries = countEntriesInGroup(groupToDelete);
             if (totalEntries > 0) {
                 addToast({
-                    title: `Cannot delete: Category contains ${totalEntries} items`,
+                    title: `Cannot delete: Group contains ${totalEntries} items`,
                     type: "error"
                 });
                 return;
@@ -639,6 +639,9 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             onEditEntry,
             onDeleteEntry,
             onMoveEntry,
+            onRestoreEntry,
+            isRecycleBinGroup,
+            isEntryInRecycleBin,
             onEmptyRecycleBin,
             lockVault: (id: string) => {
                 const vault = vaults.find(v => v.id === id);

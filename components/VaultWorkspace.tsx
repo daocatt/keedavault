@@ -9,7 +9,7 @@ import { VaultAuthForm } from './VaultAuthForm';
 import { VaultCreateForm } from './VaultCreateForm';
 import { ShieldCheck, Lock, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Plus, Save } from 'lucide-react';
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
-import { CategoryModal } from './CategoryModal';
+import { GroupModal } from './GroupModal';
 import { VaultGroup } from '../types';
 
 const VaultLayout = () => {
@@ -94,7 +94,7 @@ const VaultLayout = () => {
         };
     }, [isResizing]);
 
-    // Auto-select first entry when category changes
+    // Auto-select first entry when group changes
     const prevGroupIdRef = useRef<string | null | undefined>(undefined);
     useEffect(() => {
         if (activeGroupId !== prevGroupIdRef.current) {
@@ -107,8 +107,8 @@ const VaultLayout = () => {
         }
     }, [activeGroupId, activeEntries]);
 
-    // Category Modal State
-    const [categoryModal, setCategoryModal] = useState<{
+    // Group Modal State
+    const [groupModal, setGroupModal] = useState<{
         isOpen: boolean;
         mode: 'add' | 'edit';
         vaultId: string;
@@ -121,10 +121,10 @@ const VaultLayout = () => {
         };
     }>({ isOpen: false, mode: 'add', vaultId: '' });
 
-    const handleAddCategory = (vaultId: string, parentId?: string) => {
+    const handleAddGroup = (vaultId: string, parentId?: string) => {
         const vault = vaults.find(v => v.id === vaultId);
         if (!vault) return;
-        setCategoryModal({
+        setGroupModal({
             isOpen: true,
             mode: 'add',
             vaultId,
@@ -137,8 +137,8 @@ const VaultLayout = () => {
         });
     };
 
-    const handleEditCategory = (vaultId: string, group: VaultGroup, parentId?: string) => {
-        setCategoryModal({
+    const handleEditGroup = (vaultId: string, group: VaultGroup, parentId?: string) => {
+        setGroupModal({
             isOpen: true,
             mode: 'edit',
             vaultId,
@@ -152,15 +152,15 @@ const VaultLayout = () => {
         });
     };
 
-    const onSaveCategory = async (name: string, icon: number, parentGroupId: string, allowAdd: boolean) => {
-        if (categoryModal.mode === 'add') {
+    const onSaveGroup = async (name: string, icon: number, parentGroupId: string, allowAdd: boolean) => {
+        if (groupModal.mode === 'add') {
             await onAddGroup(name, parentGroupId, icon, allowAdd);
         } else {
-            if (categoryModal.initialData?.uuid) {
-                await onUpdateGroup(categoryModal.initialData.uuid, name, icon, parentGroupId, allowAdd);
+            if (groupModal.initialData?.uuid) {
+                await onUpdateGroup(groupModal.initialData.uuid, name, icon, parentGroupId, allowAdd);
             }
         }
-        setCategoryModal(prev => ({ ...prev, isOpen: false }));
+        setGroupModal(prev => ({ ...prev, isOpen: false }));
     };
 
     const toggleLeftSidebar = () => {
@@ -235,8 +235,8 @@ const VaultLayout = () => {
                 >
                     <Sidebar
                         onOpenVault={handleOpenVault}
-                        onAddCategory={handleAddCategory}
-                        onEditCategory={handleEditCategory}
+                        onNewGroup={handleAddGroup}
+                        onEditGroup={handleEditGroup}
                     />
                 </aside>
 
@@ -297,13 +297,13 @@ const VaultLayout = () => {
                 <VaultUnlockModal />
 
                 {activeVault && (
-                    <CategoryModal
-                        isOpen={categoryModal.isOpen}
-                        mode={categoryModal.mode}
-                        initialData={categoryModal.initialData}
+                    <GroupModal
+                        isOpen={groupModal.isOpen}
+                        mode={groupModal.mode}
+                        initialData={groupModal.initialData}
                         groups={activeVault.groups}
-                        onClose={() => setCategoryModal(prev => ({ ...prev, isOpen: false }))}
-                        onSave={onSaveCategory}
+                        onClose={() => setGroupModal(prev => ({ ...prev, isOpen: false }))}
+                        onSave={onSaveGroup}
                     />
                 )}
 

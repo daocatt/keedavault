@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Folder, Check, ChevronDown, Key, Globe, AlertTriangle, Server, PenTool, Settings, Home, Star, Lock, Wrench, FolderOpen, FileText, Image, Music, Video, Code } from 'lucide-react';
 import { VaultGroup } from '../types';
-import { CategorySelector } from './CategorySelector';
+import { GroupSelector } from './GroupSelector';
 
-interface CategoryModalProps {
+interface GroupModalProps {
     isOpen: boolean;
     mode: 'add' | 'edit';
     initialData?: {
@@ -40,7 +40,7 @@ const ICONS = [
     { id: 10, label: 'Code', icon: Code },
 ];
 
-export const CategoryModal: React.FC<CategoryModalProps> = ({
+export const GroupModal: React.FC<GroupModalProps> = ({
     isOpen, mode, initialData, groups, onClose, onSave
 }) => {
     const [name, setName] = useState('');
@@ -60,7 +60,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 setParentGroupId(initialData.parentGroupId || '');
                 setAllowAdd(initialData.allowAdd !== false);
             } else {
-                // New category – default name is "Root"
+                // New Group – default name is ""
                 setName('');
                 setIcon(48);
                 setParentGroupId(initialData?.parentGroupId || groups[0]?.uuid || '');
@@ -100,7 +100,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <div className="bg-white rounded-xl w-full max-w-md overflow-visible border border-gray-200/60 transform transition-all" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <div className="flex items-center justify-between px-4 py-2.5 bg-white rounded-t-xl">
                     <h3 className="text-sm font-medium text-gray-700">
-                        {mode === 'add' ? 'New Category' : 'Edit Category'}
+                        {mode === 'add' ? 'New Group' : 'Edit Group'}
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
                         <X size={14} />
@@ -153,7 +153,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
                         {/* Name Input */}
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Category Name</label>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Group Name</label>
                             <input
                                 type="text"
                                 value={name}
@@ -168,12 +168,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     {/* Parent Group Selector */}
                     <div className="bg-transparent">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Location</label>
-                        <CategorySelector
+                        <GroupSelector
                             groups={groups}
                             selectedGroupId={parentGroupId}
                             onSelect={setParentGroupId}
                             disabled={mode === 'edit' && (!initialData?.parentGroupId)}
-                            placeholder="Select Parent Category"
+                            placeholder="Select Parent Group"
                         />
                     </div>
                 </div>
