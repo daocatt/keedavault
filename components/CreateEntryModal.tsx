@@ -3,7 +3,7 @@ import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2 }
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
-import { CategorySelector } from './CategorySelector';
+import { GroupSelector } from './GroupSelector';
 
 interface CreateEntryModalProps {
     isOpen: boolean;
@@ -118,7 +118,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                             <div className="bg-transparent">
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Location</label>
                                 {activeVault && (
-                                    <CategorySelector
+                                    <GroupSelector
                                         groups={activeVault.groups}
                                         selectedGroupId={groupUuid}
                                         onSelect={setGroupUuid}
