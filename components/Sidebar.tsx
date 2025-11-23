@@ -148,7 +148,7 @@ const GroupItem: React.FC<{
             setIsDragOver(false);
         };
 
-        const handleDrop = (e: React.DragEvent) => {
+        const handleDrop = async (e: React.DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
             setIsDragOver(false);
@@ -157,7 +157,7 @@ const GroupItem: React.FC<{
 
             const entryId = e.dataTransfer.getData('text/plain');
             if (entryId) {
-                onMoveEntry(entryId, group.uuid);
+                await onMoveEntry(entryId, group.uuid);
             }
         };
 
