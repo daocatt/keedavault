@@ -201,7 +201,6 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
             addGroupToDb(activeVault.db, targetGroup, name, icon, allowAdd);
             refreshVault(activeVault.id);
-            await saveVault(activeVault.id, true);
             addToast({ title: "Group created", type: "success" });
         } catch (e: any) {
             console.error(e);
@@ -459,7 +458,6 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
             updateGroupInDb(activeVault.db, groupId, name, icon, parentGroupId, allowAdd);
             refreshVault(activeVault.id);
-            await saveVault(activeVault.id, true);
             addToast({ title: "Group updated", type: "success" });
         } catch (e: any) {
             console.error(e);

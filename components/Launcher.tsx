@@ -5,6 +5,7 @@ import { exists } from '@tauri-apps/api/fs';
 import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
+import { FlowBackground } from './FlowBackground';
 
 export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
@@ -116,6 +117,8 @@ export const Launcher: React.FC = () => {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden flex-col relative" style={{ backgroundColor: 'var(--color-bg-secondary)' }} onContextMenu={(e) => e.preventDefault()}>
+            <FlowBackground />
+
             {/* macOS Unified Toolbar - Fusion Style with Extended Drag Region */}
             {/* Draggable Top Region */}
             <div
@@ -125,7 +128,7 @@ export const Launcher: React.FC = () => {
             />
 
             {/* Main Content - Left-Right Layout */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
+            <div className="flex-1 flex items-center justify-center overflow-hidden p-8 relative z-10">
                 <div className="w-full max-w-5xl flex items-center gap-12">
 
                     {/* Left Side - Logo and Subtitle */}
