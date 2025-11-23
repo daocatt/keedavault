@@ -2,7 +2,7 @@ import { RefreshCw, Settings, Search, PanelLeftClose, PanelLeftOpen, PanelRightC
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 import { PasswordGenerator } from './PasswordGenerator';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useVault } from '../context/VaultContext';
 import { Globe, Key, FileText, User, Plus, Trash2, Copy, Edit, Link, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,7 +26,7 @@ interface ContextMenuState {
 }
 
 export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryId, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
-    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault } = useVault();
+    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId } = useVault();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -193,14 +193,41 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         setIsModalOpen(true);
     };
 
+    const handleDuplicate = async (entry: VaultEntry) => {
+        try {
+            const duplicateData = {
+                title: `${entry.title} (Copy)`,
+                username: entry.username,
+                password: entry.password || '',
+                url: entry.url,
+                email: entry.email || entry.fields?.Email || '',
+                notes: entry.notes,
+                totpSecret: entry.fields?.OTP || '',
+                groupUuid: activeGroupId || entry.fields?.groupUuid || ''
+            };
+            await onAddEntry(duplicateData);
+            addToast({ title: 'Entry duplicated', type: 'success' });
+            setContextMenu(null);
+        } catch (e) {
+            addToast({ title: 'Failed to duplicate entry', type: 'error' });
+        }
+    };
+
     const [isSyncing, setIsSyncing] = useState(false);
     const syncInProgressRef = useRef(false);
+    const lastSyncTimeRef = useRef(0);
 
-    const handleRefresh = async (e?: React.MouseEvent) => {
+    const handleRefresh = useCallback(async (e?: React.MouseEvent) => {
         // Prevent event bubbling
         if (e) {
             e.stopPropagation();
             e.preventDefault();
+        }
+
+        const now = Date.now();
+        // Debounce: prevent clicks within 500ms
+        if (now - lastSyncTimeRef.current < 500) {
+            return;
         }
 
         // Use ref to immediately prevent multiple calls
@@ -208,12 +235,14 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             return;
         }
 
+        lastSyncTimeRef.current = now;
         syncInProgressRef.current = true;
         setIsSyncing(true);
         addToast({ title: 'Syncing vault...', type: 'info' });
 
         try {
-            await saveVault(activeVaultId);
+            // Pass isAutoSave=true to suppress saveVault's toast
+            await saveVault(activeVaultId, true);
             addToast({ title: 'Vault synced', type: 'success' });
         } catch (e) {
             addToast({ title: 'Sync failed', type: 'error' });
@@ -221,7 +250,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             syncInProgressRef.current = false;
             setIsSyncing(false);
         }
-    };
+    }, [activeVaultId, saveVault]); // Removed addToast from dependencies
 
     return (
         <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => { setToolbarContextMenu(null); setColumnMenuOpen(false); }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
@@ -376,16 +405,16 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     style={{ top: toolbarContextMenu.y, left: toolbarContextMenu.x }}
                 >
                     <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Toolbar</div>
-                    <button onClick={() => handleSetToolbarMode('icon')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                    <button onClick={() => handleSetToolbarMode('icon')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between">
                         <span>Icon Only</span>
                         {toolbarMode === 'icon' && <Check size={14} className="text-indigo-600" />}
                     </button>
-                    <button onClick={() => handleSetToolbarMode('both')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                    <button onClick={() => handleSetToolbarMode('both')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between">
                         <span>Icon and Text</span>
                         {toolbarMode === 'both' && <Check size={14} className="text-indigo-600" />}
                     </button>
                     <div className="border-t border-gray-100 my-1"></div>
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                    <button className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
                         <Settings size={14} className="mr-2 text-gray-400" /> Customize...
                     </button>
                 </div>
@@ -553,7 +582,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             key={entry.uuid}
                             onClick={() => onSelectEntry(entry.uuid)}
                             onContextMenu={(e) => handleContextMenu(e, entry)}
-                            className={`py-0.5 flex items-center cursor-pointer transition-colors group even:bg-gray-50 ${selectedEntryId === entry.uuid ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900' : 'hover:bg-gray-100 text-gray-700'}`}
+                            className={`py-1.5 flex items-center cursor-pointer transition-colors group even:bg-gray-50 ${selectedEntryId === entry.uuid ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900' : 'hover:bg-gray-100 text-gray-700'}`}
                         >
                             {/* Title Column */}
                             {visibleColumns.title && (
@@ -635,20 +664,23 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
                         style={{ top: contextMenu.y, left: contextMenu.x }}
                     >
-                        <button onClick={() => copyToClipboard(contextMenu.entry.username, 'Username')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                        <button onClick={() => copyToClipboard(contextMenu.entry.username, 'Username')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
                             <User size={14} className="mr-2 text-gray-400" /> Copy Username
                         </button>
-                        <button onClick={() => copyToClipboard(contextMenu.entry.password || '', 'Password')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                        <button onClick={() => copyToClipboard(contextMenu.entry.password || '', 'Password')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
                             <Key size={14} className="mr-2 text-gray-400" /> Copy Password
                         </button>
-                        <button onClick={() => copyToClipboard(contextMenu.entry.url, 'URL')} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                        <button onClick={() => copyToClipboard(contextMenu.entry.url, 'URL')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
                             <Link size={14} className="mr-2 text-gray-400" /> Copy URL
                         </button>
                         <div className="border-t border-gray-100 my-1"></div>
-                        <button onClick={() => handleEdit(contextMenu.entry)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                        <button onClick={() => handleEdit(contextMenu.entry)} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
                             <Edit size={14} className="mr-2 text-gray-400" /> Edit Entry
                         </button>
-                        <button onClick={(e) => { handleDelete(e, contextMenu.entry.uuid); setContextMenu(null); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
+                        <button onClick={() => handleDuplicate(contextMenu.entry)} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
+                            <Copy size={14} className="mr-2 text-gray-400" /> Duplicate
+                        </button>
+                        <button onClick={(e) => { handleDelete(e, contextMenu.entry.uuid); setContextMenu(null); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center">
                             <Trash2 size={14} className="mr-2" /> Delete
                         </button>
                     </div>

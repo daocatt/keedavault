@@ -114,6 +114,7 @@ const GroupItem: React.FC<{
     parentId, onEditCategory
 }) => {
         const [expanded, setExpanded] = useState(true);
+        const [isHovered, setIsHovered] = useState(false);
         const hasChildren = group.subgroups.length > 0;
         const isActive = activeGroupId === group.uuid;
         const entryCount = getEntryCount(group);
@@ -127,6 +128,7 @@ const GroupItem: React.FC<{
 
         const isRenaming = actionState?.type === 'rename' && actionState.nodeId === group.uuid;
         const isAddingChild = actionState?.type === 'add' && actionState.nodeId === group.uuid;
+        const isRootCategory = depth === 1;
 
         return (
             <div>
@@ -138,11 +140,13 @@ const GroupItem: React.FC<{
                         color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'
                     }}
                     onMouseEnter={(e) => {
+                        setIsHovered(true);
                         if (!isActive) {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                         }
                     }}
                     onMouseLeave={(e) => {
+                        setIsHovered(false);
                         if (!isActive) {
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
@@ -178,10 +182,55 @@ const GroupItem: React.FC<{
                         <span className="truncate select-none flex-1">{group.name}</span>
                     )}
 
-                    {!isRenaming && (
+                    {!isRenaming && !isHovered && (
                         <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
+                    {/* Action Buttons - Show on hover, hide recycle bin actions */}
+                    {!isRenaming && isHovered && !group.isRecycleBin && (
+                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEditCategory(group, parentId);
+                                }}
+                                className="p-1 rounded transition-all duration-200"
+                                style={{ color: 'var(--color-text-tertiary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-active)';
+                                    e.currentTarget.style.color = 'var(--color-accent)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                                }}
+                                title="Edit Category"
+                            >
+                                <Edit size={12} />
+                            </button>
+                            {!isRootCategory && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(group.uuid);
+                                    }}
+                                    className="p-1 rounded transition-all duration-200"
+                                    style={{ color: 'var(--color-text-tertiary)' }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-active)';
+                                        e.currentTarget.style.color = '#ff3b30';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                                    }}
+                                    title="Delete Category"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                 </div>
 
@@ -247,7 +296,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
     const activeVault = vaults.find(v => v.id === activeVaultId);
 
     const [actionState, setActionState] = useState<ActionState | null>(null);
-    const [vaultContextMenu, setVaultContextMenu] = useState<{ x: number; y: number; vaultId: string } | null>(null);
     const [showSettings, setShowSettings] = useState(false);
 
     const handleStartAdd = (groupId: string) => {
@@ -434,11 +482,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                         <div
                             className={`px-3 py-1.5 flex items-center justify-between group cursor-pointer ${activeVaultId === vault.id ? '' : 'hover:bg-gray-100'}`}
                             onClick={(e) => { e.stopPropagation(); setActiveVault(vault.id); }}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setVaultContextMenu({ x: e.clientX, y: e.clientY, vaultId: vault.id });
-                            }}
                         >
                             {vaults.length > 1 ? (
                                 <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden flex-1">
@@ -619,43 +662,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onAddCategory, on
                 </div>
             )}
 
-            {/* Vault Context Menu */}
-            {vaultContextMenu && (
-                <div
-                    className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                    style={{ top: vaultContextMenu.y, left: vaultContextMenu.x }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <button
-                        onClick={() => {
-                            onAddCategory(vaultContextMenu.vaultId);
-                            setVaultContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                        <FolderPlus size={14} className="mr-2 text-gray-400" /> New Category
-                    </button>
-                    <button
-                        onClick={() => {
-                            saveVault(vaultContextMenu.vaultId);
-                            setVaultContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                        <RefreshCw size={14} className="mr-2 text-gray-400" /> Sync
-                    </button>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button
-                        onClick={() => {
-                            removeVault(vaultContextMenu.vaultId);
-                            setVaultContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
-                    >
-                        <Lock size={14} className="mr-2" /> Lock
-                    </button>
-                </div>
-            )}
+
         </div>
     );
 };
