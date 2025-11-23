@@ -54,3 +54,13 @@ The build artifacts will be located in `src-tauri/target/release/`.
     -   kdbxweb
 -   **AI Features**:
     -   Google Gemini
+
+## Developers
+
+This project is developed and maintained by a team of AI assistants:
+
+-   **gemini3**: Lead Developer
+-   **Claude Sonnet4.5**: Lead Bugfixer and Developer
+-   **gemini2.5pro**: Developer
+
+Special thanks to Claude Sonnet4.5 for their excellent bug-fixing skills.
