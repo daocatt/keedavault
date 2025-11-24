@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Calendar } from 'lucide-react';
+import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2 } from 'lucide-react';
+import { DateTimePicker } from './DateTimePicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
@@ -209,41 +211,52 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                                     {/* Password */}
                                     <div className="space-y-1">
-                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Password</label>
-                                        <div className="relative group">
+                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">
+                                            Password
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            {/* Icon on the left */}
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Lock size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
+                                                <Key size={16} className="text-gray-500" />
                                             </div>
+
+                                            {/* Input */}
                                             <input
                                                 type="text"
                                                 value={password}
                                                 onChange={e => setPassword(e.target.value)}
-                                                className="block w-full pl-10 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 font-mono"
+                                                className="block w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 font-mono"
                                                 placeholder="••••••••"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowGen(!showGen)}
-                                                className={`absolute right-2 top-2 p-1.5 rounded-md transition-colors ${showGen ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'}`}
-                                                title="Generate Password"
-                                            >
-                                                <Wand2 size={16} />
-                                            </button>
+
+                                            {/* Generate button (Wand2) with Popover */}
+                                            <Popover open={showGen} onOpenChange={setShowGen}>
+                                                <PopoverTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="absolute inset-y-0 right-0 flex items-center justify-center pr-3 cursor-pointer text-gray-400 hover:text-indigo-600 transition-colors"
+                                                    >
+                                                        <Wand2 size={16} />
+                                                    </button>
+                                                </PopoverTrigger>
+                                                <PopoverContent side="right" align="start" className="w-80 p-0 z-[200]">
+                                                    <div className="bg-bg-primary rounded-xl shadow-none border-0 p-4">
+                                                        <PasswordGenerator
+                                                            isOpen={true}
+                                                            onGenerate={(pw: string) => {
+                                                                setPassword(pw);
+                                                                setShowGen(false);
+                                                            }}
+                                                            onClose={() => setShowGen(false)}
+                                                            className="w-full shadow-none border-0"
+                                                        />
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </div>
 
-                                    {/* Password Generator Panel */}
-                                    {showGen && (
-                                        <div className="bg-indigo-50/50 rounded-lg border border-indigo-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
-                                            <PasswordGenerator
-                                                isOpen={showGen}
-                                                onClose={() => setShowGen(false)}
-                                                onGenerate={pwd => setPassword(pwd)}
-                                                showCopyButton={false}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                    )}
+
 
                                     {/* URL */}
                                     <div className="space-y-1">
@@ -281,33 +294,20 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         </div>
                                     </div>
 
-                                    {/* Expiry Date - Improved UI */}
+                                    {/* Expiry Date - Modern Picker */}
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Expires</label>
-                                        <div className="relative group">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Calendar size={16} className={`transition-colors ${expiryTime ? 'text-orange-600' : 'text-gray-500 group-focus-within:text-indigo-600'}`} />
-                                            </div>
-                                            <input
-                                                type="datetime-local"
-                                                value={expiryTime}
-                                                onChange={e => setExpiryTime(e.target.value)}
-                                                className={`block w-full pl-10 pr-3 py-2 rounded-lg text-sm focus:ring-2 transition-all ${expiryTime
-                                                    ? 'bg-orange-50 border-2 border-orange-300 text-orange-900 hover:border-orange-400 focus:border-orange-500 focus:ring-orange-500/20'
-                                                    : 'bg-white border border-gray-300 text-gray-600 hover:border-gray-400 focus:border-indigo-500 focus:ring-indigo-500/20 placeholder:text-gray-400'
-                                                    }`}
-                                            />
-                                            {expiryTime && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setExpiryTime('')}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-orange-500 hover:text-orange-700 hover:bg-orange-100 rounded-md transition-colors"
-                                                    title="Clear Expiry"
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </div>
+                                        <DateTimePicker
+                                            value={expiryTime ? new Date(expiryTime) : null}
+                                            onChange={(date) => {
+                                                if (date) {
+                                                    const iso = date.toISOString().slice(0, 16);
+                                                    setExpiryTime(iso);
+                                                } else {
+                                                    setExpiryTime('');
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </form>
@@ -352,6 +352,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 </div>
 
             </div >
+
+
         </div >
     );
 };
