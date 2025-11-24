@@ -83,6 +83,36 @@ export const GroupModal: React.FC<GroupModalProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Prevent keyboard shortcuts from affecting underlying components when modal is open
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Always stop propagation of these keys when modal is open
+            // This prevents the EntryList from handling them
+            // But we don't preventDefault, so form fields still work normally
+
+            if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+                e.stopPropagation();
+            }
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.stopPropagation();
+            }
+
+            if (e.key === 'Enter') {
+                e.stopPropagation();
+            }
+        };
+
+        // Use capture phase to intercept events before they reach the document listener
+        document.addEventListener('keydown', handleKeyDown, true);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
 

@@ -13,8 +13,8 @@ import { GroupModal } from './GroupModal';
 import { VaultGroup } from '../types';
 
 const VaultLayout = () => {
-    const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-    const { vaults, activeVaultId, activeGroupId, activeEntries, saveVault, removeVault, onAddGroup, onUpdateGroup } = useVault();
+    const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
+    const { vaults, activeVaultId, activeGroupId, activeEntries, saveVault, removeVault, onAddGroup, onUpdateGroup, onMoveEntry } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
     const [initMode, setInitMode] = useState<'unlock' | 'create' | null>(null);
@@ -100,9 +100,9 @@ const VaultLayout = () => {
         if (activeGroupId !== prevGroupIdRef.current) {
             prevGroupIdRef.current = activeGroupId;
             if (activeEntries.length > 0) {
-                setSelectedEntryId(activeEntries[0].uuid);
+                setSelectedEntryIds(new Set([activeEntries[0].uuid]));
             } else {
-                setSelectedEntryId(null);
+                setSelectedEntryIds(new Set());
             }
         }
     }, [activeGroupId, activeEntries]);
@@ -121,7 +121,7 @@ const VaultLayout = () => {
         };
     }>({ isOpen: false, mode: 'add', vaultId: '' });
 
-    const handleAddGroup = (vaultId: string, parentId?: string) => {
+    const handleNewGroup = (vaultId: string, parentId?: string) => {
         const vault = vaults.find(v => v.id === vaultId);
         if (!vault) return;
         setGroupModal({
@@ -235,16 +235,24 @@ const VaultLayout = () => {
                 >
                     <Sidebar
                         onOpenVault={handleOpenVault}
-                        onNewGroup={handleAddGroup}
+                        onNewGroup={handleNewGroup}
                         onEditGroup={handleEditGroup}
+                        onMoveEntry={onMoveEntry}
                     />
                 </aside>
 
                 {/* Main Content Area: Entry List */}
                 <main className="flex-1 flex flex-col min-w-0 relative" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
                     <div className="flex-1 overflow-hidden flex">
-                        <div className={`${selectedEntryId && !rightSidebarVisible ? 'flex' : selectedEntryId ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0`}>
-                            <EntryList onSelectEntry={setSelectedEntryId} selectedEntryId={selectedEntryId} leftSidebarVisible={leftSidebarVisible} rightSidebarVisible={rightSidebarVisible} toggleLeftSidebar={toggleLeftSidebar} toggleRightSidebar={toggleRightSidebar} />
+                        <div className={`${selectedEntryIds.size > 0 && !rightSidebarVisible ? 'flex' : selectedEntryIds.size > 0 ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0`}>
+                            <EntryList
+                                onSelectEntry={(ids) => setSelectedEntryIds(ids)}
+                                selectedEntryIds={selectedEntryIds}
+                                leftSidebarVisible={leftSidebarVisible}
+                                rightSidebarVisible={rightSidebarVisible}
+                                toggleLeftSidebar={toggleLeftSidebar}
+                                toggleRightSidebar={toggleRightSidebar}
+                            />
                         </div>
 
                         {/* Right Panel: Details */}
@@ -273,12 +281,19 @@ const VaultLayout = () => {
                                     maxWidth: `${rightSidebarWidth}px`,
                                     backgroundColor: 'var(--color-bg-sidebar)'
                                 }}>
-                                    {selectedEntryId ? (
+                                    {selectedEntryIds.size === 1 ? (
                                         <div className="h-full w-full">
                                             <EntryDetail
-                                                entryId={selectedEntryId}
-                                                onClose={() => setSelectedEntryId(null)}
+                                                entryId={Array.from(selectedEntryIds)[0]}
+                                                onClose={() => setSelectedEntryIds(new Set())}
                                             />
+                                        </div>
+                                    ) : selectedEntryIds.size > 1 ? (
+                                        <div className="flex flex-1 items-center justify-center flex-col h-full">
+                                            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-hover)' }}>
+                                                <div className="text-4xl font-bold text-gray-300">{selectedEntryIds.size}</div>
+                                            </div>
+                                            <p style={{ color: 'var(--color-text-tertiary)' }}>{selectedEntryIds.size} items selected</p>
                                         </div>
                                     ) : (
                                         <div className="flex flex-1 items-center justify-center flex-col h-full">

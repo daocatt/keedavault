@@ -11,8 +11,8 @@ import { useToast } from './ui/Toaster';
 import { VaultEntry } from '../types';
 
 interface EntryListProps {
-    onSelectEntry: (id: string) => void;
-    selectedEntryId: string | null;
+    onSelectEntry: (ids: Set<string>) => void;
+    selectedEntryIds: Set<string>;
     leftSidebarVisible: boolean;
     rightSidebarVisible: boolean;
     toggleLeftSidebar: () => void;
@@ -25,10 +25,11 @@ interface ContextMenuState {
     entry: VaultEntry;
 }
 
-export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryId, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
+export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryIds, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
     const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin } = useVault();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
     const [editingEntry, setEditingEntry] = useState<VaultEntry | null>(null);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -150,59 +151,146 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
     // Close context menu on click elsewhere
     useEffect(() => {
-        const handleClick = () => setContextMenu(null);
-        document.addEventListener('click', handleClick);
-        return () => document.removeEventListener('click', handleClick);
+        const handleClickOutside = (e: MouseEvent) => {
+            // Don't close if clicking inside the context menu
+            const target = e.target as HTMLElement;
+            if (target.closest('.context-menu')) {
+                return;
+            }
+            setContextMenu(null);
+        };
+
+        // Use mousedown for better control
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Keyboard shortcut for Delete key
+    // Keyboard shortcut for Delete key and Select All
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Esc key - Close modal if open
-            if (e.key === 'Escape' && isModalOpen) {
+            if (e.key === 'Escape') {
+                if (isModalOpen) {
+                    e.preventDefault();
+                    setIsModalOpen(false);
+                    setEditingEntry(null);
+                    return;
+                }
+                // Clear selection on Esc if no modal
+                if (selectedEntryIds.size > 0) {
+                    onSelectEntry(new Set());
+                    return;
+                }
+            }
+
+            // Select All (Cmd+A / Ctrl+A)
+            if ((e.metaKey || e.ctrlKey) && e.key === 'a' && !isModalOpen) {
                 e.preventDefault();
-                setIsModalOpen(false);
-                setEditingEntry(null);
+                const allIds = new Set(sortedEntries.map(e => e.uuid));
+                onSelectEntry(allIds);
                 return;
             }
 
-            // Enter key - Edit selected entry
-            if (e.key === 'Enter' && selectedEntryId && !isModalOpen) {
+            // Enter key - Edit selected entry (only if 1 selected)
+            if (e.key === 'Enter' && selectedEntryIds.size === 1 && !isModalOpen) {
                 e.preventDefault();
-                const entry = getEntry(selectedEntryId);
+                const entryId = Array.from(selectedEntryIds)[0];
+                const entry = getEntry(entryId);
                 if (entry) {
                     handleEdit(entry);
                 }
                 return;
             }
 
-            // Delete or Backspace key - Delete selected entry
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEntryId && !isModalOpen) {
+            // Delete or Backspace key - Delete selected entries
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEntryIds.size > 0 && !isModalOpen) {
                 // Prevent default behavior (like navigating back in browser)
                 e.preventDefault();
                 // Trigger delete
-                handleDelete(e as any, selectedEntryId);
+                handleDelete(e as any);
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [selectedEntryId, isModalOpen]);
+    }, [selectedEntryIds, isModalOpen, sortedEntries]);
+
+    const handleEntryClick = (e: React.MouseEvent, entry: VaultEntry) => {
+        // Prevent default text selection behavior
+        if (e.shiftKey || e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            window.getSelection()?.removeAllRanges();
+        }
+
+        let newSelection = new Set(selectedEntryIds);
+
+        if (e.metaKey || e.ctrlKey) {
+            // Toggle selection
+            if (newSelection.has(entry.uuid)) {
+                newSelection.delete(entry.uuid);
+            } else {
+                newSelection.add(entry.uuid);
+                setLastSelectedId(entry.uuid);
+            }
+        } else if (e.shiftKey && lastSelectedId) {
+            // Range selection
+            const lastIndex = sortedEntries.findIndex(e => e.uuid === lastSelectedId);
+            const currentIndex = sortedEntries.findIndex(e => e.uuid === entry.uuid);
+
+            if (lastIndex !== -1 && currentIndex !== -1) {
+                const start = Math.min(lastIndex, currentIndex);
+                const end = Math.max(lastIndex, currentIndex);
+
+                // If we're not holding Cmd/Ctrl, we might want to clear previous selection or keep it?
+                // Standard behavior is usually to extend selection from anchor.
+                // Let's clear and set range to match standard file explorers often.
+                // But if we want to add to existing selection, we'd keep `newSelection`.
+                // "Shift+Click" usually defines a range from anchor.
+                newSelection = new Set(); // Clear for pure range select from anchor
+
+                for (let i = start; i <= end; i++) {
+                    newSelection.add(sortedEntries[i].uuid);
+                }
+            }
+        } else {
+            // Single selection
+            newSelection = new Set([entry.uuid]);
+            setLastSelectedId(entry.uuid);
+        }
+
+        onSelectEntry(newSelection);
+    };
 
     const getIcon = (url: string) => {
         if (url && url.includes('http')) return <Globe size={18} className="text-blue-500" />;
         return <Key size={18} className="text-gray-400" />;
     };
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
+    const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
-        onDeleteEntry(id);
+        if (selectedEntryIds.size === 0) return;
+
+        // Confirm delete if multiple? For now just delete.
+        // Maybe we should show a confirmation dialog for multiple items.
+        // Assuming onDeleteEntry handles one by one or we loop.
+        selectedEntryIds.forEach(id => onDeleteEntry(id));
+        onSelectEntry(new Set()); // Clear selection
     };
 
     const handleContextMenu = (e: React.MouseEvent, entry: VaultEntry) => {
         e.preventDefault();
         e.stopPropagation();
-        onSelectEntry(entry.uuid);
+
+        // Clear any text selection that might have occurred during right-click
+        if (window.getSelection) {
+            window.getSelection()?.removeAllRanges();
+        }
+
+        // If clicked item is not in selection, select it (and clear others)
+        if (!selectedEntryIds.has(entry.uuid)) {
+            onSelectEntry(new Set([entry.uuid]));
+            setLastSelectedId(entry.uuid);
+        }
 
         // Calculate menu dimensions (approximate)
         const menuHeight = 240; // Approximate height of the context menu
@@ -310,7 +398,16 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     }, [activeVaultId, saveVault]); // Removed addToast from dependencies
 
     return (
-        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={() => { setToolbarContextMenu(null); setColumnMenuOpen(false); }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
+        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={(e) => {
+            // Don't clear selection if clicking on context menu
+            const target = e.target as HTMLElement;
+            if (target.closest('.context-menu')) {
+                return;
+            }
+            setToolbarContextMenu(null);
+            setColumnMenuOpen(false);
+            onSelectEntry(new Set());
+        }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
             <div
                 className="h-10 flex items-center px-3 space-x-1.5 relative"
@@ -634,17 +731,33 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     {sortedEntries.map(entry => (
                         <div
                             key={entry.uuid}
-                            onClick={() => onSelectEntry(entry.uuid)}
+                            onClick={(e) => { e.stopPropagation(); handleEntryClick(e, entry); }}
                             onContextMenu={(e) => handleContextMenu(e, entry)}
                             draggable
                             onDragStart={(e) => {
-                                e.dataTransfer.setData('text/plain', entry.uuid);
+                                // Prevent text selection during drag, especially with Shift key
+                                if (e.shiftKey) {
+                                    e.preventDefault();
+                                }
+                                if (window.getSelection) {
+                                    window.getSelection()?.removeAllRanges();
+                                }
+
+                                // If this entry is part of a selection, drag all selected entries
+                                // Otherwise, just drag this single entry
+                                const entriesToDrag = selectedEntryIds.has(entry.uuid)
+                                    ? Array.from(selectedEntryIds)
+                                    : [entry.uuid];
+
+                                e.dataTransfer.setData('application/x-keedavault-entries', JSON.stringify(entriesToDrag));
+                                e.dataTransfer.setData('text/plain', entriesToDrag.join(','));
                                 e.dataTransfer.effectAllowed = 'move';
                             }}
-                            className={`py-1.5 flex items-center cursor-pointer transition-colors group ${selectedEntryId === entry.uuid
+                            className={`py-1.5 flex items-center cursor-pointer transition-colors group select-none ${selectedEntryIds.has(entry.uuid)
                                 ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
                                 : 'even:bg-gray-50 hover:bg-gray-100 text-gray-700'
                                 }`}
+                            style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
                         >
                             {/* Title Column */}
                             {visibleColumns.title && (
@@ -652,7 +765,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                     style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
                                     title={entry.title}>
                                     <div className="min-w-0 flex-1">
-                                        <p className={`text-xs truncate whitespace-nowrap ${selectedEntryId === entry.uuid ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
+                                        <p className={`text-xs truncate whitespace-nowrap ${selectedEntryIds.has(entry.uuid) ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
                                             {entry.title}
                                         </p>
                                     </div>
@@ -723,28 +836,64 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             {
                 contextMenu && (
                     <div
-                        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
+                        className="context-menu fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
                         style={{ top: contextMenu.y, left: contextMenu.x }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                     >
-                        <button onClick={() => copyToClipboard(contextMenu.entry.username, 'Username')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
-                            <User size={14} className="mr-2 text-gray-400" /> Copy Username
-                        </button>
-                        <button onClick={() => copyToClipboard(contextMenu.entry.password || '', 'Password')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
-                            <Key size={14} className="mr-2 text-gray-400" /> Copy Password
-                        </button>
-                        <button onClick={() => copyToClipboard(contextMenu.entry.url, 'URL')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
-                            <Link size={14} className="mr-2 text-gray-400" /> Copy URL
-                        </button>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <button onClick={() => handleEdit(contextMenu.entry)} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
-                            <Edit size={14} className="mr-2 text-gray-400" /> Edit Entry
-                        </button>
-                        <button onClick={() => handleDuplicate(contextMenu.entry)} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
-                            <Copy size={14} className="mr-2 text-gray-400" /> Duplicate
-                        </button>
-                        <button onClick={(e) => { handleDelete(e, contextMenu.entry.uuid); setContextMenu(null); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center">
-                            <Trash2 size={14} className="mr-2" /> Delete
-                        </button>
+                        {(() => {
+                            const isMultiSelect = selectedEntryIds.size > 1;
+                            const disabledClass = isMultiSelect
+                                ? "w-full text-left px-4 py-2 text-xs text-gray-400 cursor-not-allowed flex items-center opacity-50"
+                                : "w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center cursor-pointer";
+
+                            return (
+                                <>
+                                    <button
+                                        onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.username, 'Username')}
+                                        className={disabledClass}
+                                        disabled={isMultiSelect}
+                                    >
+                                        <User size={14} className="mr-2 text-gray-400" /> Copy Username
+                                    </button>
+                                    <button
+                                        onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.password || '', 'Password')}
+                                        className={disabledClass}
+                                        disabled={isMultiSelect}
+                                    >
+                                        <Key size={14} className="mr-2 text-gray-400" /> Copy Password
+                                    </button>
+                                    <button
+                                        onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.url, 'URL')}
+                                        className={disabledClass}
+                                        disabled={isMultiSelect}
+                                    >
+                                        <Link size={14} className="mr-2 text-gray-400" /> Copy URL
+                                    </button>
+                                    <div className="border-t border-gray-100 my-1"></div>
+                                    <button
+                                        onClick={() => !isMultiSelect && handleEdit(contextMenu.entry)}
+                                        className={disabledClass}
+                                        disabled={isMultiSelect}
+                                    >
+                                        <Edit size={14} className="mr-2 text-gray-400" /> Edit Entry
+                                    </button>
+                                    <button
+                                        onClick={() => !isMultiSelect && handleDuplicate(contextMenu.entry)}
+                                        className={disabledClass}
+                                        disabled={isMultiSelect}
+                                    >
+                                        <Copy size={14} className="mr-2 text-gray-400" /> Duplicate
+                                    </button>
+                                    <button
+                                        onClick={(e) => { handleDelete(e); setContextMenu(null); }}
+                                        className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
+                                    >
+                                        <Trash2 size={14} className="mr-2" /> Delete {selectedEntryIds.size > 1 ? `(${selectedEntryIds.size})` : ''}
+                                    </button>
+                                </>
+                            );
+                        })()}
                     </div>
                 )
             }
