@@ -52,6 +52,7 @@ interface VaultContextType {
     onEditEntry: (data: EntryFormData) => Promise<void>;
     onDeleteEntry: (entryId: string) => Promise<void>;
     onMoveEntry: (entryId: string, targetGroupId: string) => Promise<void>;
+    onMoveEntries: (entryIds: string[], targetGroupId: string) => Promise<void>;
     onRestoreEntry: (entryId: string) => Promise<void>;
     isRecycleBinGroup: (groupId: string) => boolean;
     isEntryInRecycleBin: (entryId: string) => boolean;
@@ -247,7 +248,8 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const totalEntries = countEntriesInGroup(groupToDelete);
             if (totalEntries > 0) {
                 addToast({
-                    title: `Cannot delete: Group contains ${totalEntries} items`,
+                    title: `Cannot delete`,
+                    description: `Group contains ${totalEntries} items`,
                     type: "error"
                 });
                 return;
@@ -357,7 +359,6 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const onMoveEntry = async (entryId: string, targetGroupId: string) => {
-        addToast({ title: `Moving entry ${entryId} to ${targetGroupId}`, type: 'info' });
         if (!activeVault) return;
         try {
             moveEntryInDb(activeVault.db, entryId, targetGroupId);
@@ -367,6 +368,30 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e: any) {
             console.error(e);
             addToast({ title: e.message || "Failed to move entry", type: "error" });
+        }
+    };
+
+    const onMoveEntries = async (entryIds: string[], targetGroupId: string) => {
+        if (!activeVault) return;
+        try {
+            let movedCount = 0;
+            for (const entryId of entryIds) {
+                try {
+                    moveEntryInDb(activeVault.db, entryId, targetGroupId);
+                    movedCount++;
+                } catch (e) {
+                    console.warn(`Failed to move entry ${entryId}`, e);
+                }
+            }
+
+            if (movedCount > 0) {
+                refreshVault(activeVault.id);
+                await saveVault(activeVault.id, true);
+                addToast({ title: `${movedCount} entries moved`, type: "success" });
+            }
+        } catch (e: any) {
+            console.error(e);
+            addToast({ title: e.message || "Failed to move entries", type: "error" });
         }
     };
     const addVault = async (fileOrPath: File | FileSystemFileHandle | string, password: string, keyFile?: File) => {
@@ -639,6 +664,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             onEditEntry,
             onDeleteEntry,
             onMoveEntry,
+            onMoveEntries,
             onRestoreEntry,
             isRecycleBinGroup,
             isEntryInRecycleBin,

@@ -33,7 +33,7 @@ export const Launcher: React.FC = () => {
         // Check if window exists
         const existingWindow = WebviewWindow.getByLabel(label);
         if (existingWindow) {
-            console.log("Focusing existing window:", label);
+            // console.log("Focusing existing window:", label);
             await existingWindow.setFocus();
             return;
         }
