@@ -185,6 +185,11 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
             // Select All (Cmd+A / Ctrl+A)
             if ((e.metaKey || e.ctrlKey) && e.key === 'a' && !isModalOpen) {
+                // If user is typing in an input (like search), don't select all entries
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                    return;
+                }
                 e.preventDefault();
                 const allIds = new Set(sortedEntries.map(e => e.uuid));
                 onSelectEntry(allIds);
