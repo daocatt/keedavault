@@ -17,13 +17,18 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
     return (
         <div
-            className={`pointer-events-auto flex items-center p-3 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[300px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-x-full' : 'animate-in slide-in-from-right-full fade-in'
+            className={`pointer-events-auto flex items-start p-3 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[300px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-x-full' : 'animate-in slide-in-from-right-full fade-in'
                 }`}
         >
-            {toast.type === 'success' && <CheckCircle size={20} className="text-green-500 mr-3" />}
-            {toast.type === 'error' && <AlertCircle size={20} className="text-red-500 mr-3" />}
-            {toast.type === 'info' && <Info size={20} className="text-blue-500 mr-3" />}
-            <span className="text-sm font-medium text-gray-800 flex-1">{toast.title}</span>
+            {toast.type === 'success' && <CheckCircle size={20} className="text-green-500 mr-3 mt-0.5" />}
+            {toast.type === 'error' && <AlertCircle size={20} className="text-red-500 mr-3 mt-0.5" />}
+            {toast.type === 'info' && <Info size={20} className="text-blue-500 mr-3 mt-0.5" />}
+            <div className="flex-1">
+                <div className="text-sm font-medium text-gray-800">{toast.title}</div>
+                {toast.description && (
+                    <div className="text-xs text-gray-600 mt-1">{toast.description}</div>
+                )}
+            </div>
             <button onClick={() => { setIsExiting(true); setTimeout(() => onDismiss(toast.id), 300); }} className="text-gray-400 hover:text-gray-600 ml-2">
                 <X size={16} />
             </button>

@@ -110,11 +110,13 @@ const GroupItem: React.FC<{
     parentId?: string;
     onEditGroup: (group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
+    onMoveEntries: (entryIds: string[], targetGroupId: string) => void;
     onMoveToRecycleBin: (entryId: string) => void;
+    addToast: (toast: Omit<import('../types').ToastMessage, 'id'> & { id?: string }) => void;
 }> = ({
     group, depth, activeGroupId, actionState,
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
-    parentId, onEditGroup, onMoveEntry, onMoveToRecycleBin
+    parentId, onEditGroup, onMoveEntry, onMoveEntries, onMoveToRecycleBin, addToast
 }) => {
         const [expanded, setExpanded] = useState(true);
         const [isHovered, setIsHovered] = useState(false);
@@ -138,6 +140,13 @@ const GroupItem: React.FC<{
             e.preventDefault();
             e.stopPropagation();
             setIsDragOver(true);
+            e.dataTransfer.dropEffect = 'move';
+
+            addToast({
+                title: 'Drag Enter!',
+                description: `Drag enter ${group.name}`,
+                type: 'info'
+            });
         };
 
         const handleDragOver = (e: React.DragEvent) => {
@@ -145,6 +154,12 @@ const GroupItem: React.FC<{
             e.stopPropagation();
             setIsDragOver(true);
             e.dataTransfer.dropEffect = 'move';
+
+            addToast({
+                title: 'Drag Over!',
+                description: `Drag over ${group.name}`,
+                type: 'info'
+            });
         };
 
         const handleDragLeave = (e: React.DragEvent) => {
@@ -156,6 +171,12 @@ const GroupItem: React.FC<{
                 return;
             }
 
+            addToast({
+                title: 'Drag Leave!',
+                description: `Drag leave ${group.name}`,
+                type: 'info'
+            });
+
             setIsDragOver(false);
         };
 
@@ -164,6 +185,12 @@ const GroupItem: React.FC<{
             e.stopPropagation();
             setIsDragOver(false);
 
+            addToast({
+                title: 'Drop Event Fired!',
+                description: `Dropped on ${group.name}`,
+                type: 'info'
+            });
+
             // Try to get multiple entries first (new format)
             const entriesData = e.dataTransfer.getData('application/x-keedavault-entries');
             let entryIds: string[] = [];
@@ -171,26 +198,42 @@ const GroupItem: React.FC<{
             if (entriesData) {
                 try {
                     entryIds = JSON.parse(entriesData);
+                    console.log('✅ Parsed entry IDs:', entryIds);
                 } catch (err) {
-                    console.error('Failed to parse entry IDs:', err);
-                }
-            } else {
-                // Fallback to single entry (old format)
-                const singleEntry = e.dataTransfer.getData('application/x-keedavault-entry') || e.dataTransfer.getData('text/plain');
-                if (singleEntry) {
-                    entryIds = [singleEntry];
+                    console.error('❌ Failed to parse entry IDs:', err);
                 }
             }
 
-            if (entryIds.length > 0) {
-                // Move all entries
-                for (const entryId of entryIds) {
-                    if (group.isRecycleBin) {
-                        await onMoveToRecycleBin(entryId);
-                    } else {
-                        await onMoveEntry(entryId, group.uuid);
+            // Fallback to text/plain (which handles both single and multiple comma-separated IDs)
+            if (entryIds.length === 0) {
+                const textData = e.dataTransfer.getData('text/plain');
+                if (textData) {
+                    // console.log('📝 Fallback text data:', textData);
+                    entryIds = textData.split(',');
+                } else {
+                    // Legacy fallback
+                    const singleEntry = e.dataTransfer.getData('application/x-keedavault-entry');
+                    if (singleEntry) {
+                        entryIds = [singleEntry];
                     }
                 }
+            }
+
+            // console.log('🔢 Final entry IDs to move:', entryIds);
+
+            if (entryIds.length > 0) {
+                // Move all entries
+                console.log(`🚀 Moving ${entryIds.length} entries to group ${group.uuid}`);
+                if (group.isRecycleBin) {
+                    for (const entryId of entryIds) {
+                        await onMoveToRecycleBin(entryId);
+                    }
+                } else {
+                    await onMoveEntries(entryIds, group.uuid);
+                }
+                console.log('✨ All entries moved successfully');
+            } else {
+                console.warn('⚠️ No entry IDs found in drop data');
             }
         };
 
@@ -225,7 +268,7 @@ const GroupItem: React.FC<{
                     <button
                         onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
                         className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
-                        style={{ color: 'inherit' }}
+                        style={{ color: 'inherit', pointerEvents: isDragOver ? 'none' : 'auto' }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
@@ -233,11 +276,11 @@ const GroupItem: React.FC<{
                     </button>
 
                     {group.isRecycleBin ? (
-                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30' }} />
+                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30', pointerEvents: 'none' }} />
                     ) : (
                         (() => {
                             const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
+                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }} />;
                         })()
                     )}
 
@@ -248,16 +291,16 @@ const GroupItem: React.FC<{
                             onCancel={onCancelAction}
                         />
                     ) : (
-                        <span className="truncate select-none flex-1">{group.name}</span>
+                        <span className="truncate select-none flex-1" style={{ pointerEvents: isDragOver ? 'none' : 'auto' }}>{group.name}</span>
                     )}
 
                     {!isRenaming && !isHovered && (
-                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
+                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }}>{entryCount}</span>
                     )}
 
                     {/* Action Buttons - Show on hover, hide recycle bin actions */}
                     {!isRenaming && isHovered && !group.isRecycleBin && (
-                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: isDragOver ? 'none' : 'auto' }}>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -323,7 +366,9 @@ const GroupItem: React.FC<{
                                 parentId={group.uuid}
                                 onEditGroup={onEditGroup}
                                 onMoveEntry={onMoveEntry}
+                                onMoveEntries={onMoveEntries}
                                 onMoveToRecycleBin={onMoveToRecycleBin}
+                                addToast={addToast}
                             />
                         ))}
 
@@ -362,7 +407,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
         activeGroupId, setActiveGroup,
         removeVault, saveVault, lockVault,
         isUnlocking,
-        onAddGroup: onAddGroupFromContext, onRenameGroup, onDeleteGroup, onUpdateGroup, onDeleteEntry
+        onAddGroup: onAddGroupFromContext, onRenameGroup, onDeleteGroup, onUpdateGroup, onDeleteEntry,
+        onMoveEntries
     } = useVault();
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
@@ -647,7 +693,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         getEntryCount={getEntryCount}
                                         onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                         onMoveEntry={onMoveEntry}
+                                        onMoveEntries={onMoveEntries}
                                         onMoveToRecycleBin={onDeleteEntry}
+                                        addToast={addToast}
                                     />
                                 ))}
 
@@ -668,7 +716,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                             getEntryCount={getEntryCount}
                                             onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                             onMoveEntry={onMoveEntry}
+                                            onMoveEntries={onMoveEntries}
                                             onMoveToRecycleBin={onDeleteEntry}
+                                            addToast={addToast}
                                         />
                                     </div>
                                 ))}
