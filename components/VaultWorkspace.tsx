@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 import { EntryList } from './EntryList';
 import { EntryDetail } from './EntryDetail';
 import { VaultUnlockModal } from './VaultUnlockModal';
-import { Toaster } from './ui/Toaster';
+import { Toaster, useToast } from './ui/Toaster';
 import { VaultAuthForm } from './VaultAuthForm';
 import { VaultCreateForm } from './VaultCreateForm';
 import { ShieldCheck, Lock, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Plus, Save } from 'lucide-react';
@@ -93,6 +93,99 @@ const VaultLayout = () => {
             document.body.style.userSelect = '';
         };
     }, [isResizing]);
+
+    const { addToast } = useToast();
+    const { onMoveEntries, isRecycleBinGroup } = useVault();
+
+    // DEBUG: Global Drop Listener & Manual Drop Handling
+    useEffect(() => {
+        const handleGlobalDrop = async (e: DragEvent) => {
+            const target = e.target as HTMLElement;
+            console.log('🌟 WINDOW DROP EVENT:', target);
+
+            // Manual Drop Detection
+            // 1. Find the closest group row
+            const groupRow = (e.target as HTMLElement).closest('[data-group-uuid]');
+
+            if (groupRow) {
+                const targetGroupId = groupRow.getAttribute('data-group-uuid');
+                console.log('🎯 MANUAL DROP DETECTED on Group:', targetGroupId);
+
+                if (targetGroupId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // 2. Parse Data
+                    const entriesData = e.dataTransfer?.getData('application/x-keedavault-entries');
+                    const textData = e.dataTransfer?.getData('text/plain');
+
+                    let entryIds: string[] = [];
+
+                    if (entriesData) {
+                        try {
+                            entryIds = JSON.parse(entriesData);
+                        } catch (err) { console.error(err); }
+                    }
+
+                    if (entryIds.length === 0 && textData) {
+                        entryIds = textData.split(',');
+                    }
+
+                    // 3. Execute Move
+                    if (entryIds.length > 0) {
+                        addToast({
+                            title: 'Processing Drop...',
+                            description: `Moving ${entryIds.length} entries`,
+                            type: 'info'
+                        });
+
+                        try {
+                            // Check if target is recycle bin (we can't easily check isRecycleBinGroup here without passing it down or looking up)
+                            // For now, just assume standard move, the context handles logic
+                            await onMoveEntries(entryIds, targetGroupId);
+
+                            addToast({
+                                title: 'Success',
+                                description: 'Entries moved successfully',
+                                type: 'success'
+                            });
+                        } catch (error) {
+                            console.error('Move failed:', error);
+                            addToast({
+                                title: 'Error',
+                                description: 'Failed to move entries',
+                                type: 'error'
+                            });
+                        }
+                    }
+                }
+            } else {
+                document.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: {
+                        title: 'Window Drop Captured',
+                        description: `Target: <${target.tagName.toLowerCase()}> (No Group ID)`,
+                        type: 'info',
+                        id: crypto.randomUUID()
+                    }
+                }));
+            }
+        };
+
+        const handleGlobalDragOver = (e: DragEvent) => {
+            e.preventDefault(); // Allow drops globally
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
+        };
+
+        window.addEventListener('drop', handleGlobalDrop, true); // Capture phase
+        window.addEventListener('dragover', handleGlobalDragOver, true); // Capture phase
+
+        return () => {
+            window.removeEventListener('drop', handleGlobalDrop, true);
+            window.removeEventListener('dragover', handleGlobalDragOver, true);
+        };
+    }, [onMoveEntries, addToast]);
 
     // Auto-select first entry when group changes
     const prevGroupIdRef = useRef<string | null | undefined>(undefined);
@@ -219,11 +312,17 @@ const VaultLayout = () => {
         );
     }
 
+
+
     return (
-        <div className="flex h-screen w-screen overflow-hidden flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }} onContextMenu={(e) => e.preventDefault()}>
+        <div
+            className="flex h-screen w-screen overflow-hidden flex-col"
+            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+            onContextMenu={(e) => e.preventDefault()}
+        >
 
             {/* Main Content - Headers are the unified toolbar */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
                 {/* Left Sidebar: Vaults and Groups */}
                 <aside
                     className={`${leftSidebarVisible ? 'w-56' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
@@ -254,7 +353,6 @@ const VaultLayout = () => {
                                 toggleRightSidebar={toggleRightSidebar}
                             />
                         </div>
-
                         {/* Right Panel: Details */}
                         {/* Right Panel: Details */}
                         {rightSidebarVisible && (
