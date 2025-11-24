@@ -740,10 +740,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             onContextMenu={(e) => handleContextMenu(e, entry)}
                             draggable
                             onDragStart={(e) => {
+                                // console.log('🎬 DRAG START for entry:', entry.title, entry.uuid);
                                 // Prevent text selection during drag, especially with Shift key
-                                if (e.shiftKey) {
-                                    e.preventDefault();
-                                }
                                 if (window.getSelection) {
                                     window.getSelection()?.removeAllRanges();
                                 }
@@ -754,6 +752,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                     ? Array.from(selectedEntryIds)
                                     : [entry.uuid];
 
+                                // console.log('📋 Setting drag data for entries:', entriesToDrag);
                                 e.dataTransfer.setData('application/x-keedavault-entries', JSON.stringify(entriesToDrag));
                                 e.dataTransfer.setData('text/plain', entriesToDrag.join(','));
                                 e.dataTransfer.effectAllowed = 'move';
