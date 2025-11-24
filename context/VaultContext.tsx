@@ -357,6 +357,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const onMoveEntry = async (entryId: string, targetGroupId: string) => {
+        addToast({ title: `Moving entry ${entryId} to ${targetGroupId}`, type: 'info' });
         if (!activeVault) return;
         try {
             moveEntryInDb(activeVault.db, entryId, targetGroupId);
@@ -368,7 +369,6 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             addToast({ title: e.message || "Failed to move entry", type: "error" });
         }
     };
-
     const addVault = async (fileOrPath: File | FileSystemFileHandle | string, password: string, keyFile?: File) => {
         setIsUnlocking(true);
         setUnlockError(null);

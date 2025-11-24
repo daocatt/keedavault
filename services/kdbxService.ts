@@ -242,6 +242,22 @@ export const addEntryToDb = (db: kdbxweb.Kdbx, groupUuid: string, data: EntryFor
         }
     }
 
+    if (data.expiryTime) {
+        entry.times.expiryTime = data.expiryTime;
+        entry.times.expires = true;
+    } else {
+        entry.times.expires = false;
+    }
+
+    // Handle Custom Fields
+    if (data.customFields) {
+        Object.entries(data.customFields).forEach(([key, value]) => {
+            if (key && value) {
+                entry.fields.set(key, value);
+            }
+        });
+    }
+
     entry.times.update();
     return entry;
 };
@@ -282,6 +298,38 @@ export const updateEntryInDb = (db: kdbxweb.Kdbx, data: EntryFormData) => {
         if (otpUrl) {
             entry.fields.set('otp', kdbxweb.ProtectedValue.fromString(otpUrl));
         }
+    }
+
+    if (data.expiryTime) {
+        entry.times.expiryTime = data.expiryTime;
+        entry.times.expires = true;
+    } else {
+        entry.times.expires = false;
+    }
+
+    // Handle Custom Fields
+    // First, remove any existing custom fields that are not in the new data
+    // We protect standard fields from being removed here
+    const standardFields = ['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'Email'];
+    const currentKeys = Array.from(entry.fields.keys());
+
+    currentKeys.forEach(key => {
+        if (!standardFields.includes(key)) {
+            // If it's not a standard field, check if it exists in the new customFields
+            // If data.customFields is undefined or the key is missing, remove it
+            if (!data.customFields || !Object.prototype.hasOwnProperty.call(data.customFields, key)) {
+                entry.fields.delete(key);
+            }
+        }
+    });
+
+    // Now set/update all provided custom fields
+    if (data.customFields) {
+        Object.entries(data.customFields).forEach(([key, value]) => {
+            if (key && value) {
+                entry.fields.set(key, value);
+            }
+        });
     }
 
     entry.times.update();
@@ -500,6 +548,7 @@ const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
         tags: entry.tags,
         creationTime: entry.times.creationTime as Date,
         lastModTime: entry.times.lastModTime as Date,
-        otpUrl: otpUrl
+        otpUrl: otpUrl,
+        expiryTime: entry.times.expires ? (entry.times.expiryTime as Date) : undefined
     };
 };

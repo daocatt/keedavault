@@ -15,7 +15,29 @@ export const Launcher: React.FC = () => {
     }, []);
 
     const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock') => {
-        const label = `vault-${Date.now()}`;
+        let label: string;
+
+        if (path) {
+            // Simple hash for deterministic label
+            let hash = 0;
+            for (let i = 0; i < path.length; i++) {
+                const char = path.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            label = `vault-${Math.abs(hash)}`;
+        } else {
+            label = `vault-${Date.now()}`;
+        }
+
+        // Check if window exists
+        const existingWindow = WebviewWindow.getByLabel(label);
+        if (existingWindow) {
+            console.log("Focusing existing window:", label);
+            await existingWindow.setFocus();
+            return;
+        }
+
         const url = `index.html?mode=vault&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
 
         try {
