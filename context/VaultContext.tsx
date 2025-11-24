@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { readBinaryFile, writeBinaryFile } from '@tauri-apps/api/fs';
 import { save, ask } from '@tauri-apps/api/dialog';
-import kdbxweb from 'kdbxweb';
+import * as kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
 import {
     parseKdbxStructure,
@@ -17,7 +17,8 @@ import {
     deleteEntryFromDb,
     moveEntryInDb,
     restoreEntryFromRecycleBin,
-    getOriginalGroupInfo
+    getOriginalGroupInfo,
+    initializeArgon2
 } from '../services/kdbxService';
 import { useToast } from '../components/ui/Toaster';
 import { saveRecentVault, getRecentVaults } from '../services/storageService';
@@ -395,6 +396,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
     const addVault = async (fileOrPath: File | FileSystemFileHandle | string, password: string, keyFile?: File) => {
+        initializeArgon2();
         setIsUnlocking(true);
         setUnlockError(null);
         try {
