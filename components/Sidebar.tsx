@@ -138,57 +138,37 @@ const GroupItem: React.FC<{
 
         const handleDragEnter = (e: React.DragEvent) => {
             e.preventDefault();
-            e.stopPropagation();
             setIsDragOver(true);
             e.dataTransfer.dropEffect = 'move';
-
-            addToast({
-                title: 'Drag Enter!',
-                description: `Drag enter ${group.name}`,
-                type: 'info'
-            });
         };
 
         const handleDragOver = (e: React.DragEvent) => {
             e.preventDefault();
-            e.stopPropagation();
             setIsDragOver(true);
             e.dataTransfer.dropEffect = 'move';
-
-            addToast({
-                title: 'Drag Over!',
-                description: `Drag over ${group.name}`,
-                type: 'info'
-            });
         };
 
         const handleDragLeave = (e: React.DragEvent) => {
             e.preventDefault();
-            e.stopPropagation();
 
             // Prevent flickering when dragging over children
             if (e.currentTarget.contains(e.relatedTarget as Node)) {
                 return;
             }
 
-            addToast({
-                title: 'Drag Leave!',
-                description: `Drag leave ${group.name}`,
-                type: 'info'
-            });
-
             setIsDragOver(false);
         };
 
         const handleDrop = async (e: React.DragEvent) => {
             e.preventDefault();
-            e.stopPropagation();
             setIsDragOver(false);
+
+            console.log('🎯 DROP HANDLER FIRED on group:', group.name);
 
             addToast({
                 title: 'Drop Event Fired!',
                 description: `Dropped on ${group.name}`,
-                type: 'info'
+                type: 'success' // Changed to success to make it distinct
             });
 
             // Try to get multiple entries first (new format)
@@ -264,11 +244,17 @@ const GroupItem: React.FC<{
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
+                    data-group-uuid={group.uuid} // For global drop detection
+                    draggable="true"
+                    onDragStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
                 >
                     <button
                         onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
                         className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
-                        style={{ color: 'inherit', pointerEvents: isDragOver ? 'none' : 'auto' }}
+                        style={{ color: 'inherit' }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
@@ -276,11 +262,11 @@ const GroupItem: React.FC<{
                     </button>
 
                     {group.isRecycleBin ? (
-                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30', pointerEvents: 'none' }} />
+                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30' }} />
                     ) : (
                         (() => {
                             const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }} />;
+                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
                         })()
                     )}
 
@@ -295,12 +281,12 @@ const GroupItem: React.FC<{
                     )}
 
                     {!isRenaming && !isHovered && (
-                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }}>{entryCount}</span>
+                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
                     {/* Action Buttons - Show on hover, hide recycle bin actions */}
                     {!isRenaming && isHovered && !group.isRecycleBin && (
-                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: isDragOver ? 'none' : 'auto' }}>
+                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();

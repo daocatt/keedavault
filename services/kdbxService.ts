@@ -1,38 +1,46 @@
-import kdbxweb from 'kdbxweb';
+import * as kdbxweb from 'kdbxweb';
 import { argon2d, argon2i, argon2id } from 'hash-wasm';
 import { VaultGroup, VaultEntry, EntryFormData } from '../types';
 
 // --- Argon2 Polyfill Setup ---
-kdbxweb.CryptoEngine.setArgon2Impl(async (password: any, salt: any, memory: any, iterations: any, length: any, parallelism: any, type: any, version: any) => {
-    const passwordArr = new Uint8Array(password);
-    const saltArr = new Uint8Array(salt);
+let argon2Initialized = false;
 
-    const params = {
-        password: passwordArr,
-        salt: saltArr,
-        parallelism: Math.round(parallelism),
-        iterations: Math.round(iterations),
-        memorySize: Math.round(memory),
-        hashLength: Math.round(length),
-        outputType: 'binary' as const,
-        version: version || 0x13
-    };
+export const initializeArgon2 = () => {
+    if (argon2Initialized || !kdbxweb?.CryptoEngine) return;
 
-    try {
-        let result: Uint8Array;
-        if (type === 1) {
-            result = await argon2id(params);
-        } else if (type === 2) {
-            result = await argon2i(params);
-        } else {
-            result = await argon2d(params);
+    kdbxweb.CryptoEngine.setArgon2Impl(async (password: any, salt: any, memory: any, iterations: any, length: any, parallelism: any, type: any, version: any) => {
+        const passwordArr = new Uint8Array(password);
+        const saltArr = new Uint8Array(salt);
+
+        const params = {
+            password: passwordArr,
+            salt: saltArr,
+            parallelism: Math.round(parallelism),
+            iterations: Math.round(iterations),
+            memorySize: Math.round(memory),
+            hashLength: Math.round(length),
+            outputType: 'binary' as const,
+            version: version || 0x13
+        };
+
+        try {
+            let result: Uint8Array;
+            if (type === 1) {
+                result = await argon2id(params);
+            } else if (type === 2) {
+                result = await argon2i(params);
+            } else {
+                result = await argon2d(params);
+            }
+            return result.slice(0).buffer;
+        } catch (e) {
+            console.error("Argon2 KDF failed:", e);
+            throw new Error("Failed to derive master key using Argon2.");
         }
-        return result.slice(0).buffer;
-    } catch (e) {
-        console.error("Argon2 KDF failed:", e);
-        throw new Error("Failed to derive master key using Argon2.");
-    }
-});
+    });
+
+    argon2Initialized = true;
+};
 
 // --- Helper: Robust UUID Comparison ---
 const uuidsEqual = (a: any, b: any): boolean => {
@@ -47,6 +55,7 @@ const uuidsEqual = (a: any, b: any): boolean => {
 // --- Database Creation ---
 
 export const createDatabase = (name: string, password: string, keyFile?: ArrayBuffer): kdbxweb.Kdbx => {
+    initializeArgon2();
     const credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(password), keyFile);
     const db = kdbxweb.Kdbx.create(credentials, name);
     db.header.setKdf(kdbxweb.Consts.KdfId.Aes);
