@@ -51,6 +51,7 @@ export interface VaultEntry {
   creationTime: Date;
   lastModTime: Date;
   otpUrl?: string;
+  expiryTime?: Date;
 }
 
 export type ViewMode = 'list' | 'grid';
@@ -83,4 +84,6 @@ export interface EntryFormData {
   url: string;
   notes: string;
   totpSecret: string; // Raw secret key
+  expiryTime?: Date;
+  customFields?: Record<string, string>;
 }

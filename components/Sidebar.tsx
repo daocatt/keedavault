@@ -110,10 +110,11 @@ const GroupItem: React.FC<{
     parentId?: string;
     onEditGroup: (group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
+    onMoveToRecycleBin: (entryId: string) => void;
 }> = ({
     group, depth, activeGroupId, actionState,
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
-    parentId, onEditGroup, onMoveEntry
+    parentId, onEditGroup, onMoveEntry, onMoveToRecycleBin
 }) => {
         const [expanded, setExpanded] = useState(true);
         const [isHovered, setIsHovered] = useState(false);
@@ -133,18 +134,28 @@ const GroupItem: React.FC<{
         const isAddingChild = actionState?.type === 'add' && actionState.nodeId === group.uuid;
         const isRootGroup = depth === 1;
 
+        const handleDragEnter = (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(true);
+        };
+
         const handleDragOver = (e: React.DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!group.isRecycleBin) {
-                setIsDragOver(true);
-                e.dataTransfer.dropEffect = 'move';
-            }
+            setIsDragOver(true);
+            e.dataTransfer.dropEffect = 'move';
         };
 
         const handleDragLeave = (e: React.DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
+
+            // Prevent flickering when dragging over children
+            if (e.currentTarget.contains(e.relatedTarget as Node)) {
+                return;
+            }
+
             setIsDragOver(false);
         };
 
@@ -153,11 +164,33 @@ const GroupItem: React.FC<{
             e.stopPropagation();
             setIsDragOver(false);
 
-            if (group.isRecycleBin) return;
+            // Try to get multiple entries first (new format)
+            const entriesData = e.dataTransfer.getData('application/x-keedavault-entries');
+            let entryIds: string[] = [];
 
-            const entryId = e.dataTransfer.getData('text/plain');
-            if (entryId) {
-                await onMoveEntry(entryId, group.uuid);
+            if (entriesData) {
+                try {
+                    entryIds = JSON.parse(entriesData);
+                } catch (err) {
+                    console.error('Failed to parse entry IDs:', err);
+                }
+            } else {
+                // Fallback to single entry (old format)
+                const singleEntry = e.dataTransfer.getData('application/x-keedavault-entry') || e.dataTransfer.getData('text/plain');
+                if (singleEntry) {
+                    entryIds = [singleEntry];
+                }
+            }
+
+            if (entryIds.length > 0) {
+                // Move all entries
+                for (const entryId of entryIds) {
+                    if (group.isRecycleBin) {
+                        await onMoveToRecycleBin(entryId);
+                    } else {
+                        await onMoveEntry(entryId, group.uuid);
+                    }
+                }
             }
         };
 
@@ -184,6 +217,7 @@ const GroupItem: React.FC<{
                         }
                     }}
                     onClick={() => onSelect(group.uuid)}
+                    onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -289,6 +323,7 @@ const GroupItem: React.FC<{
                                 parentId={group.uuid}
                                 onEditGroup={onEditGroup}
                                 onMoveEntry={onMoveEntry}
+                                onMoveToRecycleBin={onMoveToRecycleBin}
                             />
                         ))}
 
@@ -318,15 +353,16 @@ interface SidebarProps {
     onOpenVault: () => void;
     onNewGroup: (vaultId: string, parentId?: string) => void;
     onEditGroup: (vaultId: string, group: VaultGroup, parentId?: string) => void;
+    onMoveEntry: (entryId: string, targetGroupId: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry }) => {
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
         removeVault, saveVault, lockVault,
         isUnlocking,
-        onAddGroup, onRenameGroup, onDeleteGroup, onUpdateGroup, onMoveEntry
+        onAddGroup: onAddGroupFromContext, onRenameGroup, onDeleteGroup, onUpdateGroup, onDeleteEntry
     } = useVault();
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
@@ -350,7 +386,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
         if (!actionState) return;
 
         if (actionState.type === 'add') {
-            onAddGroup(value, actionState.nodeId);
+            onNewGroup(value, actionState.nodeId);
         } else if (actionState.type === 'rename') {
             onRenameGroup(actionState.nodeId, value);
         }
@@ -611,6 +647,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         getEntryCount={getEntryCount}
                                         onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                         onMoveEntry={onMoveEntry}
+                                        onMoveToRecycleBin={onDeleteEntry}
                                     />
                                 ))}
 
@@ -631,6 +668,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                             getEntryCount={getEntryCount}
                                             onEditGroup={(g, pid) => onEditGroup(vault.id, g, pid)}
                                             onMoveEntry={onMoveEntry}
+                                            onMoveToRecycleBin={onDeleteEntry}
                                         />
                                     </div>
                                 ))}

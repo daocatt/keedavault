@@ -37,6 +37,8 @@ const TOTPDisplay: React.FC<{ url: string }> = ({ url }) => {
     const [period, setPeriod] = useState<number>(30);
     const [timeLeft, setTimeLeft] = useState<number>(0);
 
+    const { addToast } = useToast();
+
     useEffect(() => {
         let totp: OTPAuth.TOTP;
         try {
@@ -66,17 +68,26 @@ const TOTPDisplay: React.FC<{ url: string }> = ({ url }) => {
         return () => clearInterval(interval);
     }, [url]);
 
+    const handleDoubleClick = () => {
+        if (!code || code === '--- ---' || code === 'Error') return;
+        navigator.clipboard.writeText(code);
+        addToast({ title: '2FA Code copied', type: 'success' });
+    };
+
     return (
         <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 mt-4">
             <div className="flex justify-between items-center mb-1">
-                <div className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center">
-                    <Clock size={12} className="mr-1" />
-                    One-Time Password (2FA)
+                <div className="text-xs font-mono text-gray-300 uppercase tracking-wider flex items-center">
+                    2FA Code
                 </div>
                 <div className="text-xs text-indigo-400 font-mono">{timeLeft}s</div>
             </div>
             <div className="flex items-center justify-between">
-                <div className="font-mono text-2xl font-bold text-gray-800 tracking-widest">
+                <div
+                    className="font-mono text-2xl font-bold text-gray-800 tracking-widest cursor-pointer select-none"
+                    onDoubleClick={handleDoubleClick}
+                    title="Double click to copy"
+                >
                     {code.slice(0, 3)} {code.slice(3)}
                 </div>
                 <CopyButton text={code} label="2FA Code" />
@@ -93,6 +104,7 @@ const TOTPDisplay: React.FC<{ url: string }> = ({ url }) => {
 
 export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) => {
     const { getEntry } = useVault();
+    const { addToast } = useToast();
     const entry = getEntry(entryId);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -100,39 +112,55 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
     if (!entry) return null;
 
-    const FieldRow: React.FC<{ label: string, value: string, isSecret?: boolean, type?: 'link' | 'text' }> = ({ label, value, isSecret, type = 'text' }) => (
-        <div className="mb-3 group">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
-            <div className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative">
-                {type === 'link' && value ? (
-                    <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-xs">
-                        {value}
-                    </a>
-                ) : (
-                    <div className="flex-1 text-xs text-gray-800 truncate font-mono">
-                        {isSecret && !showPassword ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
-                    </div>
-                )}
+    const FieldRow: React.FC<{ label: string, value: string, isSecret?: boolean, type?: 'link' | 'text' }> = ({ label, value, isSecret, type = 'text' }) => {
+        const handleDoubleClick = () => {
+            if (!value) return;
+            navigator.clipboard.writeText(value);
+            addToast({ title: `${label} copied`, type: 'success' });
+        };
 
-                <div className="flex items-center space-x-1 ml-2">
-                    {isSecret && (
-                        <button
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="p-1.5 text-gray-400 hover:text-gray-600"
-                        >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                    )}
-                    {value && <CopyButton text={value} label={label} />}
-                    {type === 'link' && value && (
-                        <a href={value} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600">
-                            <ExternalLink size={16} />
+        return (
+            <div className="mb-3 group">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
+                <div
+                    className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative cursor-pointer"
+                    onDoubleClick={handleDoubleClick}
+                    title="Double click to copy"
+                >
+                    {type === 'link' && value ? (
+                        <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-xs" onClick={e => e.stopPropagation()}>
+                            {value}
                         </a>
+                    ) : (
+                        <div className="flex-1 text-xs text-gray-800 truncate font-mono select-none">
+                            {isSecret && !showPassword ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
+                        </div>
                     )}
+
+                    <div className="flex items-center space-x-1 ml-2">
+                        {isSecret && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowPassword(!showPassword); }}
+                                className="p-1.5 text-gray-400 hover:text-gray-600"
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                        )}
+                        {value && (
+                            <div onClick={e => e.stopPropagation()}>
+                                <CopyButton text={value} label={label} />
+                            </div>
+                        )}
+                        {type === 'link' && value && (
+                            <a href={value} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600" onClick={e => e.stopPropagation()}>
+                                <ExternalLink size={16} />
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', boxShadow: 'var(--shadow-xl)' }}>
@@ -187,6 +215,18 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                             {/* <p className="text-xs text-gray-500">{entry.username}</p> */}
                         </div>
                     </div>
+
+                    {entry.expiryTime && (
+                        <div className="mb-3 bg-orange-50 px-3 py-2 rounded-lg border border-orange-100">
+                            <div className="flex items-center text-xs text-orange-600 mb-1">
+                                <Clock size={14} className="mr-1 flex-shrink-0" />
+                                <span className="font-semibold">Expires</span>
+                            </div>
+                            <div className="text-xs text-orange-700 font-medium">
+                                {entry.expiryTime.toLocaleString()}
+                            </div>
+                        </div>
+                    )}
 
                     <FieldRow label="Username" value={entry.username} />
                     {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
