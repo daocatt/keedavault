@@ -831,6 +831,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                 window.__isDragging = true;
                                 // @ts-ignore
                                 window.__draggedEntryIds = entriesToDrag;
+                                document.body.classList.add('app-dragging');
 
                                 e.dataTransfer.setData('application/x-keedavault-entries', JSON.stringify(entriesToDrag));
                                 e.dataTransfer.setData('text/plain', entriesToDrag.join(','));
@@ -841,6 +842,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                 window.__isDragging = false;
                                 // @ts-ignore
                                 window.__draggedEntryIds = null;
+                                document.body.classList.remove('app-dragging');
 
                                 addToast({
                                     title: 'Drag Ended',
@@ -848,6 +850,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                     type: 'info'
                                 });
                             }}
+
                             className={`py-1.5 flex items-center cursor-pointer transition-colors group select-none ${selectedEntryIds.has(entry.uuid)
                                 ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
                                 : 'even:bg-gray-50 hover:bg-gray-100 text-gray-700'
