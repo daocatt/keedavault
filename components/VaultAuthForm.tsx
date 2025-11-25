@@ -25,8 +25,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     useEffect(() => {
         if (initialVaultInfo?.path) {
             setPath(initialVaultInfo.path);
-            setFile(new File([], initialVaultInfo.filename));
-            setFileHandle(null);
+            // Don't create a dummy File object - we'll use the path directly
             clearError();
         }
     }, [initialVaultInfo]);
@@ -99,12 +98,12 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             {!hideHeader && (
                 <div className="flex flex-col items-center mb-8 text-center">
                     {(file || path) ? (
-                        <div className="animate-in fade-in zoom-in duration-300">
+                        <div>
                             <div className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto">
                                 <HardDrive size={32} strokeWidth={1.5} />
                             </div>
                             <h2 className="text-xl font-semibold text-gray-900 tracking-tight truncate max-w-[280px] mx-auto">
-                                {file?.name || 'Database'}
+                                {file?.name || (path ? path.split(/[/\\]/).pop() : 'Database')}
                             </h2>
                             {path && (
                                 <p className="text-[11px] font-medium text-gray-400 mt-1 truncate max-w-[280px] px-4 mx-auto">
@@ -113,7 +112,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                             )}
                         </div>
                     ) : (
-                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div>
                             <div className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm bg-white border border-gray-100 mx-auto">
                                 <Lock size={32} className="text-gray-400" strokeWidth={1.5} />
                             </div>
@@ -131,13 +130,13 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
 
             {(unlockError || formError) && (
-                <div className="mb-5 p-3 bg-red-50 text-red-600 text-[13px] font-medium rounded-xl flex items-start border border-red-100 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className="mb-5 p-3 bg-red-50 text-red-600 text-[13px] font-medium rounded-xl flex items-start border border-red-100 shadow-sm">
                     <AlertCircle size={16} className="mt-0.5 mr-2.5 flex-shrink-0" />
                     <span>{unlockError || formError}</span>
                 </div>
             )}
 
-            <form onSubmit={handleUnlock} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+            <form onSubmit={handleUnlock} className="space-y-4">
                 <input
                     type="file"
                     accept=".kdbx,.kdb"

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { WebviewWindow } from '@tauri-apps/api/window';
-import { open, message } from '@tauri-apps/api/dialog';
-import { exists } from '@tauri-apps/api/fs';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { open, message } from '@tauri-apps/plugin-dialog';
+import { exists } from '@tauri-apps/plugin-fs';
 import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
@@ -12,6 +13,25 @@ export const Launcher: React.FC = () => {
 
     useEffect(() => {
         setRecentVaults(getRecentVaults());
+
+        // Check URL params for auto-browse action
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get('action');
+
+        if (action === 'browse') {
+            // Auto-trigger file browse after a short delay
+            setTimeout(() => handleBrowse(), 300);
+        }
+
+        // Listen for open-file-picker event from menu
+        const unlisten = getCurrentWebviewWindow().listen('open-file-picker', () => {
+            handleBrowse();
+        });
+
+        return () => {
+            unlisten.then(f => f());
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock') => {
@@ -31,31 +51,46 @@ export const Launcher: React.FC = () => {
         }
 
         // Check if window exists
-        const existingWindow = WebviewWindow.getByLabel(label);
-        if (existingWindow) {
-            // console.log("Focusing existing window:", label);
-            await existingWindow.setFocus();
-            return;
+        try {
+            const existingWindow = await WebviewWindow.getByLabel(label);
+            if (existingWindow) {
+                // console.log("Focusing existing window:", label);
+                await existingWindow.setFocus();
+                return;
+            }
+        } catch (e) {
+            // Window doesn't exist, continue to create new one
         }
 
-        const url = `index.html?mode=vault&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
+        const mode = action === 'create' ? 'create' : 'auth';
+        const url = `/?mode=${mode}&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
 
         try {
             const webview = new WebviewWindow(label, {
                 url,
                 title: 'KeedaVault',
-                width: 960,
+                width: 500,
                 height: 640,
-                minWidth: 800,
+                minWidth: 500,
                 minHeight: 600,
                 center: true,
-                resizable: true,
+                resizable: false,
                 hiddenTitle: true,
                 titleBarStyle: 'overlay',
+                visible: false, // Start hidden to prevent flash
             });
 
-            webview.once('tauri://created', function () {
+            webview.once('tauri://created', async function () {
                 console.log("Window created successfully");
+                // Safety: Ensure window is shown after a timeout if component fails to show it
+                setTimeout(async () => {
+                    try {
+                        await webview.show();
+                        await webview.setFocus();
+                    } catch (e) {
+                        // Ignore if window is already destroyed
+                    }
+                }, 500);
             });
 
             webview.once('tauri://error', function (e: any) {
@@ -68,27 +103,33 @@ export const Launcher: React.FC = () => {
 
     const handleOpenRecent = async (vault: SavedVaultInfo) => {
         try {
+            console.log('handleOpenRecent called with:', vault);
+
             if (!vault.path) {
                 await message(
                     `Invalid vault path. The entry may be corrupted.`,
-                    { title: 'Invalid Vault', type: 'error' }
+                    { title: 'Invalid Vault', kind: 'error' }
                 );
                 removeRecentVault(vault.path || '', vault.filename);
                 setRecentVaults(getRecentVaults());
                 return;
             }
 
+            console.log('Checking if file exists:', vault.path);
             const fileExists = await exists(vault.path);
+            console.log('File exists:', fileExists);
+
             if (!fileExists) {
                 await message(
                     `The file "${vault.path}" no longer exists.\nIt may have been moved or deleted.`,
-                    { title: 'File Not Found', type: 'error' }
+                    { title: 'File Not Found', kind: 'error' }
                 );
                 // removeRecentVault(vault.path, vault.filename);
                 // setRecentVaults(getRecentVaults());
                 return;
             }
 
+            console.log('Opening vault window for:', vault.path);
             saveRecentVault({ ...vault, lastOpened: Date.now() });
             setRecentVaults(getRecentVaults());
             openVaultWindow(vault.path, 'unlock');
@@ -96,7 +137,7 @@ export const Launcher: React.FC = () => {
             console.error("Error checking file or opening vault", e);
             await message(
                 `Error accessing file: ${e}`,
-                { title: 'Error', type: 'error' }
+                { title: 'Error', kind: 'error' }
             );
         }
     };
@@ -107,6 +148,7 @@ export const Launcher: React.FC = () => {
 
     const handleBrowse = async () => {
         try {
+            console.log('handleBrowse: Opening file picker...');
             const selected = await open({
                 multiple: false,
                 filters: [{
@@ -114,6 +156,8 @@ export const Launcher: React.FC = () => {
                     extensions: ['kdbx', 'kdb']
                 }]
             });
+
+            console.log('File selected:', selected);
 
             if (selected && typeof selected === 'string') {
                 const filename = selected.split(/[/\\]/).pop() || selected;
@@ -141,16 +185,20 @@ export const Launcher: React.FC = () => {
         <div className="flex h-screen w-screen overflow-hidden flex-col relative" style={{ backgroundColor: 'var(--color-bg-secondary)' }} onContextMenu={(e) => e.preventDefault()}>
             <FlowBackground />
 
-            {/* macOS Unified Toolbar - Fusion Style with Extended Drag Region */}
-            {/* Draggable Top Region */}
+            {/* Draggable Top Region - Increased height for better UX */}
             <div
-                className="absolute top-0 left-0 w-full h-12 z-50"
-                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-                data-tauri-drag-region
+                className="absolute top-0 left-0 w-full h-20 z-50"
+                style={{ userSelect: 'none' }}
+                onMouseDown={(e) => {
+                    if (e.button === 0) { // Only left click
+                        e.preventDefault(); // Prevent text selection
+                        getCurrentWebviewWindow().startDragging();
+                    }
+                }}
             />
 
             {/* Main Content - Left-Right Layout */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden p-8 relative z-10">
+            <div className="flex-1 flex items-center justify-center overflow-hidden p-8 relative z-10" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                 <div className="w-full max-w-5xl flex items-center gap-12">
 
                     {/* Left Side - Logo and Subtitle */}
@@ -170,9 +218,12 @@ export const Launcher: React.FC = () => {
 
                         {/* Recent Files Section */}
                         <div className="p-5" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-tertiary)' }}>
-                            <div className="flex items-center text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
-                                <Clock size={12} className="mr-1.5" />
-                                Recent Databases
+                            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                                <div className="flex items-center">
+                                    <Clock size={12} className="mr-1.5" />
+                                    Recent Databases
+                                </div>
+
                             </div>
 
                             <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
@@ -184,7 +235,7 @@ export const Launcher: React.FC = () => {
                                     recentVaults.map((vault, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={() => handleOpenRecent(vault)}
+                                            onDoubleClick={() => handleOpenRecent(vault)}
                                             className="w-full text-left px-3 py-2 rounded-lg transition-all flex items-center group relative"
                                             style={{
                                                 backgroundColor: 'var(--color-bg-primary)',

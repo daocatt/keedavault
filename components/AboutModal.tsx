@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { X, Github, Globe } from 'lucide-react';
-import { appWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getVersion, getName } from '@tauri-apps/api/app';
 import logo from '../logo.svg';
+const appWindow = getCurrentWebviewWindow()
 
 export const AboutModal: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);

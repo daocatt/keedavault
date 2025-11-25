@@ -7,7 +7,7 @@ import {
     AlertTriangle, Server, PenTool, Settings, Home, Star, Wrench, FolderOpen, FileText, Image, Music, Video, Code, Key, Copy
 } from 'lucide-react';
 import { VaultGroup } from '../types';
-import { WebviewWindow } from '@tauri-apps/api/window';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const ICONS_MAP: Record<number, React.ElementType> = {
     48: Folder,
@@ -391,13 +391,14 @@ const GroupItem: React.FC<{
     };
 
 interface SidebarProps {
-    onOpenVault: () => void;
+    onOpenVault?: () => void;
     onNewGroup: (vaultId: string, parentId?: string) => void;
     onEditGroup: (vaultId: string, group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
+    className?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry, className = '' }) => {
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
@@ -536,7 +537,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
     }, [vaults, activeVaultId]);
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden" onClick={() => {
+        <div className={`flex-1 flex flex-col overflow-hidden ${className}`} onClick={() => {
             if (actionState) setActionState(null);
         }}>
             {/* Row 1: Traffic Lights & Settings */}

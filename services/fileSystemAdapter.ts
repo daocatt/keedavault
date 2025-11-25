@@ -3,8 +3,8 @@
  * Provides a unified interface for file operations across browser and Tauri environments
  */
 
-import { readBinaryFile, writeBinaryFile } from '@tauri-apps/api/fs';
-import { open, save } from '@tauri-apps/api/dialog';
+import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { open, save } from '@tauri-apps/plugin-dialog';
 
 export interface FileHandle {
     name: string;
@@ -95,7 +95,7 @@ class FileSystemAdapter {
     public async readFile(handle: FileHandle): Promise<ArrayBuffer> {
         if (this.isTauri && handle.path) {
             try {
-                const contents = await readBinaryFile(handle.path);
+                const contents = await readFile(handle.path);
                 return contents.buffer as ArrayBuffer;
             } catch (err) {
                 console.error('Tauri file read failed:', err);
@@ -120,7 +120,7 @@ class FileSystemAdapter {
     public async writeFile(handle: FileHandle, data: ArrayBuffer): Promise<void> {
         if (this.isTauri && handle.path) {
             try {
-                await writeBinaryFile(handle.path, new Uint8Array(data));
+                await writeFile(handle.path, new Uint8Array(data));
             } catch (err) {
                 console.error('Tauri file write failed:', err);
                 throw new Error('Failed to write file');
@@ -157,7 +157,7 @@ class FileSystemAdapter {
                     return null;
                 }
 
-                await writeBinaryFile(selected, new Uint8Array(data));
+                await writeFile(selected, new Uint8Array(data));
 
                 return {
                     name: selected.split('/').pop() || selected.split('\\').pop() || defaultName,
