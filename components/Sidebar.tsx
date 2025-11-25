@@ -138,29 +138,37 @@ const GroupItem: React.FC<{
 
         const handleDragEnter = (e: React.DragEvent) => {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('➡️ Drag Enter:', group.name);
             setIsDragOver(true);
             e.dataTransfer.dropEffect = 'move';
         };
 
         const handleDragOver = (e: React.DragEvent) => {
+            e.stopPropagation();
             e.preventDefault();
+
+            // console.log('🔄 Drag Over:', group.name);
             setIsDragOver(true);
             e.dataTransfer.dropEffect = 'move';
         };
 
         const handleDragLeave = (e: React.DragEvent) => {
             e.preventDefault();
+            e.stopPropagation();
 
             // Prevent flickering when dragging over children
             if (e.currentTarget.contains(e.relatedTarget as Node)) {
                 return;
             }
 
+            console.log('⬅️ Drag Leave:', group.name);
             setIsDragOver(false);
         };
 
         const handleDrop = async (e: React.DragEvent) => {
             e.preventDefault();
+            e.stopPropagation();
             setIsDragOver(false);
 
             console.log('🎯 DROP HANDLER FIRED on group:', group.name);
@@ -197,6 +205,12 @@ const GroupItem: React.FC<{
                         entryIds = [singleEntry];
                     }
                 }
+            }
+
+            // Fallback to global state (most reliable for in-app drag)
+            if (entryIds.length === 0 && (window as any).__draggedEntryIds) {
+                entryIds = (window as any).__draggedEntryIds;
+                console.log('📦 Recovered entry IDs from global state');
             }
 
             // console.log('🔢 Final entry IDs to move:', entryIds);
@@ -240,20 +254,16 @@ const GroupItem: React.FC<{
                         }
                     }}
                     onClick={() => onSelect(group.uuid)}
+                    data-group-uuid={group.uuid} // For global drop detection
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    data-group-uuid={group.uuid} // For global drop detection
-                    draggable="true"
-                    onDragStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
                 >
+
                     <button
                         onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                        className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
+                        className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'} relative z-10`}
                         style={{ color: 'inherit' }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -262,11 +272,11 @@ const GroupItem: React.FC<{
                     </button>
 
                     {group.isRecycleBin ? (
-                        <Trash2 size={16} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30' }} />
+                        <Trash2 size={16} className="mr-2 flex-shrink-0 relative z-10" style={{ color: '#ff3b30' }} />
                     ) : (
                         (() => {
                             const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                            return <IconComponent size={16} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
+                            return <IconComponent size={16} className="mr-2 flex-shrink-0 relative z-10" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
                         })()
                     )}
 
@@ -277,16 +287,16 @@ const GroupItem: React.FC<{
                             onCancel={onCancelAction}
                         />
                     ) : (
-                        <span className="truncate select-none flex-1" style={{ pointerEvents: isDragOver ? 'none' : 'auto' }}>{group.name}</span>
+                        <span className="truncate select-none flex-1 relative z-10">{group.name}</span>
                     )}
 
                     {!isRenaming && !isHovered && (
-                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
+                        <span className="text-[10px] ml-2 relative z-10" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
                     {/* Action Buttons - Show on hover, hide recycle bin actions */}
                     {!isRenaming && isHovered && !group.isRecycleBin && (
-                        <div className="flex items-center gap-0.5 ml-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-0.5 ml-2 relative z-20" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
