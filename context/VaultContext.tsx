@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { readBinaryFile, writeBinaryFile } from '@tauri-apps/api/fs';
-import { save, ask } from '@tauri-apps/api/dialog';
+import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { save, ask } from '@tauri-apps/plugin-dialog';
 import * as kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
 import {
@@ -176,7 +176,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             if (vault.path) {
                 // Native Tauri Save
-                await writeBinaryFile(vault.path, data);
+                await writeFile(vault.path, new Uint8Array(data));
                 if (!isAutoSave) addToast({ title: "Saved to file", type: "success" });
             } else if (vault.fileHandle) {
                 const writable = await vault.fileHandle.createWritable();
@@ -409,7 +409,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (typeof fileOrPath === 'string') {
                 path = fileOrPath;
                 // Read file using Tauri fs
-                const data = await readBinaryFile(path);
+                const data = await readFile(path);
                 arrayBuffer = data.buffer as ArrayBuffer;
                 // Extract filename from path (simple split)
                 const parts = path.split(/[/\\]/);
@@ -490,7 +490,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (selectedPath) {
                     path = selectedPath;
                     const data = await db.save();
-                    await writeBinaryFile(path, data);
+                    await writeFile(path, new Uint8Array(data));
                     saved = true;
                 }
             } catch (e) {
