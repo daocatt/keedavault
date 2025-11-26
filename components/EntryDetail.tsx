@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2, Paperclip, Download, FileText } from 'lucide-react';
+import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2, Paperclip, Download, FileText, History } from 'lucide-react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as OTPAuth from 'otpauth';
 import { useToast } from './ui/Toaster';
 import { CreateEntryModal } from './CreateEntryModal';
+import { formatDistanceToNow } from 'date-fns';
+import { VaultEntry } from '../types';
 
 interface EntryDetailProps {
     entryId: string;
@@ -111,9 +113,10 @@ interface FieldRowProps {
     onLargeType?: () => void;
     isRevealed?: boolean;
     onToggleReveal?: () => void;
+    onHistory?: () => void;
 }
 
-const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'text', onLargeType, isRevealed, onToggleReveal }) => {
+const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'text', onLargeType, isRevealed, onToggleReveal, onHistory }) => {
     const { addToast } = useToast();
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -127,7 +130,29 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
 
     return (
         <div className="mb-3 group">
-            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">{label}</label>
+            <div className="flex justify-between items-center mb-0.5">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">{label}</label>
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onHistory && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onHistory(); }}
+                            className="p-0.5 text-gray-400 hover:text-indigo-600"
+                            title="View History"
+                        >
+                            <History size={16} />
+                        </button>
+                    )}
+                    {onLargeType && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onLargeType(); }}
+                            className="p-0.5 text-gray-400 hover:text-indigo-600"
+                            title="Large Type"
+                        >
+                            <ZoomIn size={16} />
+                        </button>
+                    )}
+                </div>
+            </div>
             <div
                 className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative cursor-pointer"
                 onDoubleClick={handleDoubleClick}
@@ -150,15 +175,6 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
                             className="p-1.5 text-gray-400 hover:text-gray-600"
                         >
                             {isRevealed ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                    )}
-                    {onLargeType && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onLargeType(); }}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600"
-                            title="Large Type"
-                        >
-                            <ZoomIn size={16} />
                         </button>
                     )}
                     {value && (
@@ -186,17 +202,53 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
     );
 };
 
+const PasswordHistoryModal: React.FC<{ history: VaultEntry[], onClose: () => void }> = ({ history, onClose }) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-900">Password History</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={16} />
+                    </button>
+                </div>
+                <div className="overflow-y-auto px-4 py-2">
+                    {history.length === 0 ? (
+                        <p className="text-center text-gray-500 text-sm py-4">No history available.</p>
+                    ) : (
+                        history.slice().reverse().map((entry, index) => (
+                            <div key={entry.uuid || index} className="py-3 border-b border-gray-100 last:border-0">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-gray-500">
+                                        {entry.lastModTime.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400">
+                                        {formatDistanceToNow(entry.lastModTime, { addSuffix: true })}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <code className="text-xs font-mono text-gray-800 break-all mr-2">{entry.password || '<empty>'}</code>
+                                    <CopyButton text={entry.password || ''} label="Old Password" />
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) => {
     const { getEntry } = useVault();
     const { addToast } = useToast();
     const entry = getEntry(entryId);
     const [showPassword, setShowPassword] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     if (!entry) return null;
-
-
 
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', boxShadow: 'var(--shadow-xl)' }}>
@@ -265,8 +317,6 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                         </div>
                     </div>
 
-
-
                     <FieldRow label="Username" value={entry.username} />
                     {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
                     <FieldRow
@@ -275,6 +325,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                         isSecret
                         isRevealed={showPassword}
                         onToggleReveal={() => setShowPassword(!showPassword)}
+                        onHistory={entry.history && entry.history.length > 0 ? () => setShowHistory(true) : undefined}
                         onLargeType={() => {
                             const label = `large-type-${Date.now()}`;
                             const url = `index.html?mode=large-type&text=${encodeURIComponent(entry.password || '')}&title=${encodeURIComponent(entry.title)}&username=${encodeURIComponent(entry.username || '')}`;
@@ -408,13 +459,18 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                 </div>
             </div>
 
-
-
             <CreateEntryModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 editEntry={entry}
             />
+
+            {showHistory && entry.history && (
+                <PasswordHistoryModal
+                    history={entry.history}
+                    onClose={() => setShowHistory(false)}
+                />
+            )}
         </div>
     );
 };
