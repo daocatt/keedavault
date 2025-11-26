@@ -52,6 +52,7 @@ export interface VaultEntry {
   lastModTime: Date;
   otpUrl?: string;
   expiryTime?: Date;
+  attachments: { name: string; data: ArrayBuffer }[];
 }
 
 export type ViewMode = 'list' | 'grid';
@@ -87,4 +88,5 @@ export interface EntryFormData {
   totpSecret: string; // Raw secret key
   expiryTime?: Date;
   customFields?: Record<string, string>;
+  attachments?: { name: string; data: ArrayBuffer }[];
 }

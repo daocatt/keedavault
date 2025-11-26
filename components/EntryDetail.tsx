@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2, Paperclip, Download, FileText } from 'lucide-react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as OTPAuth from 'otpauth';
 import { useToast } from './ui/Toaster';
@@ -28,7 +28,7 @@ const CopyButton: React.FC<{ text: string, label?: string }> = ({ text, label })
             className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
             title="Copy"
         >
-            {copied ? <span className="text-green-600 text-xs font-bold">Copied</span> : <Copy size={16} />}
+            {copied ? <Copy size={16} className="text-green-600" fill="currentColor" /> : <Copy size={16} />}
         </button>
     );
 }
@@ -127,7 +127,7 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
 
     return (
         <div className="mb-3 group">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
+            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">{label}</label>
             <div
                 className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative cursor-pointer"
                 onDoubleClick={handleDoubleClick}
@@ -138,7 +138,7 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
                         {value}
                     </a>
                 ) : (
-                    <div className={`flex-1 text-xs text-gray-800 font-mono select-none ${showFull ? 'break-all whitespace-pre-wrap' : 'truncate'}`}>
+                    <div className={`flex-1 text-xs text-gray-900 font-mono select-none ${showFull ? 'break-all whitespace-pre-wrap' : 'truncate'}`}>
                         {isSecret && !isRevealed ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
                     </div>
                 )}
@@ -312,8 +312,32 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
                     {/* Notes */}
                     <div className="mt-4">
-                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Notes</label>
-                        <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-700 min-h-[60px] whitespace-pre-wrap">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-medium text-gray-600 uppercase">Notes</label>
+                            {entry.notes && (
+                                <button
+                                    onClick={() => {
+                                        const label = `markdown-preview-${Date.now()}`;
+                                        const url = `index.html?mode=markdown-preview&title=${encodeURIComponent(entry.title)}&text=${encodeURIComponent(entry.notes)}`;
+                                        new WebviewWindow(label, {
+                                            url,
+                                            title: `Notes - ${entry.title}`,
+                                            width: 600,
+                                            height: 800,
+                                            resizable: true,
+                                            center: true,
+                                            titleBarStyle: 'overlay',
+                                            hiddenTitle: true,
+                                        });
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                                    title="Preview Markdown"
+                                >
+                                    <FileText size={14} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-900 min-h-[60px] whitespace-pre-wrap font-mono">
                             {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
                         </div>
                     </div>
@@ -321,11 +345,46 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                     {/* Custom Fields */}
                     {Object.keys(entry.fields).length > 0 && (
                         <div className="mt-6 pt-4 border-t border-gray-200">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase mb-4">Attributes</h3>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Attributes</h3>
                             {Object.entries(entry.fields).map(([k, v]) => {
                                 if (['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'Email'].includes(k)) return null;
                                 return <FieldRow key={k} label={k} value={v} />;
                             })}
+                        </div>
+                    )}
+
+                    {/* Attachments */}
+                    {entry.attachments && entry.attachments.length > 0 && (
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Attachments</h3>
+                            <div className="space-y-2">
+                                {entry.attachments.map((att, index) => (
+                                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200 group hover:border-indigo-300 transition-colors">
+                                        <div className="flex items-center overflow-hidden">
+                                            <Paperclip size={14} className="text-gray-400 mr-2 flex-shrink-0" />
+                                            <span className="text-xs text-gray-700 truncate font-medium" title={att.name}>{att.name}</span>
+                                            <span className="text-[10px] text-gray-400 ml-2 flex-shrink-0">({Math.round(att.data.byteLength / 1024)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const blob = new Blob([att.data]);
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = att.name;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                document.body.removeChild(a);
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                            title="Download"
+                                        >
+                                            <Download size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -333,7 +392,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
             {/* Meta Information */}
             <div className="px-4 pb-4 pt-2">
-                <div className="max-w-md mx-auto pt-3 border-t border-gray-200 text-[10px] text-gray-400 space-y-1 font-mono">
+                <div className="max-w-md mx-auto pt-3 border-t border-gray-200 text-[10px] text-gray-500 space-y-1 font-mono">
                     <div className="flex justify-between items-center">
                         <span className="uppercase tracking-wider font-semibold">Created</span>
                         <span>{entry.creationTime.toLocaleString()}</span>

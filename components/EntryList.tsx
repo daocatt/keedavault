@@ -752,7 +752,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         <button
                             key={col}
                             onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between"
                         >
                             <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
                             {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} className="text-indigo-600" />}
@@ -901,13 +901,13 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             className={`py-1.5 flex items-center cursor-pointer transition-colors group select-none ${selectedEntryIds.has(entry.uuid)
                                 ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
-                                : 'even:bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                : 'even:bg-gray-50 hover:bg-gray-100 text-gray-900'
                                 }`}
                             style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
                         >
                             {/* Group Column */}
                             {visibleColumns.group && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.group}px`, minWidth: '80px' }}
                                     title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>
                                     {(() => {
@@ -934,7 +934,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Username Column */}
                             {visibleColumns.username && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
                                     title={entry.username}>
                                     <span className="truncate" title={entry.username}>{entry.username}</span>
@@ -943,7 +943,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Email Column */}
                             {visibleColumns.email && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
                                     title={entry.email || entry.fields?.Email || ''}>
                                     <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
@@ -952,7 +952,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Password Column */}
                             {visibleColumns.password && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
                                     title={entry.password ? '••••••' : ''}>
                                     <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
@@ -961,7 +961,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* URL Column */}
                             {visibleColumns.url && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
                                     title={entry.url}>
                                     <span className="truncate" title={entry.url}>{entry.url}</span>
@@ -970,7 +970,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Created Column */}
                             {visibleColumns.created && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
@@ -979,7 +979,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Modified Column */}
                             {visibleColumns.modified && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-400 px-2 overflow-hidden whitespace-nowrap"
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-600 px-2 overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
                                     title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
@@ -1039,9 +1039,11 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                         <Edit size={14} className="mr-2 text-gray-400" /> Edit Entry
                                     </button>
                                     <button
-                                        onClick={() => !isMultiSelect && handleDuplicate(contextMenu.entry)}
-                                        className={disabledClass}
-                                        disabled={isMultiSelect}
+                                        onClick={() => !isMultiSelect && !getActiveGroup()?.isRecycleBin && handleDuplicate(contextMenu.entry)}
+                                        className={isMultiSelect || getActiveGroup()?.isRecycleBin
+                                            ? "w-full text-left px-4 py-2 text-xs text-gray-400 cursor-not-allowed flex items-center opacity-50"
+                                            : "w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center cursor-pointer"}
+                                        disabled={isMultiSelect || !!getActiveGroup()?.isRecycleBin}
                                     >
                                         <Copy size={14} className="mr-2 text-gray-400" /> Duplicate
                                     </button>
@@ -1049,7 +1051,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                         onClick={(e) => { handleDelete(e); setContextMenu(null); }}
                                         className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
                                     >
-                                        <Trash2 size={14} className="mr-2" /> Delete {selectedEntryIds.size > 1 ? `(${selectedEntryIds.size})` : ''}
+                                        <Trash2 size={14} className="mr-2" /> {getActiveGroup()?.isRecycleBin ? 'Delete Permanently' : 'Recycle'} {selectedEntryIds.size > 1 ? `(${selectedEntryIds.size})` : ''}
                                     </button>
                                 </>
                             );

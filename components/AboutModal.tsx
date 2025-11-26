@@ -73,7 +73,7 @@ export const AboutModal: React.FC = () => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
             <div
-                className="bg-white rounded-2xl w-80 overflow-hidden shadow-2xl border border-gray-200/50 transform transition-all animate-in fade-in zoom-in-95 duration-200"
+                className="bg-white rounded-xl w-80 overflow-hidden shadow-2xl border border-gray-200/50 transform transition-all animate-in fade-in zoom-in-95 duration-200"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header with Close Button */}

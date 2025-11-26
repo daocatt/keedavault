@@ -11,6 +11,7 @@ interface GroupModalProps {
         icon: number;
         parentGroupId?: string;
         allowAdd?: boolean;
+        uuid?: string;
     };
     groups: VaultGroup[]; // Root groups to build tree
     onClose: () => void;
@@ -124,6 +125,7 @@ export const GroupModal: React.FC<GroupModalProps> = ({
     };
 
     const SelectedIcon = ICONS.find(i => i.id === icon)?.icon || Folder;
+    const isRootGroup = mode === 'edit' && groups.some(g => g.uuid === initialData?.uuid);
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -202,13 +204,15 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                             groups={groups}
                             selectedGroupId={parentGroupId}
                             onSelect={setParentGroupId}
-                            disabled={mode === 'edit' && (!initialData?.parentGroupId)}
+                            disabled={isRootGroup}
+                            excludedGroupId={initialData?.uuid}
+                            direction="up"
                             placeholder="Select Parent Group"
                         />
                     </div>
                 </div>
 
-                <div className="px-4 py-2.5 bg-gray-50/50 border-t border-gray-100 flex justify-end space-x-2">
+                <div className="px-4 py-2.5 bg-gray-50/50 border-t border-gray-100 flex justify-end space-x-2 rounded-b-xl">
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"

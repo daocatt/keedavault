@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Plus, Trash2 } from 'lucide-react';
+import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Plus, Trash2, Paperclip, Pencil } from 'lucide-react';
 import { DateTimePicker } from './DateTimePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
@@ -27,6 +27,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     const [expiryTime, setExpiryTime] = useState('');
     const [showGen, setShowGen] = useState(false);
     const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([]);
+    const [attachments, setAttachments] = useState<{ name: string; data: ArrayBuffer }[]>([]);
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
 
@@ -50,6 +51,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                     .filter(([key]) => !standardKeys.includes(key))
                     .map(([key, value]) => ({ key, value }));
                 setCustomFields(fields);
+                setAttachments(editEntry.attachments || []);
             } else {
                 reset();
                 setGroupUuid(activeGroupId || '');
@@ -99,7 +101,9 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
         setTotpSecret('');
         setExpiryTime('');
         setShowGen(false);
+
         setCustomFields([]);
+        setAttachments([]);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -117,7 +121,9 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             customFields: customFields.reduce((acc, field) => {
                 if (field.key) acc[field.key] = field.value;
                 return acc;
+
             }, {} as Record<string, string>),
+            attachments
         };
         if (editEntry) {
             onEditEntry({ ...formData, uuid: editEntry.uuid });
@@ -129,35 +135,43 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
 
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (e.target?.result instanceof ArrayBuffer) {
+                    setAttachments([...attachments, { name: file.name, data: e.target.result }]);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    };
+
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-            <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-300 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transform transition-all">
+        <div className="fixed inset-0 z-[9999] flex flex-col p-2 pt-10 bg-black/50 backdrop-blur-md">
+            <div className="bg-white rounded-xl flex-1 w-full overflow-hidden border border-gray-300 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transform transition-all relative flex flex-col">
 
                 {/* Header / Title Area */}
                 <div
-                    className="px-4 py-2.5 flex justify-between items-center border-b border-gray-200"
+                    className="px-4 py-2.5 flex justify-between items-center border-b border-gray-200 pl-4"
                     data-tauri-drag-region
                     style={{ WebkitAppRegion: 'drag', cursor: 'default' } as React.CSSProperties}
                 >
-                    <h3 className="text-sm font-medium text-gray-700">
+                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        {editEntry ? <Pencil size={16} className="text-gray-500" /> : <Plus size={16} className="text-gray-500" />}
                         {editEntry ? 'Edit Entry' : 'New Entry'}
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
-                        <X size={14} />
-                    </button>
                 </div>
 
                 {/* Two-column layout */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Left Panel */}
-                    <div className="w-1/2 border-r border-gray-200 flex flex-col">
-
-                        {/* Body */}
-                        <div className="flex-1 overflow-y-auto px-4 py-3">
+                    {/* Left Column: Standard Fields (60%) */}
+                    <div className="w-[50%] flex flex-col h-full">
+                        <div className="flex-1 overflow-y-auto px-4 py-3 pb-16">
                             <form id="entry-form" onSubmit={handleSubmit} className="space-y-4">
-
                                 {/* Title & Group Block */}
                                 <div className="space-y-3">
                                     <div>
@@ -221,8 +235,6 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-3">
-
-
                                     {/* Password */}
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">
@@ -269,8 +281,6 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                             </Popover>
                                         </div>
                                     </div>
-
-
 
                                     {/* URL */}
                                     <div className="space-y-1">
@@ -326,87 +336,141 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                 </div>
                             </form>
                         </div>
-
                     </div>
 
-                    {/* Right Panel */}
-                    <div className="w-1/2 flex flex-col">
-                        {/* Notes */}
-                        <div className="flex-1 overflow-y-auto px-4 py-3">
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Notes</label>
-                                <textarea
-                                    value={notes}
-                                    onChange={e => setNotes(e.target.value)}
-                                    rows={8}
-                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 resize-none"
-                                    placeholder="Add any additional notes here..."
-                                />
+                    {/* Right Column: Notes, Attachments, Attributes (40%) */}
+                    <div className="w-[50%] border-l border-gray-200 flex flex-col h-full">
+                        {/* Top Section: Notes & Attachments (60% height) */}
+                        <div className="h-[60%] flex flex-row border-b border-gray-200">
+                            {/* Notes (40% width) */}
+                            <div className="w-[60%] border-r border-gray-200 flex flex-col h-full">
+                                <div className="flex-1 overflow-y-auto px-4 py-3">
+                                    <div className="space-y-1 h-full flex flex-col">
+                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Notes</label>
+                                        <textarea
+                                            value={notes}
+                                            onChange={e => setNotes(e.target.value)}
+                                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 resize-none flex-1"
+                                            placeholder="Add any additional notes here..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Attachments (40% width) */}
+                            <div className="w-[40%] flex flex-col h-full">
+                                <div className="flex-1 overflow-y-auto px-3 py-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Files</label>
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                id="attachment-upload"
+                                                className="hidden"
+                                                onChange={handleFileSelect}
+                                            />
+                                            <label
+                                                htmlFor="attachment-upload"
+                                                className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors cursor-pointer flex items-center"
+                                                title="Add Attachment"
+                                            >
+                                                <Plus size={14} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {attachments.map((att, index) => (
+                                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200">
+                                                <div className="flex items-center overflow-hidden min-w-0">
+                                                    <Paperclip size={14} className="text-gray-400 mr-1 flex-shrink-0" />
+                                                    <span className="text-xs text-gray-700 truncate" title={att.name}>{att.name}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newAtts = attachments.filter((_, i) => i !== index);
+                                                        setAttachments(newAtts);
+                                                    }}
+                                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors ml-1 flex-shrink-0"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {attachments.length === 0 && (
+                                            <div className="text-center py-4 text-xs text-gray-400 italic border-2 border-dashed border-gray-100 rounded-lg">
+                                                No files
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Custom Attributes */}
-                        <div className="flex-1 overflow-y-auto px-4 py-3 border-t border-gray-200">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Attributes</label>
-                                <button
-                                    type="button"
-                                    onClick={() => setCustomFields([...customFields, { key: '', value: '' }])}
-                                    className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                    title="Add Attribute"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {customFields.map((field, index) => (
-                                    <div key={index} className="flex items-center space-x-2">
-                                        <input
-                                            type="text"
-                                            value={field.key}
-                                            onChange={(e) => {
-                                                const newFields = [...customFields];
-                                                newFields[index].key = e.target.value;
-                                                setCustomFields(newFields);
-                                            }}
-                                            className="w-1/3 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
-                                            placeholder="Name"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={field.value}
-                                            onChange={(e) => {
-                                                const newFields = [...customFields];
-                                                newFields[index].value = e.target.value;
-                                                setCustomFields(newFields);
-                                            }}
-                                            className="flex-1 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
-                                            placeholder="Value"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const newFields = customFields.filter((_, i) => i !== index);
-                                                setCustomFields(newFields);
-                                            }}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                                {customFields.length === 0 && (
-                                    <div className="text-center py-4 text-xs text-gray-400 italic border-2 border-dashed border-gray-100 rounded-lg">
-                                        No custom attributes
-                                    </div>
-                                )}
+                        {/* Bottom Section: Attributes (40% height) */}
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-y-auto px-4 py-3 pb-16">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Attributes</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomFields([...customFields, { key: '', value: '' }])}
+                                        className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                        title="Add Attribute"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {customFields.map((field, index) => (
+                                        <div key={index} className="flex items-center space-x-2">
+                                            <input
+                                                type="text"
+                                                value={field.key}
+                                                onChange={(e) => {
+                                                    const newFields = [...customFields];
+                                                    newFields[index].key = e.target.value;
+                                                    setCustomFields(newFields);
+                                                }}
+                                                className="w-1/3 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                                placeholder="Name"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={field.value}
+                                                onChange={(e) => {
+                                                    const newFields = [...customFields];
+                                                    newFields[index].value = e.target.value;
+                                                    setCustomFields(newFields);
+                                                }}
+                                                className="flex-1 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                                placeholder="Value"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newFields = customFields.filter((_, i) => i !== index);
+                                                    setCustomFields(newFields);
+                                                }}
+                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {customFields.length === 0 && (
+                                        <div className="text-center py-4 text-xs text-gray-400 italic border-2 border-dashed border-gray-100 rounded-lg">
+                                            No custom attributes
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer actions */}
-                <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2">
+                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-white/90 backdrop-blur-sm border-t border-gray-200 flex justify-end space-x-2 z-10">
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"
@@ -423,10 +487,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                     </button>
                 </div>
 
-            </div >
-
-
-        </div >,
+            </div>
+        </div>,
         document.body
     );
 };

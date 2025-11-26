@@ -4,7 +4,7 @@ import { useToast } from './ui/Toaster';
 import {
     ChevronRight, ChevronDown, Folder, Trash2, Edit, Plus, X, Check,
     Database, Lock, Save, Globe, Smartphone, StickyNote, Sparkles, RefreshCw, FolderPlus,
-    AlertTriangle, Server, PenTool, Settings, Home, Star, Wrench, FolderOpen, FileText, Image, Music, Video, Code, Key, Copy
+    AlertTriangle, Server, PenTool, Settings, Home, Star, Wrench, FolderOpen, FileText, Image, Music, Video, Code, Key, Copy, SquarePlus
 } from 'lucide-react';
 import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -94,10 +94,11 @@ const GroupItem: React.FC<{
     onMoveEntries: (entryIds: string[], targetGroupId: string) => void;
     onMoveToRecycleBin: (entryId: string) => void;
     addToast: (toast: Omit<import('../types').ToastMessage, 'id'> & { id?: string }) => void;
+    onContextMenu: (e: React.MouseEvent, group: VaultGroup, parentId?: string) => void;
 }> = ({
     group, depth, activeGroupId, actionState,
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
-    parentId, onEditGroup, onMoveEntry, onMoveEntries, onMoveToRecycleBin, addToast
+    parentId, onEditGroup, onMoveEntry, onMoveEntries, onMoveToRecycleBin, addToast, onContextMenu
 }) => {
         const [expanded, setExpanded] = useState(depth === 1);
         const [isHovered, setIsHovered] = useState(false);
@@ -240,6 +241,7 @@ const GroupItem: React.FC<{
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
+                    onContextMenu={(e) => onContextMenu(e, group, parentId)}
                 >
 
                     <button
@@ -275,51 +277,7 @@ const GroupItem: React.FC<{
                         <span className="text-[10px] ml-2 relative z-10" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{entryCount}</span>
                     )}
 
-                    {/* Action Buttons - Show on hover, hide recycle bin actions */}
-                    {!isRenaming && isHovered && !group.isRecycleBin && (
-                        <div className="flex items-center gap-0.5 ml-2 relative z-20" onClick={(e) => e.stopPropagation()}>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditGroup(group, parentId);
-                                }}
-                                className="p-1 rounded transition-all duration-200"
-                                style={{ color: 'var(--color-text-tertiary)' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-active)';
-                                    e.currentTarget.style.color = 'var(--color-accent)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                }}
-                                title="Edit Group"
-                            >
-                                <Edit size={12} />
-                            </button>
-                            {!isRootGroup && (
-                                <button
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        await onDelete(group.uuid);
-                                    }}
-                                    className="p-1 rounded transition-all duration-200"
-                                    style={{ color: 'var(--color-text-tertiary)' }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-active)';
-                                        e.currentTarget.style.color = '#ff3b30';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                    }}
-                                    title="Delete Group"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    {/* Action Buttons - Removed in favor of Context Menu */}
 
                 </div>
 
@@ -346,6 +304,7 @@ const GroupItem: React.FC<{
                                 onMoveEntries={onMoveEntries}
                                 onMoveToRecycleBin={onMoveToRecycleBin}
                                 addToast={addToast}
+                                onContextMenu={onContextMenu}
                             />
                         ))}
 
@@ -356,7 +315,7 @@ const GroupItem: React.FC<{
                                 style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
                             >
                                 <div className="w-4 mr-1"></div> {/* Indent for chevron placeholder */}
-                                <Folder size={16} className="mr-2 text-gray-300 flex-shrink-0" />
+                                <Folder size={16} className="mr-2 text-gray-500 flex-shrink-0" />
                                 <GroupInput
                                     initialValue=""
                                     placeholder="New Group Name"
@@ -394,6 +353,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
     const [actionState, setActionState] = useState<ActionState | null>(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: VaultGroup; parentId?: string } | null>(null);
+
+    // Close context menu on click elsewhere
+    useEffect(() => {
+        const handleClick = () => setContextMenu(null);
+        window.addEventListener('click', handleClick);
+        return () => window.removeEventListener('click', handleClick);
+    }, []);
+
+    const handleGroupContextMenu = (e: React.MouseEvent, group: VaultGroup, parentId?: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, group, parentId });
+    };
 
     const handleStartAdd = (groupId: string) => {
         setActionState({ type: 'add', nodeId: groupId });
@@ -576,7 +549,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
             {/* Row 2: Database Name & Actions */}
             <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                <div className="flex items-center font-medium text-sm text-gray-700 truncate flex-1 mr-2 select-none">
+                <div className="flex items-center font-medium text-sm text-gray-900 truncate flex-1 mr-2 select-none">
                     <Database size={14} className="mr-2 opacity-50 flex-shrink-0" />
                     <span className="truncate">{activeVault ? activeVault.name : 'KeedaVault'}</span>
                 </div>
@@ -596,7 +569,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Add Group"
                     >
-                        <Plus size={16} />
+                        <SquarePlus size={16} />
                     </button>
                     <button
                         onClick={() => activeVaultId && saveVault(activeVaultId)}
@@ -649,18 +622,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
                 {vaults.map(vault => (
                     <div key={vault.id} className="mb-2">
-                        <div
-                            className={`px-3 py-1.5 flex items-center justify-between group cursor-pointer ${activeVaultId === vault.id ? '' : 'hover:bg-gray-100'}`}
-                            onClick={(e) => { e.stopPropagation(); setActiveVault(vault.id); }}
-                        >
-                            {vaults.length > 1 ? (
-                                <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden flex-1">
+                        {vaults.length > 1 && activeVaultId !== vault.id && (
+                            <div
+                                className="px-3 py-1.5 flex items-center justify-between group cursor-pointer hover:bg-gray-100"
+                                onClick={(e) => { e.stopPropagation(); setActiveVault(vault.id); }}
+                            >
+                                <div className="flex items-center text-xs font-bold text-gray-700 uppercase tracking-wider overflow-hidden flex-1">
                                     <Database size={12} className="mr-1.5 flex-shrink-0" />
                                     <span className="truncate">{vault.name}</span>
                                     {vault.fileHandle && <span className="ml-1 text-[10px] text-green-600 bg-green-100 px-1 rounded">Sync</span>}
                                 </div>
-                            ) : null}
-                        </div>
+                            </div>
+                        )}
 
                         {activeVaultId === vault.id && (
                             <div className="mt-1">
@@ -684,6 +657,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         onMoveEntries={onMoveEntries}
                                         onMoveToRecycleBin={onDeleteEntry}
                                         addToast={addToast}
+                                        onContextMenu={(e, g, pid) => handleGroupContextMenu(e, g, pid)}
                                     />
                                 ))}
 
@@ -707,6 +681,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                             onMoveEntries={onMoveEntries}
                                             onMoveToRecycleBin={onDeleteEntry}
                                             addToast={addToast}
+                                            onContextMenu={(e, g, pid) => handleGroupContextMenu(e, g, pid)}
                                         />
                                     </div>
                                 ))}
@@ -841,6 +816,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                 </div>
             )}
 
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div
+                    className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            if (activeVaultId) {
+                                onNewGroup(activeVaultId, contextMenu.group.uuid);
+                            }
+                            setContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                    >
+                        <FolderPlus size={14} className="mr-2 text-gray-400" /> New Group
+                    </button>
+                    <button
+                        onClick={() => {
+                            onEditGroup(activeVaultId!, contextMenu.group, contextMenu.parentId);
+                            setContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                    >
+                        <Edit size={14} className="mr-2 text-gray-400" /> Edit Group
+                    </button>
+                    {/* Show Recycle (Delete) for non-root groups and not the Recycle Bin itself */}
+                    {!contextMenu.group.isRecycleBin && contextMenu.parentId && (
+                        <button
+                            onClick={async () => {
+                                await onDeleteGroup(contextMenu.group.uuid);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center"
+                        >
+                            <Trash2 size={14} className="mr-2" /> Delete
+                        </button>
+                    )}
+                </div>
+            )}
 
         </div>
     );
