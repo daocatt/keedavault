@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit } from 'lucide-react';
+import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2 } from 'lucide-react';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as OTPAuth from 'otpauth';
 import { useToast } from './ui/Toaster';
 import { CreateEntryModal } from './CreateEntryModal';
@@ -102,6 +103,89 @@ const TOTPDisplay: React.FC<{ url: string }> = ({ url }) => {
     );
 };
 
+interface FieldRowProps {
+    label: string;
+    value: string;
+    isSecret?: boolean;
+    type?: 'link' | 'text';
+    onLargeType?: () => void;
+    isRevealed?: boolean;
+    onToggleReveal?: () => void;
+}
+
+const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'text', onLargeType, isRevealed, onToggleReveal }) => {
+    const { addToast } = useToast();
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const handleDoubleClick = () => {
+        if (!value) return;
+        navigator.clipboard.writeText(value);
+        addToast({ title: `${label} copied`, type: 'success' });
+    };
+
+    const showFull = isExpanded || (isSecret && isRevealed);
+
+    return (
+        <div className="mb-3 group">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
+            <div
+                className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative cursor-pointer"
+                onDoubleClick={handleDoubleClick}
+                title="Double click to copy"
+            >
+                {type === 'link' && value ? (
+                    <a href={value} target="_blank" rel="noreferrer" className={`flex-1 text-blue-600 hover:underline text-xs ${showFull ? 'break-all whitespace-pre-wrap' : 'truncate'}`} onClick={e => e.stopPropagation()}>
+                        {value}
+                    </a>
+                ) : (
+                    <div className={`flex-1 text-xs text-gray-800 font-mono select-none ${showFull ? 'break-all whitespace-pre-wrap' : 'truncate'}`}>
+                        {isSecret && !isRevealed ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
+                    </div>
+                )}
+
+                <div className="flex items-center space-x-1 ml-2">
+                    {isSecret && onToggleReveal && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onToggleReveal(); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600"
+                        >
+                            {isRevealed ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                    )}
+                    {onLargeType && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onLargeType(); }}
+                            className="p-1.5 text-gray-400 hover:text-indigo-600"
+                            title="Large Type"
+                        >
+                            <ZoomIn size={16} />
+                        </button>
+                    )}
+                    {value && (
+                        <div onClick={e => e.stopPropagation()}>
+                            <CopyButton text={value} label={label} />
+                        </div>
+                    )}
+                    {type === 'link' && value && (
+                        <a href={value} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600" onClick={e => e.stopPropagation()}>
+                            <ExternalLink size={16} />
+                        </a>
+                    )}
+                    {value && value.length > 30 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600"
+                            title={isExpanded ? "Collapse" : "Expand"}
+                        >
+                            {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) => {
     const { getEntry } = useVault();
     const { addToast } = useToast();
@@ -112,66 +196,28 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
 
     if (!entry) return null;
 
-    const FieldRow: React.FC<{ label: string, value: string, isSecret?: boolean, type?: 'link' | 'text' }> = ({ label, value, isSecret, type = 'text' }) => {
-        const handleDoubleClick = () => {
-            if (!value) return;
-            navigator.clipboard.writeText(value);
-            addToast({ title: `${label} copied`, type: 'success' });
-        };
 
-        return (
-            <div className="mb-3 group">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">{label}</label>
-                <div
-                    className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1 shadow-sm group-hover:border-indigo-300 transition-colors relative cursor-pointer"
-                    onDoubleClick={handleDoubleClick}
-                    title="Double click to copy"
-                >
-                    {type === 'link' && value ? (
-                        <a href={value} target="_blank" rel="noreferrer" className="flex-1 text-blue-600 hover:underline truncate text-xs" onClick={e => e.stopPropagation()}>
-                            {value}
-                        </a>
-                    ) : (
-                        <div className="flex-1 text-xs text-gray-800 truncate font-mono select-none">
-                            {isSecret && !showPassword ? '••••••••••••••••' : value || <span className="text-gray-300 italic">Empty</span>}
-                        </div>
-                    )}
-
-                    <div className="flex items-center space-x-1 ml-2">
-                        {isSecret && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setShowPassword(!showPassword); }}
-                                className="p-1.5 text-gray-400 hover:text-gray-600"
-                            >
-                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                        )}
-                        {value && (
-                            <div onClick={e => e.stopPropagation()}>
-                                <CopyButton text={value} label={label} />
-                            </div>
-                        )}
-                        {type === 'link' && value && (
-                            <a href={value} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600" onClick={e => e.stopPropagation()}>
-                                <ExternalLink size={16} />
-                            </a>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', boxShadow: 'var(--shadow-xl)' }}>
             {/* Header Toolbar - Aligned with Traffic Lights */}
-            <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}>
+            <div className="h-10 flex items-center px-3 flex-shrink-0" style={{
+                borderBottom: '1px solid var(--color-border-light)',
+                backgroundColor: 'var(--color-bg-primary)'
+            } as React.CSSProperties}>
                 <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Entry Details</h2>
+
+                {/* Middle Spacer - Layout */}
+                <div className="flex-1 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
+
                 <div className="flex items-center space-x-1">
                     <button
                         onClick={() => setIsEditModalOpen(true)}
                         className="p-1.5 rounded-md transition-all duration-200"
-                        style={{ color: 'var(--color-text-secondary)' }}
+                        style={{
+                            color: 'var(--color-text-secondary)',
+                            cursor: 'pointer'
+                        } as React.CSSProperties}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                             e.currentTarget.style.color = 'var(--color-accent)';
@@ -188,7 +234,10 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                     <button
                         onClick={onClose}
                         className="p-1.5 rounded-md transition-all duration-200 md:hidden"
-                        style={{ color: 'var(--color-text-secondary)' }}
+                        style={{
+                            color: 'var(--color-text-secondary)',
+                            cursor: 'pointer'
+                        } as React.CSSProperties}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                             e.currentTarget.style.color = 'var(--color-text-primary)';
@@ -216,25 +265,50 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                         </div>
                     </div>
 
-                    {entry.expiryTime && (
-                        <div className="mb-3 bg-orange-50 px-3 py-2 rounded-lg border border-orange-100">
-                            <div className="flex items-center text-xs text-orange-600 mb-1">
-                                <Clock size={14} className="mr-1 flex-shrink-0" />
-                                <span className="font-semibold">Expires</span>
-                            </div>
-                            <div className="text-xs text-orange-700 font-medium">
-                                {entry.expiryTime.toLocaleString()}
-                            </div>
-                        </div>
-                    )}
+
 
                     <FieldRow label="Username" value={entry.username} />
                     {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
-                    <FieldRow label="Password" value={entry.password || ''} isSecret />
-                    <FieldRow label="Website" value={entry.url} type="link" />
+                    <FieldRow
+                        label="Password"
+                        value={entry.password || ''}
+                        isSecret
+                        isRevealed={showPassword}
+                        onToggleReveal={() => setShowPassword(!showPassword)}
+                        onLargeType={() => {
+                            const label = `large-type-${Date.now()}`;
+                            const url = `index.html?mode=large-type&text=${encodeURIComponent(entry.password || '')}&title=${encodeURIComponent(entry.title)}&username=${encodeURIComponent(entry.username || '')}`;
+                            new WebviewWindow(label, {
+                                url,
+                                title: entry.title,
+                                width: 800,
+                                height: 600,
+                                resizable: true,
+                                center: true,
+                                titleBarStyle: 'overlay',
+                                hiddenTitle: true,
+                                minimizable: false,
+                                maximizable: false
+                            });
+                        }}
+                    />
+                    <FieldRow label="URL" value={entry.url} type="link" />
 
                     {/* TOTP Section */}
                     {entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
+
+                    {/* Expiry Section */}
+                    {entry.expiryTime && (
+                        <div className="mt-4 flex items-center p-3 bg-orange-50 border border-orange-100 rounded-lg text-xs">
+                            <Clock size={16} className="text-orange-500 mr-3 flex-shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-semibold text-orange-800 uppercase tracking-wider text-[10px] mb-0.5">Expires</div>
+                                <div className="font-mono text-orange-900 font-medium">
+                                    {entry.expiryTime.toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Notes */}
                     <div className="mt-4">

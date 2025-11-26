@@ -7,7 +7,7 @@ import { EntryList } from './EntryList';
 import { EntryDetail } from './EntryDetail';
 import { VaultUnlockModal } from './VaultUnlockModal';
 import { Toaster, useToast } from './ui/Toaster';
-import { ShieldCheck, Lock, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ShieldCheck, Lock, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, FileText } from 'lucide-react';
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 import { GroupModal } from './GroupModal';
 import { VaultGroup } from '../types';
@@ -18,9 +18,13 @@ export const VaultWorkspace: React.FC = () => {
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
 
-    // UI Settings
-    const [leftSidebarVisible, setLeftSidebarVisible] = useState(() => getUISettings().leftSidebarVisible);
-    const [rightSidebarVisible, setRightSidebarVisible] = useState(() => getUISettings().rightSidebarVisible);
+    // UI Settings - Ensure both sidebars are visible by default
+    const [leftSidebarVisible, setLeftSidebarVisible] = useState(false);
+    const [rightSidebarVisible, setRightSidebarVisible] = useState(() => {
+        const settings = getUISettings();
+        console.log('Initial rightSidebarVisible:', settings.rightSidebarVisible);
+        return settings.rightSidebarVisible ?? true;
+    });
     const { addToast } = useToast();
 
     // Group Modal State
@@ -46,30 +50,53 @@ export const VaultWorkspace: React.FC = () => {
         const initWindow = async () => {
             try {
                 const win = getCurrentWebviewWindow();
-                // Enforce window capabilities
+                console.log('VaultWorkspace: Initializing window...');
+
+                // First, make window resizable and maximizable
                 await win.setResizable(true);
                 await win.setMaximizable(true);
                 await win.setMinimizable(true);
-                // Set size (230 + 600 + 350 = 1180)
-                await win.setSize(new LogicalSize(1180, 700));
-                // Center
+
+                // Try multiple approaches to force the size
+                console.log('VaultWorkspace: Attempting to resize window...');
+
+                // Approach 1: Set min/max size constraints
+                await win.setMinSize(new LogicalSize(650, 600));
+                await win.setMaxSize(null); // Remove max size constraint
+
+                // Approach 2: Set the actual size
+                await win.setSize(new LogicalSize(1200, 700));
+
+                // Approach 3: Force a second resize after a tiny delay
+                setTimeout(async () => {
+                    try {
+                        await win.setSize(new LogicalSize(1200, 700));
+                        console.log('VaultWorkspace: Second resize attempt completed');
+                    } catch (e) {
+                        console.error('Second resize failed:', e);
+                    }
+                }, 50);
+
+                // Center the window
                 await win.center();
+
                 // Ensure visible and focused
                 await win.show();
                 await win.setFocus();
-                console.log("VaultWorkspace: Window resized and shown");
+
+                console.log("VaultWorkspace: Window initialized successfully");
             } catch (e) {
                 console.error("VaultWorkspace: Failed to init window", e);
             }
         };
-        // Delay to ensure previous window state is cleared and transition is done
-        setTimeout(initWindow, 500);
+
+        // Execute immediately - no delay
+        initWindow();
     }, []);
 
     const toggleLeftSidebar = () => {
-        const newValue = !leftSidebarVisible;
-        setLeftSidebarVisible(newValue);
-        saveUISettings({ leftSidebarVisible: newValue });
+        console.log('Toggling left sidebar', !leftSidebarVisible);
+        setLeftSidebarVisible(!leftSidebarVisible);
     };
 
     const toggleRightSidebar = () => {
@@ -77,6 +104,62 @@ export const VaultWorkspace: React.FC = () => {
         setRightSidebarVisible(newValue);
         saveUISettings({ rightSidebarVisible: newValue });
     };
+
+    // Handle window resize - auto-hide/show sidebar based on width
+    // Handle window resize - auto-hide/show sidebar based on width
+    useEffect(() => {
+        let unlistenFn: (() => void) | null = null;
+
+        const checkAndToggleSidebar = async (logicalWidth?: number) => {
+            const win = getCurrentWebviewWindow();
+            const factor = await win.scaleFactor();
+            const currentWidth: number = logicalWidth ?? await win.innerSize().then(size => size.toLogical(factor).width);
+
+            if (currentWidth < 850) {
+                setLeftSidebarVisible(false);
+            } else {
+                setLeftSidebarVisible(true);
+            }
+        };
+
+        const setupListener = async () => {
+            try {
+                const win = getCurrentWebviewWindow();
+                // console.log('VaultWorkspace: Setting up resize listener...');
+
+                // Get scale factor for converting physical to logical pixels
+                const scaleFactor = await win.scaleFactor();
+                // console.log('VaultWorkspace: Scale factor:', scaleFactor);
+
+                // Check initial size (convert physical to logical)
+                const initialSize = await win.innerSize();
+                const logicalWidth = initialSize.width / scaleFactor;
+
+                await checkAndToggleSidebar(logicalWidth);
+
+                // Listen for resize events using Tauri's listen API
+                unlistenFn = await win.listen('tauri://resize', async (event: any) => {
+                    // Get current size after resize (convert physical to logical)
+                    const size = await win.innerSize();
+                    const currentScaleFactor = await win.scaleFactor();
+                    const currentLogicalWidth = size.width / currentScaleFactor;
+                    await checkAndToggleSidebar(currentLogicalWidth);
+                });
+
+                // console.log('VaultWorkspace: Resize listener setup complete');
+            } catch (e) {
+                console.error('VaultWorkspace: Failed to setup resize listener:', e);
+            }
+        };
+
+        setupListener();
+
+        return () => {
+            if (unlistenFn) {
+                unlistenFn();
+            }
+        };
+    }, []);
 
     const handleNewGroup = (vaultId: string, parentId?: string) => {
         const vault = vaults.find(v => v.id === vaultId);
@@ -141,34 +224,28 @@ export const VaultWorkspace: React.FC = () => {
         <div className="flex h-screen w-screen bg-gray-50 overflow-hidden text-sm select-none">
             <Toaster />
 
-            {/* Drag Region */}
-            <div
-                className="absolute top-0 left-0 w-full h-8 z-50"
-                style={{ userSelect: 'none' }}
-                onMouseDown={(e) => {
-                    if (e.button === 0) {
-                        e.preventDefault();
-                        getCurrentWebviewWindow().startDragging();
-                    }
-                }}
-            />
 
-            {/* Left Sidebar */}
+
+            {/* Left Sidebar - Conditionally rendered */}
             {leftSidebarVisible && (
-                <Sidebar
+                <div
                     className="flex-shrink-0 border-r border-gray-200 bg-gray-50/50"
                     style={{ width: 230 }}
-                    onNewGroup={handleNewGroup}
-                    onEditGroup={handleEditGroup}
-                    onMoveEntry={onMoveEntry}
-                />
+                >
+                    <Sidebar
+                        className="h-full"
+                        style={{ width: 230 }}
+                        onNewGroup={handleNewGroup}
+                        onEditGroup={handleEditGroup}
+                        onMoveEntry={onMoveEntry}
+                    />
+                </div>
             )}
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-white relative z-0">
-
+            {/* Main Content Area - EntryList with flexible width */}
+            <div className="flex-1 flex flex-col bg-white relative z-0" style={{ minWidth: 300 }}>
                 {/* Entry List */}
-                <div className="flex-1 overflow-hidden relative">
+                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                     <EntryList
                         onSelectEntry={(ids) => setSelectedEntryIds(ids)}
                         selectedEntryIds={selectedEntryIds}
@@ -180,22 +257,27 @@ export const VaultWorkspace: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Sidebar (Entry Detail) */}
+            {/* Right Sidebar (Entry Detail) - Conditionally rendered */}
             {rightSidebarVisible && (
                 <div
-                    className="flex-shrink-0 border-l border-gray-200 bg-white relative flex flex-col"
-                    style={{ width: 350 }}
+                    className="flex-shrink-0 border-l border-gray-200 bg-white"
+                    style={{ width: 300 }}
                 >
-                    {selectedEntryIds.size > 0 ? (
-                        <EntryDetail
-                            entryId={Array.from(selectedEntryIds)[0]}
-                            onClose={() => setSelectedEntryIds(new Set())}
-                        />
-                    ) : (
-                        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                            Select an entry to view details
-                        </div>
-                    )}
+                    <div className="h-full flex flex-col">
+                        {selectedEntryIds.size > 0 ? (
+                            <EntryDetail
+                                entryId={Array.from(selectedEntryIds)[0]}
+                                onClose={() => setSelectedEntryIds(new Set())}
+                            />
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <FileText className="w-8 h-8 opacity-30" />
+                                </div>
+                                Select an entry to view details
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
