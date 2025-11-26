@@ -6,6 +6,7 @@ export interface UISettings {
     leftSidebarVisible: boolean;
     rightSidebarVisible: boolean;
     rightSidebarWidth?: number;
+    entryListWidth?: number;
     entryColumns?: {
         title: boolean;
         username: boolean;
@@ -35,6 +36,7 @@ const defaultSettings: UISettings = {
     leftSidebarVisible: true,
     rightSidebarVisible: true,
     rightSidebarWidth: 350,
+    entryListWidth: 600,
     entryColumns: {
         title: true,
         username: true,

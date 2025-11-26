@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { save, ask } from '@tauri-apps/plugin-dialog';
+import { emit } from '@tauri-apps/api/event';
 import * as kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
 import {
@@ -674,6 +675,9 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             lockVault: (id: string) => {
                 const vault = vaults.find(v => v.id === id);
                 if (vault) {
+                    // Emit event to close child windows
+                    emit('vault-locked').catch(console.error);
+
                     // Trigger the unlock modal with current vault info
                     document.dispatchEvent(new CustomEvent('open-unlock-modal', {
                         detail: {

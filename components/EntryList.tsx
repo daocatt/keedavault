@@ -1,4 +1,4 @@
-import { RefreshCw, Settings, Search, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { RefreshCw, Settings, Search, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, ChevronUp, ChevronDown, Folder } from 'lucide-react';
 import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 import { PasswordGenerator } from './PasswordGenerator';
 
@@ -8,7 +8,8 @@ import { Globe, Key, FileText, User, Plus, Trash2, Copy, Edit, Link, Check } fro
 import { formatDistanceToNow } from 'date-fns';
 import { CreateEntryModal } from './CreateEntryModal';
 import { useToast } from './ui/Toaster';
-import { VaultEntry } from '../types';
+import { VaultEntry, VaultGroup } from '../types';
+import { ICONS_MAP } from '../constants';
 
 interface EntryListProps {
     onSelectEntry: (ids: Set<string>) => void;
@@ -26,7 +27,7 @@ interface ContextMenuState {
 }
 
 export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryIds, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
-    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin } = useVault();
+    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin, vaults } = useVault();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
@@ -38,9 +39,12 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const [columnMenuOpen, setColumnMenuOpen] = useState(false);
     const [showPassGen, setShowPassGen] = useState(false);
     // Column visibility state persisted in UI settings
-    const [visibleColumns, setVisibleColumns] = useState(() => getUISettings().entryColumns || { title: true, username: true, email: true, password: true, url: true, created: true, modified: true });
+    const defaultVisibleColumns = { group: true, title: true, username: true, email: true, password: false, url: false, created: false, modified: true };
+    const [visibleColumns, setVisibleColumns] = useState<any>(() => ({ ...defaultVisibleColumns, ...getUISettings().entryColumns }));
+
     // Column widths state
-    const [columnWidths, setColumnWidths] = useState(() => getUISettings().entryColumnWidths || { title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 });
+    const defaultColumnWidths = { group: 120, title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 };
+    const [columnWidths, setColumnWidths] = useState<any>(() => ({ ...defaultColumnWidths, ...getUISettings().entryColumnWidths }));
     // Sorting state
     const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>(() => getUISettings().entrySort?.field || 'title');
     const [sortAsc, setSortAsc] = useState(() => getUISettings().entrySort?.asc ?? true);
@@ -48,6 +52,25 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const [resizing, setResizing] = useState<{ column: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
 
 
+
+    // Create a map of entry IDs to their parent group for quick lookup
+    const entryGroupMap = useMemo(() => {
+        const map = new Map<string, VaultGroup>();
+        vaults.forEach(vault => {
+            const traverse = (groups: VaultGroup[]) => {
+                groups.forEach(group => {
+                    if (group.entries) {
+                        group.entries.forEach(entry => {
+                            map.set(entry.uuid, group);
+                        });
+                    }
+                    if (group.subgroups) traverse(group.subgroups);
+                });
+            };
+            traverse(vault.groups);
+        });
+        return map;
+    }, [vaults]);
 
     // Handle column resize
     useEffect(() => {
@@ -57,7 +80,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             if (!resizing) return;
             const delta = e.clientX - resizing.startX;
             const newWidth = Math.max(80, resizing.startWidth + delta);
-            setColumnWidths(prev => ({ ...prev, [resizing.column]: newWidth }));
+            setColumnWidths((prev: any) => ({ ...prev, [resizing.column]: newWidth }));
         };
 
         const handleMouseUp = () => {
@@ -411,35 +434,39 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             }
             setToolbarContextMenu(null);
             setColumnMenuOpen(false);
-            onSelectEntry(new Set());
+            // onSelectEntry(new Set()); // Keep selection when clicking background
         }} style={{ cursor: resizing ? 'col-resize' : 'default' }}>
+            {/* Header Toolbar - Aligned with Traffic Lights */}
             {/* Header Toolbar - Aligned with Traffic Lights */}
             <div
                 className="h-10 flex items-center px-3 space-x-1.5 relative"
                 style={{
-                    WebkitAppRegion: 'drag',
                     borderBottom: '1px solid var(--color-border-light)',
                     backgroundColor: 'var(--color-bg-primary)'
                 } as React.CSSProperties}
-                data-tauri-drag-region
                 onContextMenu={(e) => {
                     e.preventDefault();
                     setToolbarContextMenu({ x: e.clientX, y: e.clientY });
                 }}
             >
                 {/* Left spacing for traffic lights - Only when sidebar is hidden */}
-                {!leftSidebarVisible && <div className="w-16"></div>}
+                {!leftSidebarVisible && (
+                    <div className="w-16 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
+                )}
 
                 <button
                     onClick={toggleLeftSidebar}
-                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
-                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
+                    className={`relative z-10 p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                    style={{
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer'
+                    } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
                 >
-                    {leftSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Sidebar</span>}
+                    {leftSidebarVisible ? <PanelLeftClose size={18} className="pointer-events-none" /> : <PanelLeftOpen size={18} className="pointer-events-none" />}
+                    {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium pointer-events-none">Sidebar</span>}
                 </button>
 
                 {/* Empty Recycle Bin Button - Only show when in Recycle Bin */}
@@ -447,10 +474,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     <>
                         <button
                             onClick={onEmptyRecycleBin}
-                            className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                            className={`relative z-10 p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                             style={{
-                                WebkitAppRegion: 'no-drag',
-                                color: '#dc2626'
+                                color: '#dc2626',
+                                cursor: 'pointer'
                             } as React.CSSProperties}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -464,8 +491,11 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                 <button
                     onClick={handleCreate}
-                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
-                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
+                    className={`relative z-10 p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                    style={{
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer'
+                    } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title="New"
@@ -477,11 +507,11 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 {/* Password Generator Icon */}
                 <button
                     onClick={() => setShowPassGen(!showPassGen)}
-                    className={`p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                    className={`relative z-10 p-1.5 rounded-md transition-all duration-200 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
                     style={{
-                        WebkitAppRegion: 'no-drag',
                         backgroundColor: showPassGen ? 'var(--color-accent-light)' : 'transparent',
-                        color: showPassGen ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                        color: showPassGen ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                        cursor: 'pointer'
                     } as React.CSSProperties}
                     onMouseEnter={(e) => {
                         if (!showPassGen) {
@@ -501,9 +531,9 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
 
 
-                <div className="flex-1"></div>
+                <div className="flex-1 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
 
-                <div className="relative w-56" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+                <div className="relative w-56 z-10">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--color-text-placeholder)' }} />
                     <input
                         type="text"
@@ -514,7 +544,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         style={{
                             backgroundColor: 'var(--color-bg-secondary)',
                             border: '1px solid var(--color-border-light)',
-                            color: 'var(--color-text-primary)'
+                            color: 'var(--color-text-primary)',
+                            cursor: 'text'
                         }}
                         onFocus={(e) => {
                             e.currentTarget.style.borderColor = 'var(--color-accent)';
@@ -526,11 +557,14 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         }}
                     />
                 </div>
-
+                {/* Details Button 
                 <button
                     onClick={toggleRightSidebar}
-                    className={`p-1.5 rounded-md transition-all duration-200 ml-2 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
-                    style={{ WebkitAppRegion: 'no-drag', color: 'var(--color-text-secondary)' } as React.CSSProperties}
+                    className={`relative z-10 p-1.5 rounded-md transition-all duration-200 ml-2 flex items-center ${toolbarMode !== 'icon' ? 'px-2' : ''}`}
+                    style={{
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer'
+                    } as React.CSSProperties}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={rightSidebarVisible ? "Hide details" : "Show details"}
@@ -538,8 +572,9 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     {rightSidebarVisible ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Details</span>}
                 </button>
+                */}
 
-                {/* Password Generator Popover - Positioned relative to the toolbar container */}
+                {/* Password Generator Popover */}
                 {showPassGen && (
                     <PasswordGenerator
                         isOpen={true}
@@ -579,6 +614,18 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
             {/* Column Headers */}
             <div className="sticky top-0 z-10 h-6 flex items-center text-xs uppercase tracking-wider select-none" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderBottom: '1px solid var(--color-border-light)', color: 'var(--color-text-secondary)' }}>
+                {visibleColumns.group && (
+                    <div
+                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-2 overflow-hidden whitespace-nowrap border-r border-gray-200"
+                        style={{ width: `${columnWidths.group}px`, minWidth: '80px' }}
+                    >
+                        <span className="flex-1 truncate">Group</span>
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
+                            onMouseDown={(e) => startResize('group', e)}
+                        />
+                    </div>
+                )}
                 {visibleColumns.title && (
                     <div
                         className="relative flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer transition-colors"
@@ -691,30 +738,31 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                         <Settings size={12} />
                     </button>
                 </div>
-
-                {/* Column Settings Menu */}
-                {columnMenuOpen && (
-                    <div
-                        className="absolute top-6 right-0 z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Columns</div>
-                        {['title', 'username', 'email', 'password', 'url', 'created', 'modified'].map((col) => (
-                            <button
-                                key={col}
-                                onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
-                            >
-                                <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
-                                {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} className="text-indigo-600" />}
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
 
+            {/* Column Settings Menu - Absolute position relative to EntryList */}
+            {columnMenuOpen && (
+                <div
+                    className="absolute top-10 right-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
+                    style={{ maxHeight: '400px', overflow: 'auto' }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Columns</div>
+                    {['group', 'title', 'username', 'email', 'password', 'url', 'created', 'modified'].map((col) => (
+                        <button
+                            key={col}
+                            onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                        >
+                            <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
+                            {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} className="text-indigo-600" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* List Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-auto">
                 {activeEntries.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -857,6 +905,20 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                                 }`}
                             style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
                         >
+                            {/* Group Column */}
+                            {visibleColumns.group && (
+                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-500 truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.group}px`, minWidth: '80px' }}
+                                    title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>
+                                    {(() => {
+                                        const group = entryGroupMap.get(entry.uuid);
+                                        const Icon = group ? (ICONS_MAP[group.icon] || Folder) : Folder;
+                                        return <Icon size={12} className="mr-1.5 flex-shrink-0 text-gray-400" />;
+                                    })()}
+                                    <span className="truncate" title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>{entryGroupMap.get(entry.uuid)?.name || 'Unknown'}</span>
+                                </div>
+                            )}
+
                             {/* Title Column */}
                             {visibleColumns.title && (
                                 <div className="flex items-center min-w-0 justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap"
