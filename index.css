@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   /* Modern macOS Color Palette */
@@ -15,10 +16,10 @@
   --color-accent-light: #e5f1ff;
 
   /* Text Colors */
-  --color-text-primary: #1d1d1f;
-  --color-text-secondary: #6e6e73;
-  --color-text-tertiary: #86868b;
-  --color-text-placeholder: #a1a1a6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-placeholder: #9ca3af;
 
   /* Border Colors */
   --color-border-light: #e5e5e7;
