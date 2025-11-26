@@ -58,7 +58,9 @@ export const createDatabase = (name: string, password: string, keyFile?: ArrayBu
     initializeArgon2();
     const credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(password), keyFile);
     const db = kdbxweb.Kdbx.create(credentials, name);
-    db.header.setKdf(kdbxweb.Consts.KdfId.Aes);
+    db.header.setKdf(kdbxweb.Consts.KdfId.Argon2);
+    // @ts-ignore
+    db.header.cipherUuid = kdbxweb.Consts.CipherId.ChaCha20;
 
     // Create standard default groups
     const root = db.getDefaultGroup();

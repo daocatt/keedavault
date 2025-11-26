@@ -61,21 +61,24 @@ const defaultSettings: UISettings = {
     },
 };
 
-export const getUISettings = (): UISettings => {
+import { settingsStore } from './settingsStore';
+
+// ... (imports and interface definitions remain same)
+
+export const getUISettings = async (): Promise<UISettings> => {
     try {
-        const stored = localStorage.getItem(UI_SETTINGS_KEY);
+        const stored = await settingsStore.get<UISettings>(UI_SETTINGS_KEY);
         if (stored) {
-            const parsed = JSON.parse(stored);
-            const settings = { ...defaultSettings, ...parsed };
+            const settings = { ...defaultSettings, ...stored };
 
             // Migration: name -> title in entryColumns
-            if (settings.entryColumns && 'name' in settings.entryColumns) {
-                settings.entryColumns.title = settings.entryColumns.name;
-                delete settings.entryColumns.name;
+            if (settings.entryColumns && 'name' in (settings.entryColumns as any)) {
+                settings.entryColumns.title = (settings.entryColumns as any).name;
+                delete (settings.entryColumns as any).name;
             }
 
             // Migration: name -> title in entrySort
-            if (settings.entrySort && settings.entrySort.field === 'name') {
+            if (settings.entrySort && settings.entrySort.field === 'name' as any) {
                 settings.entrySort.field = 'title';
             }
 
@@ -87,16 +90,16 @@ export const getUISettings = (): UISettings => {
     return defaultSettings;
 };
 
-export const saveUISettings = (settings: Partial<UISettings>): void => {
+export const saveUISettings = async (settings: Partial<UISettings>): Promise<void> => {
     try {
-        const current = getUISettings();
+        const current = await getUISettings();
         const updated = { ...current, ...settings };
-        localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(updated));
+        await settingsStore.set(UI_SETTINGS_KEY, updated);
     } catch (e) {
         console.error('Failed to save UI settings:', e);
     }
 };
 
-export const updateUISettings = (key: keyof UISettings, value: any): void => {
-    saveUISettings({ [key]: value });
+export const updateUISettings = async (key: keyof UISettings, value: any): Promise<void> => {
+    await saveUISettings({ [key]: value });
 };

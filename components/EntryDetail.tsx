@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2, Paperclip, Download, FileText, History } from 'lucide-react';
+import { settingsStore } from '../services/settingsStore';
+import { X, Copy, Eye, EyeOff, ExternalLink, Clock, Edit, ZoomIn, Maximize2, Minimize2, Paperclip, Download, FileText, History, Rows2 } from 'lucide-react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as OTPAuth from 'otpauth';
 import { useToast } from './ui/Toaster';
@@ -245,10 +246,62 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
     const entry = getEntry(entryId);
     const [showPassword, setShowPassword] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [previewImage, setPreviewImage] = useState<{ name: string; url: string } | null>(null);
+    const [showColumnMenu, setShowColumnMenu] = useState(false);
+
+    // ...
+
+    const [columnMenuPosition, setColumnMenuPosition] = useState({ x: 0, y: 0 });
+
+    // Default settings
+    const [visibleFields, setVisibleFields] = useState<{
+        username: boolean;
+        email: boolean;
+        password: boolean;
+        url: boolean;
+        totp: boolean;
+        expires: boolean;
+        notes: boolean;
+        attributes: boolean;
+        files: boolean;
+    }>({
+        username: true,
+        email: true,
+        password: true,
+        url: true,
+        totp: true,
+        expires: true,
+        notes: true,
+        attributes: true,
+        files: true
+    });
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            const saved = await settingsStore.get<typeof visibleFields>('entryDetail_visibleFields');
+            if (saved) {
+                setVisibleFields(saved);
+            }
+        };
+        loadSettings();
+    }, []);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     if (!entry) return null;
+
+    const isImageFile = (filename: string) => {
+        const ext = filename.toLowerCase().split('.').pop();
+        return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext || '');
+    };
+
+    const toggleField = (field: keyof typeof visibleFields) => {
+        setVisibleFields(prev => {
+            const newState = { ...prev, [field]: !prev[field] };
+            settingsStore.set('entryDetail_visibleFields', newState);
+            return newState;
+        });
+    };
 
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-sidebar)', boxShadow: 'var(--shadow-xl)' }}>
@@ -263,6 +316,31 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                 <div className="flex-1 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
 
                 <div className="flex items-center space-x-1">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setColumnMenuPosition({ x: window.innerWidth - rect.right, y: rect.bottom + 5 });
+                            setShowColumnMenu(!showColumnMenu);
+                        }}
+                        className="p-1.5 rounded-md transition-all duration-200"
+                        style={{
+                            color: 'var(--color-text-secondary)',
+                            cursor: 'pointer'
+                        } as React.CSSProperties}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                            e.currentTarget.style.color = 'var(--color-accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-secondary)';
+                        }}
+                        title="Column Settings"
+                    >
+                        <Rows2 size={16} />
+                    </button>
+
                     <button
                         onClick={() => setIsEditModalOpen(true)}
                         className="p-1.5 rounded-md transition-all duration-200"
@@ -317,39 +395,41 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                         </div>
                     </div>
 
-                    <FieldRow label="Username" value={entry.username} />
-                    {entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
-                    <FieldRow
-                        label="Password"
-                        value={entry.password || ''}
-                        isSecret
-                        isRevealed={showPassword}
-                        onToggleReveal={() => setShowPassword(!showPassword)}
-                        onHistory={entry.history && entry.history.length > 0 ? () => setShowHistory(true) : undefined}
-                        onLargeType={() => {
-                            const label = `large-type-${Date.now()}`;
-                            const url = `index.html?mode=large-type&text=${encodeURIComponent(entry.password || '')}&title=${encodeURIComponent(entry.title)}&username=${encodeURIComponent(entry.username || '')}`;
-                            new WebviewWindow(label, {
-                                url,
-                                title: entry.title,
-                                width: 800,
-                                height: 600,
-                                resizable: true,
-                                center: true,
-                                titleBarStyle: 'overlay',
-                                hiddenTitle: true,
-                                minimizable: false,
-                                maximizable: false
-                            });
-                        }}
-                    />
-                    <FieldRow label="URL" value={entry.url} type="link" />
+                    {visibleFields.username && <FieldRow label="Username" value={entry.username} />}
+                    {visibleFields.email && entry.fields['Email'] && <FieldRow label="Email" value={entry.fields['Email']} />}
+                    {visibleFields.password && (
+                        <FieldRow
+                            label="Password"
+                            value={entry.password || ''}
+                            isSecret
+                            isRevealed={showPassword}
+                            onToggleReveal={() => setShowPassword(!showPassword)}
+                            onHistory={entry.history && entry.history.length > 0 ? () => setShowHistory(true) : undefined}
+                            onLargeType={() => {
+                                const label = `large-type-${Date.now()}`;
+                                const url = `index.html?mode=large-type&text=${encodeURIComponent(entry.password || '')}&title=${encodeURIComponent(entry.title)}&username=${encodeURIComponent(entry.username || '')}`;
+                                new WebviewWindow(label, {
+                                    url,
+                                    title: entry.title,
+                                    width: 800,
+                                    height: 600,
+                                    resizable: true,
+                                    center: true,
+                                    titleBarStyle: 'overlay',
+                                    hiddenTitle: true,
+                                    minimizable: false,
+                                    maximizable: false
+                                });
+                            }}
+                        />
+                    )}
+                    {visibleFields.url && <FieldRow label="URL" value={entry.url} type="link" />}
 
                     {/* TOTP Section */}
-                    {entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
+                    {visibleFields.totp && entry.otpUrl && <TOTPDisplay url={entry.otpUrl} />}
 
                     {/* Expiry Section */}
-                    {entry.expiryTime && (
+                    {visibleFields.expires && entry.expiryTime && (
                         <div className="mt-4 flex items-center p-3 bg-orange-50 border border-orange-100 rounded-lg text-xs">
                             <Clock size={16} className="text-orange-500 mr-3 flex-shrink-0" />
                             <div className="flex-1">
@@ -362,39 +442,41 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                     )}
 
                     {/* Notes */}
-                    <div className="mt-4">
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-medium text-gray-600 uppercase">Notes</label>
-                            {entry.notes && (
-                                <button
-                                    onClick={() => {
-                                        const label = `markdown-preview-${Date.now()}`;
-                                        const url = `index.html?mode=markdown-preview&title=${encodeURIComponent(entry.title)}&text=${encodeURIComponent(entry.notes)}`;
-                                        new WebviewWindow(label, {
-                                            url,
-                                            title: `Notes - ${entry.title}`,
-                                            width: 600,
-                                            height: 800,
-                                            resizable: true,
-                                            center: true,
-                                            titleBarStyle: 'overlay',
-                                            hiddenTitle: true,
-                                        });
-                                    }}
-                                    className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
-                                    title="Preview Markdown"
-                                >
-                                    <FileText size={14} />
-                                </button>
-                            )}
+                    {visibleFields.notes && (
+                        <div className="mt-4">
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-xs font-medium text-gray-600 uppercase">Notes</label>
+                                {entry.notes && (
+                                    <button
+                                        onClick={() => {
+                                            const label = `markdown-preview-${Date.now()}`;
+                                            const url = `index.html?mode=markdown-preview&title=${encodeURIComponent(entry.title)}&text=${encodeURIComponent(entry.notes)}`;
+                                            new WebviewWindow(label, {
+                                                url,
+                                                title: `Notes - ${entry.title}`,
+                                                width: 600,
+                                                height: 800,
+                                                resizable: true,
+                                                center: true,
+                                                titleBarStyle: 'overlay',
+                                                hiddenTitle: true,
+                                            });
+                                        }}
+                                        className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                                        title="Preview Markdown"
+                                    >
+                                        <FileText size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-900 min-h-[60px] whitespace-pre-wrap font-mono">
+                                {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
+                            </div>
                         </div>
-                        <div className="bg-yellow-50/50 border border-yellow-100 rounded-md p-2 text-xs text-gray-900 min-h-[60px] whitespace-pre-wrap font-mono">
-                            {entry.notes || <span className="text-gray-400 italic">No notes available.</span>}
-                        </div>
-                    </div>
+                    )}
 
                     {/* Custom Fields */}
-                    {Object.keys(entry.fields).length > 0 && (
+                    {visibleFields.attributes && Object.keys(entry.fields).length > 0 && (
                         <div className="mt-6 pt-4 border-t border-gray-200">
                             <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Attributes</h3>
                             {Object.entries(entry.fields).map(([k, v]) => {
@@ -405,9 +487,9 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                     )}
 
                     {/* Attachments */}
-                    {entry.attachments && entry.attachments.length > 0 && (
+                    {visibleFields.files && entry.attachments && entry.attachments.length > 0 && (
                         <div className="mt-6 pt-4 border-t border-gray-200">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Attachments</h3>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Files</h3>
                             <div className="space-y-2">
                                 {entry.attachments.map((att, index) => (
                                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200 group hover:border-indigo-300 transition-colors">
@@ -416,23 +498,38 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                                             <span className="text-xs text-gray-700 truncate font-medium" title={att.name}>{att.name}</span>
                                             <span className="text-[10px] text-gray-400 ml-2 flex-shrink-0">({Math.round(att.data.byteLength / 1024)} KB)</span>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                const blob = new Blob([att.data]);
-                                                const url = URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = att.name;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                document.body.removeChild(a);
-                                                URL.revokeObjectURL(url);
-                                            }}
-                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                            title="Download"
-                                        >
-                                            <Download size={14} />
-                                        </button>
+                                        <div className="flex items-center space-x-1">
+                                            {isImageFile(att.name) && (
+                                                <button
+                                                    onClick={() => {
+                                                        const blob = new Blob([att.data]);
+                                                        const url = URL.createObjectURL(blob);
+                                                        setPreviewImage({ name: att.name, url });
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                    title="Preview"
+                                                >
+                                                    <Eye size={14} />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    const blob = new Blob([att.data]);
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = att.name;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    URL.revokeObjectURL(url);
+                                                }}
+                                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                title="Download"
+                                            >
+                                                <Download size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -470,6 +567,84 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                     history={entry.history}
                     onClose={() => setShowHistory(false)}
                 />
+            )}
+
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+                    onClick={() => {
+                        URL.revokeObjectURL(previewImage.url);
+                        setPreviewImage(null);
+                    }}
+                >
+                    <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => {
+                                URL.revokeObjectURL(previewImage.url);
+                                setPreviewImage(null);
+                            }}
+                            className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+                            title="Close"
+                        >
+                            <X size={24} />
+                        </button>
+                        <img
+                            src={previewImage.url}
+                            alt={previewImage.name}
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        />
+                        <div className="absolute -bottom-10 left-0 right-0 text-center text-white text-sm">
+                            {previewImage.name}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Column Settings Menu */}
+            {showColumnMenu && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowColumnMenu(false)}
+                    />
+                    <div
+                        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px]"
+                        style={{
+                            right: `${columnMenuPosition.x}px`,
+                            top: `${columnMenuPosition.y}px`
+                        }}
+                    >
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-1">
+                            Column Settings
+                        </div>
+                        {[
+                            { key: 'username' as const, label: 'Username' },
+                            { key: 'email' as const, label: 'Email' },
+                            { key: 'password' as const, label: 'Password' },
+                            { key: 'url' as const, label: 'URL' },
+                            { key: 'totp' as const, label: '2FA Code' },
+                            { key: 'expires' as const, label: 'Expires' },
+                            { key: 'notes' as const, label: 'Notes' },
+                            { key: 'attributes' as const, label: 'Attributes' },
+                            { key: 'files' as const, label: 'Files' }
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => toggleField(key)}
+                                className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center transition-colors"
+                            >
+                                <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center flex-shrink-0">
+                                    {visibleFields[key] && (
+                                        <div className="w-2 h-2 bg-indigo-600 rounded-sm" />
+                                    )}
+                                </div>
+                                <span className={visibleFields[key] ? 'text-gray-900' : 'text-gray-400'}>
+                                    {label}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </>
             )}
         </div>
     );

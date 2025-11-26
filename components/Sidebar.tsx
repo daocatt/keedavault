@@ -9,6 +9,8 @@ import {
 import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { ICONS_MAP } from '../constants';
+import { DatabasePropertiesModal } from './DatabasePropertiesModal';
+import { Info } from 'lucide-react';
 
 // Helper component for inline inputs
 const GroupInput: React.FC<{
@@ -355,6 +357,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
     const [showSettings, setShowSettings] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: VaultGroup; parentId?: string } | null>(null);
 
+    const [showDbMenu, setShowDbMenu] = useState(false);
+    const [showDbProperties, setShowDbProperties] = useState(false);
+    const dbMenuRef = useRef<HTMLDivElement>(null);
+
+
+
     // Close context menu on click elsewhere
     useEffect(() => {
         const handleClick = () => setContextMenu(null);
@@ -548,10 +556,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
             </div>
 
             {/* Row 2: Database Name & Actions */}
-            <div className="h-10 flex items-center justify-between px-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                <div className="flex items-center font-medium text-sm text-gray-900 truncate flex-1 mr-2 select-none">
+            <div className="h-10 flex items-center justify-between px-3 flex-shrink-0 relative z-20" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                <div
+                    role="button"
+                    tabIndex={0}
+                    className={`flex items-center font-medium text-sm text-gray-900 flex-1 mr-2 select-none rounded px-1 py-0.5 transition-colors relative min-w-0 ${activeVault ? 'cursor-pointer hover:bg-gray-100 active:bg-gray-200' : ''}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Database name clicked', { activeVault });
+                        if (activeVault) setShowDbMenu((prev) => !prev);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.stopPropagation();
+                            if (activeVault) setShowDbMenu((prev) => !prev);
+                        }
+                    }}
+                    style={{ zIndex: 30, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                >
                     <Database size={14} className="mr-2 opacity-50 flex-shrink-0" />
                     <span className="truncate">{activeVault ? activeVault.name : 'KeedaVault'}</span>
+                    {activeVault && <ChevronDown size={12} className="ml-1 opacity-50" />}
+
+                    {/* Dropdown Menu */}
+                    {showDbMenu && activeVault && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowDbMenu(false);
+                                }}
+                            />
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                                <button
+                                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDbProperties(true);
+                                        setShowDbMenu(false);
+                                    }}
+                                >
+                                    <Info size={14} className="mr-2" />
+                                    Properties
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="flex items-center space-x-0.5">
@@ -798,67 +849,81 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
             </div>
 
             {/* Settings Modal */}
-            {showSettings && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
-                    <div className="bg-white rounded-xl shadow-2xl p-6 w-64 text-center border border-gray-100 transform scale-100 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                            <Settings size={24} />
+            {
+                activeVault && (
+                    <DatabasePropertiesModal
+                        isOpen={showDbProperties}
+                        onClose={() => setShowDbProperties(false)}
+                        vault={activeVault}
+                        stats={stats}
+                    />
+                )
+            }
+            {
+                showSettings && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+                        <div className="bg-white rounded-xl shadow-2xl p-6 w-64 text-center border border-gray-100 transform scale-100 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                <Settings size={24} />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">Settings</h3>
+                            <p className="text-sm text-gray-500 mb-4">Coming Soon</p>
+                            <button
+                                onClick={() => setShowSettings(false)}
+                                className="w-full py-2 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                            >
+                                Close
+                            </button>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Settings</h3>
-                        <p className="text-sm text-gray-500 mb-4">Coming Soon</p>
-                        <button
-                            onClick={() => setShowSettings(false)}
-                            className="w-full py-2 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                        >
-                            Close
-                        </button>
                     </div>
-                </div>
-            )}
+                )
+            }
 
 
             {/* Context Menu */}
-            {contextMenu && (
-                <div
-                    className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <button
-                        onClick={() => {
-                            if (activeVaultId) {
-                                onNewGroup(activeVaultId, contextMenu.group.uuid);
-                            }
-                            setContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+            {
+                contextMenu && (
+                    <div
+                        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
+                        style={{ top: contextMenu.y, left: contextMenu.x }}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <FolderPlus size={14} className="mr-2 text-gray-400" /> New Group
-                    </button>
-                    <button
-                        onClick={() => {
-                            onEditGroup(activeVaultId!, contextMenu.group, contextMenu.parentId);
-                            setContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                        <Edit size={14} className="mr-2 text-gray-400" /> Edit Group
-                    </button>
-                    {/* Show Recycle (Delete) for non-root groups and not the Recycle Bin itself */}
-                    {!contextMenu.group.isRecycleBin && contextMenu.parentId && (
                         <button
-                            onClick={async () => {
-                                await onDeleteGroup(contextMenu.group.uuid);
+                            onClick={() => {
+                                if (activeVaultId) {
+                                    onNewGroup(activeVaultId, contextMenu.group.uuid);
+                                }
                                 setContextMenu(null);
                             }}
-                            className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
                         >
-                            <Trash2 size={14} className="mr-2" /> Delete
+                            <FolderPlus size={14} className="mr-2 text-gray-400" /> New Group
                         </button>
-                    )}
-                </div>
-            )}
+                        <button
+                            onClick={() => {
+                                onEditGroup(activeVaultId!, contextMenu.group, contextMenu.parentId);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                            <Edit size={14} className="mr-2 text-gray-400" /> Edit Group
+                        </button>
+                        {/* Show Recycle (Delete) for non-root groups and not the Recycle Bin itself */}
+                        {!contextMenu.group.isRecycleBin && contextMenu.parentId && (
+                            <button
+                                onClick={async () => {
+                                    await onDeleteGroup(contextMenu.group.uuid);
+                                    setContextMenu(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center"
+                            >
+                                <Trash2 size={14} className="mr-2" /> Delete
+                            </button>
+                        )}
+                    </div>
+                )
+            }
 
-        </div>
+        </div >
     );
 };

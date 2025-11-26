@@ -20,11 +20,18 @@ export const VaultWorkspace: React.FC = () => {
 
     // UI Settings - Ensure both sidebars are visible by default
     const [leftSidebarVisible, setLeftSidebarVisible] = useState(false);
-    const [rightSidebarVisible, setRightSidebarVisible] = useState(() => {
-        const settings = getUISettings();
-        console.log('Initial rightSidebarVisible:', settings.rightSidebarVisible);
-        return settings.rightSidebarVisible ?? true;
-    });
+    const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            const settings = await getUISettings();
+            if (settings.rightSidebarVisible !== undefined) {
+                setRightSidebarVisible(settings.rightSidebarVisible);
+            }
+        };
+        loadSettings();
+    }, []);
+
     const { addToast } = useToast();
 
     // Group Modal State
