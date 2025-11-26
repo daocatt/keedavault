@@ -9,6 +9,8 @@ interface GroupSelectorProps {
     disabled?: boolean;
     placeholder?: string;
     excludeRecycleBin?: boolean;
+    excludedGroupId?: string;
+    direction?: 'up' | 'down';
     className?: string;
 }
 
@@ -28,6 +30,8 @@ export const GroupSelector: React.FC<GroupSelectorProps> = ({
     disabled = false,
     placeholder = "Select Group",
     excludeRecycleBin = true,
+    excludedGroupId,
+    direction = 'down',
     className = ""
 }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -59,6 +63,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = ({
 
         const processGroup = (group: VaultGroup, depth: number, path: string[]) => {
             if (excludeRecycleBin && group.isRecycleBin) return;
+            if (excludedGroupId && group.uuid === excludedGroupId) return;
 
             const currentPath = [...path, group.name];
 
@@ -78,7 +83,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = ({
 
         groups.forEach(g => processGroup(g, 0, []));
         return result;
-    }, [groups, excludeRecycleBin]);
+    }, [groups, excludeRecycleBin, excludedGroupId]);
 
     // Filter groups based on search
     const filteredGroups = useMemo(() => {
@@ -127,7 +132,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = ({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
+                <div className={`absolute z-50 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${direction === 'up' ? 'bottom-full mb-2 origin-bottom' : 'top-full mt-2 origin-top'}`}>
                     {/* Search Header */}
                     <div className="p-2 border-b border-gray-100 bg-gray-50/50">
                         <div className="relative">

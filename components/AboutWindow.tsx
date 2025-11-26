@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Github, Globe } from 'lucide-react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getVersion, getName } from '@tauri-apps/api/app';
-import appIcon from '../app-icon.png';
+import logo from '../logo.svg';
 
 export const AboutWindow: React.FC = () => {
     const [appVersion, setAppVersion] = useState('');
@@ -35,7 +35,7 @@ export const AboutWindow: React.FC = () => {
 
             <div className="relative z-10 flex flex-col items-center pt-12 pb-8 px-6 text-center w-full max-w-xs">
                 {/* App Icon */}
-                <img src={appIcon} alt="App Logo" className="w-24 h-24 mb-5 drop-shadow-xl select-none pointer-events-none" />
+                <img src={logo} alt="App Logo" className="w-24 h-24 mb-5 drop-shadow-xl select-none pointer-events-none" />
 
                 {/* App Name & Version */}
                 <h2 className="text-xl font-bold text-gray-900 mb-1">{appName}</h2>

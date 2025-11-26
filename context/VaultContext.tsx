@@ -260,7 +260,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const confirmed = await ask("Are you sure you want to delete this group?", {
             title: 'Delete Group',
-            type: 'warning'
+            kind: 'warning'
         });
 
         if (confirmed) {
@@ -342,9 +342,19 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const onDeleteEntry = async (entryId: string) => {
         if (!activeVault) return;
 
-        const confirmed = await ask("Move this entry to the Recycle Bin?", {
-            title: 'Delete Entry',
-            type: 'warning'
+        // Check if entry is in recycle bin OR if we are currently viewing the recycle bin
+        // This handles cases where isEntryInRecycleBin might fail or be slow, but we know we are in the bin
+        const currentGroup = getActiveGroup();
+        const inRecycleBin = isEntryInRecycleBin(entryId) || (currentGroup?.isRecycleBin === true);
+
+        const title = inRecycleBin ? 'Permanently Delete Entry' : 'Delete Entry';
+        const message = inRecycleBin
+            ? "Are you sure you want to permanently delete this entry? This cannot be undone."
+            : "Move this entry to the Recycle Bin?";
+
+        const confirmed = await ask(message, {
+            title: title,
+            kind: 'warning'
         });
 
         if (confirmed) {
@@ -352,7 +362,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 deleteEntryFromDb(activeVault.db, entryId);
                 refreshVault(activeVault.id);
                 await saveVault(activeVault.id, true);
-                addToast({ title: "Entry moved to Recycle Bin", type: "success" });
+                addToast({ title: inRecycleBin ? "Entry permanently deleted" : "Entry moved to Recycle Bin", type: "success" });
             } catch (e: any) {
                 console.error(e);
                 addToast({ title: e.message || "Failed to delete entry", type: "error" });
@@ -620,7 +630,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const confirmed = await ask(`Permanently delete all ${currentGroup.entries.length} entries from the Recycle Bin? This cannot be undone.`, {
             title: 'Empty Recycle Bin',
-            type: 'warning'
+            kind: 'warning'
         });
 
         if (confirmed) {

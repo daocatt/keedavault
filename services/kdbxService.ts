@@ -267,6 +267,13 @@ export const addEntryToDb = (db: kdbxweb.Kdbx, groupUuid: string, data: EntryFor
         });
     }
 
+    // Handle Attachments
+    if (data.attachments) {
+        data.attachments.forEach(att => {
+            entry.binaries.set(att.name, kdbxweb.ProtectedValue.fromBinary(att.data));
+        });
+    }
+
     entry.times.update();
     return entry;
 };
@@ -338,6 +345,14 @@ export const updateEntryInDb = (db: kdbxweb.Kdbx, data: EntryFormData) => {
             if (key && value) {
                 entry.fields.set(key, value);
             }
+        });
+    }
+
+    // Handle Attachments
+    if (data.attachments) {
+        entry.binaries.clear();
+        data.attachments.forEach(att => {
+            entry.binaries.set(att.name, kdbxweb.ProtectedValue.fromBinary(att.data));
         });
     }
 
@@ -545,6 +560,19 @@ const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
         }
     }
 
+    const attachments: { name: string; data: ArrayBuffer }[] = [];
+    if (entry.binaries) {
+        entry.binaries.forEach((val: any, key: any) => {
+            let data: ArrayBuffer;
+            if (val instanceof kdbxweb.ProtectedValue) {
+                data = val.getBinary();
+            } else {
+                data = val;
+            }
+            attachments.push({ name: key, data });
+        });
+    }
+
     return {
         uuid: entry.uuid.id,
         title: attributes['Title'] || 'Untitled',
@@ -558,6 +586,7 @@ const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
         creationTime: entry.times.creationTime as Date,
         lastModTime: entry.times.lastModTime as Date,
         otpUrl: otpUrl,
-        expiryTime: entry.times.expires ? (entry.times.expiryTime as Date) : undefined
+        expiryTime: entry.times.expires ? (entry.times.expiryTime as Date) : undefined,
+        attachments
     };
 };

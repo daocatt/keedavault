@@ -31,7 +31,7 @@ export const LargeTypeModal: React.FC<LargeTypeModalProps> = ({ isOpen, onClose,
 
     return createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <h3 className="text-lg font-bold text-gray-700">{title}</h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">

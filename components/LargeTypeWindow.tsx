@@ -48,7 +48,7 @@ export const LargeTypeWindow: React.FC = () => {
                 <div className="flex flex-col items-center space-y-8 w-full max-w-4xl">
                     {/* Large Password Display */}
                     <div className="text-center w-full">
-                        <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">{username}</div>
+                        <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 break-all whitespace-normal px-4">{username}</div>
                         <div className="text-6xl font-mono font-bold break-all leading-tight tracking-wide bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-inner select-all cursor-text">
                             {renderColorfulText(text)}
                         </div>
