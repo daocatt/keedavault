@@ -1,0 +1,19 @@
+{
+    "identifier": "default",
+    "description": "Default capability with shell permissions",
+    "windows": [
+        "*"
+    ],
+    "permissions": [
+        {
+            "identifier": "shell:allow-open",
+            "allow": [
+                {
+                    "args": {
+                        "validator": "^(file://|https?://|mailto:|tel:).*$"
+                    }
+                }
+            ]
+        }
+    ]
+}
