@@ -18,6 +18,7 @@
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-store": "^2.4.1",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
     "hash-wasm": "^4.12.0",

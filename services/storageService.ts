@@ -1,3 +1,5 @@
+import { settingsStore } from './settingsStore';
+
 // Service for persisting vault information
 export interface SavedVaultInfo {
     path?: string;
@@ -7,38 +9,38 @@ export interface SavedVaultInfo {
 
 const STORAGE_KEY = 'keedavault_recent_vaults';
 
-export const saveRecentVault = (vaultInfo: SavedVaultInfo) => {
+export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
     try {
-        const recent = getRecentVaults();
+        const recent = await getRecentVaults();
         // Remove if already exists
         const filtered = recent.filter(v => v.path !== vaultInfo.path || v.filename !== vaultInfo.filename);
         // Add to beginning
         filtered.unshift(vaultInfo);
         // Keep only last 5
         const toSave = filtered.slice(0, 5);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        await settingsStore.set(STORAGE_KEY, toSave);
     } catch (e) {
         console.error('Failed to save recent vault:', e);
     }
 };
 
-export const getRecentVaults = (): SavedVaultInfo[] => {
+export const getRecentVaults = async (): Promise<SavedVaultInfo[]> => {
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        console.log('getRecentVaults called');
+        const stored = await settingsStore.get<SavedVaultInfo[]>(STORAGE_KEY);
         if (!stored) return [];
-        const vaults: SavedVaultInfo[] = JSON.parse(stored);
-        return vaults.sort((a, b) => b.lastOpened - a.lastOpened);
+        return stored.sort((a, b) => b.lastOpened - a.lastOpened);
     } catch (e) {
         console.error('Failed to load recent vaults:', e);
         return [];
     }
 };
 
-export const removeRecentVault = (path?: string, filename?: string) => {
+export const removeRecentVault = async (path?: string, filename?: string) => {
     try {
-        const recent = getRecentVaults();
+        const recent = await getRecentVaults();
         const filtered = recent.filter(v => v.path !== path || v.filename !== filename);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        await settingsStore.set(STORAGE_KEY, filtered);
     } catch (e) {
         console.error('Failed to remove recent vault:', e);
     }

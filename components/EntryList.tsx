@@ -34,20 +34,34 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
     const [editingEntry, setEditingEntry] = useState<VaultEntry | null>(null);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-    const [toolbarMode, setToolbarMode] = useState<'icon' | 'text' | 'both'>(() => getUISettings().toolbarStyle);
+    const [toolbarMode, setToolbarMode] = useState<'icon' | 'text' | 'both'>('icon');
     const [toolbarContextMenu, setToolbarContextMenu] = useState<{ x: number; y: number } | null>(null);
     const [columnMenuOpen, setColumnMenuOpen] = useState(false);
     const [showPassGen, setShowPassGen] = useState(false);
     // Column visibility state persisted in UI settings
     const defaultVisibleColumns = { group: true, title: true, username: true, email: true, password: false, url: false, created: false, modified: true };
-    const [visibleColumns, setVisibleColumns] = useState<any>(() => ({ ...defaultVisibleColumns, ...getUISettings().entryColumns }));
+    const [visibleColumns, setVisibleColumns] = useState<any>(defaultVisibleColumns);
 
     // Column widths state
     const defaultColumnWidths = { group: 120, title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 };
-    const [columnWidths, setColumnWidths] = useState<any>(() => ({ ...defaultColumnWidths, ...getUISettings().entryColumnWidths }));
+    const [columnWidths, setColumnWidths] = useState<any>(defaultColumnWidths);
     // Sorting state
-    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>(() => getUISettings().entrySort?.field || 'title');
-    const [sortAsc, setSortAsc] = useState(() => getUISettings().entrySort?.asc ?? true);
+    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>('title');
+    const [sortAsc, setSortAsc] = useState(true);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            const settings = await getUISettings();
+            setToolbarMode(settings.toolbarStyle);
+            if (settings.entryColumns) setVisibleColumns({ ...defaultVisibleColumns, ...settings.entryColumns });
+            if (settings.entryColumnWidths) setColumnWidths({ ...defaultColumnWidths, ...settings.entryColumnWidths });
+            if (settings.entrySort) {
+                setSortField(settings.entrySort.field);
+                setSortAsc(settings.entrySort.asc);
+            }
+        };
+        loadSettings();
+    }, []);
     // Resize state
     const [resizing, setResizing] = useState<{ column: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
 
@@ -83,10 +97,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             setColumnWidths((prev: any) => ({ ...prev, [resizing.column]: newWidth }));
         };
 
-        const handleMouseUp = () => {
+        const handleMouseUp = async () => {
             if (resizing) {
                 // Save to settings
-                const settings = getUISettings();
+                const settings = await getUISettings();
                 saveUISettings({ ...settings, entryColumnWidths: columnWidths });
                 setResizing(null);
             }
@@ -111,27 +125,27 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
         });
     };
 
-    const handleSetToolbarMode = (mode: 'icon' | 'text' | 'both') => {
+    const handleSetToolbarMode = async (mode: 'icon' | 'text' | 'both') => {
         setToolbarMode(mode);
-        saveUISettings({ toolbarStyle: mode });
+        await saveUISettings({ toolbarStyle: mode });
         setToolbarContextMenu(null);
     };
     // Toggle column visibility and persist
-    const toggleColumn = (col: keyof typeof visibleColumns) => {
+    const toggleColumn = async (col: keyof typeof visibleColumns) => {
         const updated = { ...visibleColumns, [col]: !visibleColumns[col] };
         setVisibleColumns(updated);
-        const settings = getUISettings();
+        const settings = await getUISettings();
         saveUISettings({ ...settings, entryColumns: updated });
     };
     // Change sorting field
-    const changeSort = (field: typeof sortField) => {
+    const changeSort = async (field: typeof sortField) => {
         if (field === sortField) {
             setSortAsc(!sortAsc);
         } else {
             setSortField(field);
             setSortAsc(true);
         }
-        const settings = getUISettings();
+        const settings = await getUISettings();
         saveUISettings({ ...settings, entrySort: { field, asc: field === sortField ? !sortAsc : true } });
     };
 

@@ -12,7 +12,10 @@ export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
 
     useEffect(() => {
-        setRecentVaults(getRecentVaults());
+        const fetchAndSetVaults = async () => {
+            setRecentVaults(await getRecentVaults());
+        };
+        fetchAndSetVaults();
 
         // Check URL params for auto-browse action
         const params = new URLSearchParams(window.location.search);
@@ -110,8 +113,8 @@ export const Launcher: React.FC = () => {
                     `Invalid vault path. The entry may be corrupted.`,
                     { title: 'Invalid Vault', kind: 'error' }
                 );
-                removeRecentVault(vault.path || '', vault.filename);
-                setRecentVaults(getRecentVaults());
+                await removeRecentVault(vault.path || '', vault.filename);
+                setRecentVaults(await getRecentVaults());
                 return;
             }
 
@@ -130,8 +133,8 @@ export const Launcher: React.FC = () => {
             }
 
             console.log('Opening vault window for:', vault.path);
-            saveRecentVault({ ...vault, lastOpened: Date.now() });
-            setRecentVaults(getRecentVaults());
+            await saveRecentVault({ ...vault, lastOpened: Date.now() });
+            // Don't update the list order immediately - it will update when app reopens
             openVaultWindow(vault.path, 'unlock');
         } catch (e) {
             console.error("Error checking file or opening vault", e);
@@ -166,8 +169,8 @@ export const Launcher: React.FC = () => {
                     filename: filename,
                     lastOpened: Date.now()
                 };
-                saveRecentVault(vaultInfo);
-                setRecentVaults(getRecentVaults());
+                await saveRecentVault(vaultInfo);
+                // Don't update the list order immediately - it will update when app reopens
                 openVaultWindow(selected, 'unlock');
             }
         } catch (e) {
@@ -175,10 +178,10 @@ export const Launcher: React.FC = () => {
         }
     };
 
-    const handleRemoveRecent = (e: React.MouseEvent, vault: SavedVaultInfo) => {
+    const handleRemoveRecent = async (e: React.MouseEvent, vault: SavedVaultInfo) => {
         e.stopPropagation();
-        removeRecentVault(vault.path, vault.filename);
-        setRecentVaults(getRecentVaults());
+        await removeRecentVault(vault.path, vault.filename);
+        setRecentVaults(await getRecentVaults());
     };
 
     return (
@@ -232,7 +235,7 @@ export const Launcher: React.FC = () => {
                                         No recent files found.
                                     </div>
                                 ) : (
-                                    recentVaults.map((vault, idx) => (
+                                    recentVaults.slice(0, 5).map((vault, idx) => (
                                         <button
                                             key={idx}
                                             onDoubleClick={() => handleOpenRecent(vault)}
