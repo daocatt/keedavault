@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Plus, Trash2 } from 'lucide-react';
 import { DateTimePicker } from './DateTimePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
@@ -25,6 +26,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     const [totpSecret, setTotpSecret] = useState('');
     const [expiryTime, setExpiryTime] = useState('');
     const [showGen, setShowGen] = useState(false);
+    const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([]);
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
 
@@ -41,6 +43,13 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 setTotpSecret('');
                 setExpiryTime(editEntry.expiryTime ? new Date(editEntry.expiryTime.getTime() - (editEntry.expiryTime.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
                 setGroupUuid(activeGroupId || '');
+
+                // Parse custom fields
+                const standardKeys = ['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'Email'];
+                const fields = Object.entries(editEntry.fields)
+                    .filter(([key]) => !standardKeys.includes(key))
+                    .map(([key, value]) => ({ key, value }));
+                setCustomFields(fields);
             } else {
                 reset();
                 setGroupUuid(activeGroupId || '');
@@ -90,6 +99,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
         setTotpSecret('');
         setExpiryTime('');
         setShowGen(false);
+        setCustomFields([]);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -104,6 +114,10 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             notes,
             totpSecret,
             expiryTime: expiryTime ? new Date(expiryTime) : undefined,
+            customFields: customFields.reduce((acc, field) => {
+                if (field.key) acc[field.key] = field.value;
+                return acc;
+            }, {} as Record<string, string>),
         };
         if (editEntry) {
             onEditEntry({ ...formData, uuid: editEntry.uuid });
@@ -117,8 +131,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
             <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-300 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transform transition-all">
 
                 {/* Header / Title Area */}
@@ -239,7 +253,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                         <Wand2 size={16} />
                                                     </button>
                                                 </PopoverTrigger>
-                                                <PopoverContent side="right" align="start" className="w-80 p-0 z-[200]">
+                                                <PopoverContent side="right" align="start" className="w-80 p-0 z-[10000]">
                                                     <div className="bg-bg-primary rounded-xl shadow-none border-0 p-4">
                                                         <PasswordGenerator
                                                             isOpen={true}
@@ -260,7 +274,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
                                     {/* URL */}
                                     <div className="space-y-1">
-                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Website</label>
+                                        <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">URL</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <Globe size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
@@ -330,6 +344,64 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                 />
                             </div>
                         </div>
+
+                        {/* Custom Attributes */}
+                        <div className="flex-1 overflow-y-auto px-4 py-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Attributes</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomFields([...customFields, { key: '', value: '' }])}
+                                    className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                    title="Add Attribute"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
+                            <div className="space-y-2">
+                                {customFields.map((field, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                        <input
+                                            type="text"
+                                            value={field.key}
+                                            onChange={(e) => {
+                                                const newFields = [...customFields];
+                                                newFields[index].key = e.target.value;
+                                                setCustomFields(newFields);
+                                            }}
+                                            className="w-1/3 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                            placeholder="Name"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={field.value}
+                                            onChange={(e) => {
+                                                const newFields = [...customFields];
+                                                newFields[index].value = e.target.value;
+                                                setCustomFields(newFields);
+                                            }}
+                                            className="flex-1 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                            placeholder="Value"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newFields = customFields.filter((_, i) => i !== index);
+                                                setCustomFields(newFields);
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {customFields.length === 0 && (
+                                    <div className="text-center py-4 text-xs text-gray-400 italic border-2 border-dashed border-gray-100 rounded-lg">
+                                        No custom attributes
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -354,6 +426,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             </div >
 
 
-        </div >
+        </div >,
+        document.body
     );
 };

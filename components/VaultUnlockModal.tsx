@@ -51,7 +51,9 @@ export const VaultUnlockModal: React.FC = () => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300" onContextMenu={(e) => e.preventDefault()}>
-            <div className="w-full h-full flex flex-col">
+            {/* Draggable Top Bar */}
+            <div className="absolute top-0 left-0 right-0 h-12 z-30" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+            <div className="w-full h-full flex flex-col relative z-20">
                 {/* Centered Title */}
                 <div className="flex items-center justify-center pt-16 pb-8">
                     <h1 className="text-2xl font-semibold text-gray-800">Unlock Vault</h1>

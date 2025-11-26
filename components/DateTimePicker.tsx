@@ -81,7 +81,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange 
                     )}
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 border-border-light bg-bg-primary" align="start">
+            <PopoverContent className="w-auto p-0 border-border-light bg-bg-primary z-[10000]" align="start">
                 <div className="p-3 border-b border-border-light">
                     <Calendar
                         mode="single"

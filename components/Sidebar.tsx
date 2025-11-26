@@ -8,26 +8,7 @@ import {
 } from 'lucide-react';
 import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-
-const ICONS_MAP: Record<number, React.ElementType> = {
-    48: Folder,
-    49: FolderOpen,
-    0: Key,
-    1: Globe,
-    2: AlertTriangle,
-    3: Server,
-    6: PenTool,
-    7: Settings,
-    60: Home,
-    61: Star,
-    68: Lock,
-    69: Wrench,
-    4: FileText,
-    5: Image,
-    8: Music,
-    9: Video,
-    10: Code
-};
+import { ICONS_MAP } from '../constants';
 
 // Helper component for inline inputs
 const GroupInput: React.FC<{
@@ -118,7 +99,7 @@ const GroupItem: React.FC<{
     onSelect, onStartAdd, onStartRename, onSubmitAction, onCancelAction, onDelete, getEntryCount,
     parentId, onEditGroup, onMoveEntry, onMoveEntries, onMoveToRecycleBin, addToast
 }) => {
-        const [expanded, setExpanded] = useState(true);
+        const [expanded, setExpanded] = useState(depth === 1);
         const [isHovered, setIsHovered] = useState(false);
         const [isDragOver, setIsDragOver] = useState(false);
         const hasChildren = group.subgroups.length > 0;
@@ -396,9 +377,10 @@ interface SidebarProps {
     onEditGroup: (vaultId: string, group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
     className?: string;
+    style?: React.CSSProperties;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry, className = '' }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry, className = '', style }) => {
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
@@ -537,21 +519,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
     }, [vaults, activeVaultId]);
 
     return (
-        <div className={`flex-1 flex flex-col overflow-hidden ${className}`} onClick={() => {
+        <div className={`flex-1 flex flex-col overflow-hidden ${className}`} style={style} onClick={() => {
             if (actionState) setActionState(null);
         }}>
             {/* Row 1: Traffic Lights & Settings */}
             <div
-                className="h-10 flex items-center justify-between px-3 flex-shrink-0"
-                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-                data-tauri-drag-region
+                className="h-10 flex items-center px-3 flex-shrink-0"
             >
-                <div className="w-16"></div>
+                {/* Traffic Light Spacer - Layout */}
+                <div className="w-16 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
+
+                {/* Middle Spacer - Layout */}
+                <div className="flex-1 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
+
                 <div className="flex items-center space-x-0.5">
                     <button
                         onClick={() => setShowSettings(true)}
                         className="p-1.5 rounded-md transition-all duration-200"
-                        style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        style={{
+                            color: 'var(--color-text-tertiary)',
+                            cursor: 'pointer'
+                        } as React.CSSProperties}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                             e.currentTarget.style.color = 'var(--color-accent)';
@@ -567,7 +555,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                     <button
                         onClick={() => activeVaultId && lockVault(activeVaultId)}
                         className="p-1.5 rounded-md transition-all duration-200"
-                        style={{ color: 'var(--color-text-tertiary)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        style={{
+                            color: 'var(--color-text-tertiary)',
+                            cursor: 'pointer'
+                        } as React.CSSProperties}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
                             e.currentTarget.style.color = '#ff3b30';
@@ -726,7 +717,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         <Sparkles size={10} className="mr-1" /> Smart Views
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
+                                        className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
                                         style={{
                                             backgroundColor: activeGroupId === 'smart-duplicated' ? 'var(--color-accent-light)' : 'transparent',
                                             color: activeGroupId === 'smart-duplicated' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
@@ -748,7 +739,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.duplicated}</span>
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-2fa' ? 'font-medium' : ''}`}
+                                        className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-2fa' ? 'font-medium' : ''}`}
                                         style={{
                                             backgroundColor: activeGroupId === 'smart-2fa' ? 'var(--color-accent-light)' : 'transparent',
                                             color: activeGroupId === 'smart-2fa' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
@@ -769,8 +760,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         <span className="flex-1">2FA Codes</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.twoFA}</span>
                                     </div>
+
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-websites' ? 'font-medium' : ''}`}
+                                        className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-websites' ? 'font-medium' : ''}`}
                                         style={{
                                             backgroundColor: activeGroupId === 'smart-websites' ? 'var(--color-accent-light)' : 'transparent',
                                             color: activeGroupId === 'smart-websites' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
@@ -788,11 +780,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         onClick={() => setActiveGroup('smart-websites')}
                                     >
                                         <Globe size={16} className="mr-2" style={{ color: '#007aff' }} />
-                                        <span className="flex-1">Websites</span>
+                                        <span className="flex-1">URLs</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.websites}</span>
                                     </div>
                                     <div
-                                        className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-notes' ? 'font-medium' : ''}`}
+                                        className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-notes' ? 'font-medium' : ''}`}
                                         style={{
                                             backgroundColor: activeGroupId === 'smart-notes' ? 'var(--color-accent-light)' : 'transparent',
                                             color: activeGroupId === 'smart-notes' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
