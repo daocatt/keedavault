@@ -53,6 +53,7 @@ export interface VaultEntry {
   otpUrl?: string;
   expiryTime?: Date;
   attachments: { name: string; data: ArrayBuffer }[];
+  history?: VaultEntry[];
 }
 
 export type ViewMode = 'list' | 'grid';

@@ -297,6 +297,9 @@ export const updateEntryInDb = (db: kdbxweb.Kdbx, data: EntryFormData) => {
         }
     }
 
+    // Save current state to history before modification
+    entry.pushHistory();
+
     entry.fields.set('Title', data.title);
     entry.fields.set('UserName', data.username);
     entry.fields.set('Password', kdbxweb.ProtectedValue.fromString(data.password));
@@ -528,7 +531,7 @@ export const parseKdbxStructure = (db: kdbxweb.Kdbx): VaultGroup[] => {
     return [parseGroup(root)];
 };
 
-const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
+const parseEntry = (entry: kdbxweb.KdbxEntry, includeHistory: boolean = true): VaultEntry => {
     const fields = entry.fields;
     const attributes: Record<string, string> = {};
 
@@ -565,11 +568,19 @@ const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
         entry.binaries.forEach((val: any, key: any) => {
             let data: ArrayBuffer;
             if (val instanceof kdbxweb.ProtectedValue) {
-                data = val.getBinary();
+                const binary = val.getBinary();
+                data = binary.buffer as ArrayBuffer;
             } else {
                 data = val;
             }
             attachments.push({ name: key, data });
+        });
+    }
+
+    const history: VaultEntry[] = [];
+    if (includeHistory && entry.history) {
+        entry.history.forEach((histEntry: kdbxweb.KdbxEntry) => {
+            history.push(parseEntry(histEntry, false));
         });
     }
 
@@ -587,6 +598,7 @@ const parseEntry = (entry: kdbxweb.KdbxEntry): VaultEntry => {
         lastModTime: entry.times.lastModTime as Date,
         otpUrl: otpUrl,
         expiryTime: entry.times.expires ? (entry.times.expiryTime as Date) : undefined,
-        attachments
+        attachments,
+        history
     };
 };
