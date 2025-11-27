@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
 import { Key, FileKey, AlertCircle, PlusCircle, X } from 'lucide-react';
 
@@ -8,6 +8,8 @@ interface VaultCreateFormProps {
     hideHeader?: boolean;
 }
 
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+
 export const VaultCreateForm: React.FC<VaultCreateFormProps> = ({ onSuccess, className = '', hideHeader = false }) => {
     const [newName, setNewName] = useState('');
     const [password, setPassword] = useState('');
@@ -16,6 +18,12 @@ export const VaultCreateForm: React.FC<VaultCreateFormProps> = ({ onSuccess, cla
     const [formError, setFormError] = useState<string | null>(null);
 
     const { createVault, isUnlocking, unlockError, clearError } = useVault();
+
+    useEffect(() => {
+        const win = getCurrentWebviewWindow();
+        const title = newName ? `${newName} - Create Vault` : 'KeedaVault - Create Vault';
+        win.setTitle(title);
+    }, [newName]);
 
     const resetForm = () => {
         setNewName('');
@@ -87,7 +95,7 @@ export const VaultCreateForm: React.FC<VaultCreateFormProps> = ({ onSuccess, cla
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all shadow-sm"
-                        placeholder="My Passwords"
+                        placeholder="Database Name"
                         autoFocus
                     />
                 </div>

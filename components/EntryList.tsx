@@ -550,6 +550,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 <div className="relative w-56 z-10">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--color-text-placeholder)' }} />
                     <input
+                        id="entry-search-input"
                         type="text"
                         placeholder="Search entries..."
                         value={searchQuery}
