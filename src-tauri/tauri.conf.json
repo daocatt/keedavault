@@ -53,6 +53,7 @@
             "core:window:allow-hide",
             "core:window:allow-set-position",
             "dialog:default",
+            "core:window:allow-set-title",
             "fs:default",
             "store:default",
             "shell:default",
