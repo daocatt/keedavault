@@ -1,8 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::menu::{Menu, MenuItem, Submenu};
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 
 #[tauri::command]
 fn reveal_in_finder(path: String) -> Result<(), String> {
@@ -57,19 +56,65 @@ fn main() {
     .plugin(tauri_plugin_store::Builder::new().build())
     .invoke_handler(tauri::generate_handler![reveal_in_finder])
     .setup(|app| {
-      // ... (omitted lines) ...
+      #[cfg(target_os = "macos")]
+      {
+        use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+        
+        let handle = app.handle();
+        
+        // App Menu
+        let app_menu = SubmenuBuilder::new(handle, "App")
+            .item(&MenuItemBuilder::with_id("about", "About KeedaVault").build(handle)?)
+            .separator()
+            .quit()
+            .build()?;
+
+        // File Menu
+        let file_menu = SubmenuBuilder::new(handle, "File")
+            .item(&MenuItemBuilder::with_id("open_vault", "Open Vault...").accelerator("CmdOrCtrl+O").build(handle)?)
+            .item(&MenuItemBuilder::with_id("create_vault", "New Vault...").accelerator("CmdOrCtrl+N").build(handle)?)
+            .separator()
+            .close_window()
+            .build()?;
+
+        // Edit Menu (Standard)
+        let edit_menu = SubmenuBuilder::new(handle, "Edit")
+            .undo()
+            .redo()
+            .separator()
+            .cut()
+            .copy()
+            .paste()
+            .select_all()
+            .build()?;
+
+        // Window Menu
+        let window_menu = SubmenuBuilder::new(handle, "Window")
+            .minimize()
+            .maximize()
+            .separator()
+            .item(&MenuItemBuilder::with_id("close", "Close").accelerator("CmdOrCtrl+W").build(handle)?)
+            .build()?;
+
+        let menu = MenuBuilder::new(handle)
+            .items(&[&app_menu, &file_menu, &edit_menu, &window_menu])
+            .build()?;
+
+        app.set_menu(menu)?;
+      }
+
       app.on_menu_event(move |app_handle, event| {
          match event.id().as_ref() {
-            // ... (omitted lines) ...
             "open_vault" => {
               // Open the Launcher window
               if let Some(window) = app_handle.get_webview_window("launcher") {
                  let _ = window.set_focus();
+                 let _ = window.emit("open-file-picker", ());
               } else {
                   let _window = tauri::WebviewWindowBuilder::new(
                     app_handle,
                     "launcher",
-                    tauri::WebviewUrl::App("/".into())
+                    tauri::WebviewUrl::App("/?action=browse".into())
                   )
                   .title("KeedaVault")
                   .hidden_title(true)
@@ -85,11 +130,12 @@ fn main() {
               // Open the Launcher window
               if let Some(window) = app_handle.get_webview_window("launcher") {
                  let _ = window.set_focus();
+                 let _ = window.emit("create-new-vault", ());
               } else {
                   let _window = tauri::WebviewWindowBuilder::new(
                     app_handle,
                     "launcher",
-                    tauri::WebviewUrl::App("/".into())
+                    tauri::WebviewUrl::App("/?action=create".into())
                   )
                   .title("KeedaVault")
                   .hidden_title(true)

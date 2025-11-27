@@ -122,7 +122,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Smart Views
         if (activeGroupId === 'smart-websites') {
             const all = getAllEntries(activeVault.groups);
-            return all.filter(e => e.url && (e.url.startsWith('http') || e.url.startsWith('www')));
+            return all.filter(e => !!e.url);
         }
         if (activeGroupId === 'smart-2fa') {
             const all = getAllEntries(activeVault.groups);

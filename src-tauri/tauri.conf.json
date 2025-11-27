@@ -54,6 +54,8 @@
             "core:window:allow-set-position",
             "dialog:default",
             "fs:default",
+            "store:default",
+            "shell:default",
             {
               "identifier": "fs:allow-read-file",
               "allow": [

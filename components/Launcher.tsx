@@ -27,14 +27,25 @@ export const Launcher: React.FC = () => {
         }
 
         // Listen for open-file-picker event from menu
-        const unlisten = getCurrentWebviewWindow().listen('open-file-picker', () => {
+        const unlistenOpen = getCurrentWebviewWindow().listen('open-file-picker', () => {
             handleBrowse();
         });
 
+        // Listen for create-new-vault event from menu
+        const unlistenCreate = getCurrentWebviewWindow().listen('create-new-vault', () => {
+            handleCreateNew();
+        });
+
         return () => {
-            unlisten.then(f => f());
+            unlistenOpen.then(f => f());
+            unlistenCreate.then(f => f());
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        const win = getCurrentWebviewWindow();
+        win.setTitle('KeedaVault - Home');
     }, []);
 
     const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock') => {
@@ -68,10 +79,22 @@ export const Launcher: React.FC = () => {
         const mode = action === 'create' ? 'create' : 'auth';
         const url = `/?mode=${mode}&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
 
+        let initialTitle = 'KeedaVault';
+        if (action === 'create') {
+            initialTitle = 'KeedaVault - New Vault';
+        } else if (action === 'unlock') {
+            if (path) {
+                const filename = path.split(/[/\\]/).pop() || 'Database';
+                initialTitle = `${filename} - Unlock`;
+            } else {
+                initialTitle = 'KeedaVault - Unlock';
+            }
+        }
+
         try {
             const webview = new WebviewWindow(label, {
                 url,
-                title: 'KeedaVault',
+                title: initialTitle,
                 width: 500,
                 height: 640,
                 minWidth: 500,
