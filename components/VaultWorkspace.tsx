@@ -14,7 +14,7 @@ import { VaultGroup } from '../types';
 
 export const VaultWorkspace: React.FC = () => {
     const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
-    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry } = useVault();
+    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, saveVault } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
 
@@ -58,6 +58,30 @@ export const VaultWorkspace: React.FC = () => {
         mode: 'add',
         vaultId: '',
     });
+
+    // Global Save Shortcut (Cmd+S)
+    useEffect(() => {
+        const handleKeyDown = async (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+
+                // Check if our local group modal is open
+                if (groupModal.isOpen) return;
+
+                // Simple check for other modals (like Entry Edit modal) by checking for common modal classes or z-index layers
+                // This is a heuristic since we don't have access to EntryList's state directly
+                const hasOpenModals = document.querySelectorAll('.fixed.inset-0.z-50').length > 0;
+                if (hasOpenModals) return;
+
+                if (activeVaultId) {
+                    await saveVault(activeVaultId);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [activeVaultId, groupModal.isOpen, saveVault]);
 
     // Resize window on mount
     useEffect(() => {
