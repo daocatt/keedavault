@@ -27,13 +27,16 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     const [expiryTime, setExpiryTime] = useState('');
     const [showGen, setShowGen] = useState(false);
     const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([]);
-    const [attachments, setAttachments] = useState<{ name: string; data: ArrayBuffer }[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
 
     // Populate fields when opening modal
     useEffect(() => {
         if (isOpen) {
+            setError(null);
+            setIsSaving(false);
             if (editEntry) {
                 setTitle(editEntry.title);
                 setUsername(editEntry.username);
@@ -58,8 +61,6 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             }
         }
     }, [isOpen, editEntry, activeGroupId]);
-
-
 
     // Prevent keyboard shortcuts from affecting underlying components when modal is open
     useEffect(() => {
@@ -101,13 +102,17 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
         setTotpSecret('');
         setExpiryTime('');
         setShowGen(false);
+        setError(null);
 
         setCustomFields([]);
         setAttachments([]);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+        setIsSaving(true);
+
         const formData = {
             groupUuid,
             title,
@@ -125,28 +130,23 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             }, {} as Record<string, string>),
             attachments
         };
-        if (editEntry) {
-            onEditEntry({ ...formData, uuid: editEntry.uuid });
-        } else {
-            onAddEntry(formData);
-        }
-        onClose();
-    };
 
-
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (e.target?.result instanceof ArrayBuffer) {
-                    setAttachments([...attachments, { name: file.name, data: e.target.result }]);
-                }
-            };
-            reader.readAsArrayBuffer(file);
+        try {
+            if (editEntry) {
+                await onEditEntry({ ...formData, uuid: editEntry.uuid });
+            } else {
+                await onAddEntry(formData);
+            }
+            onClose();
+        } catch (e: any) {
+            console.error(e);
+            setError(e.message || "Failed to save entry");
+        } finally {
+            setIsSaving(false);
         }
     };
+
+    // ... (keep handleFileSelect)
 
     if (!isOpen) return null;
 
@@ -164,7 +164,17 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                         {editEntry ? <Pencil size={16} className="text-gray-500" /> : <Plus size={16} className="text-gray-500" />}
                         {editEntry ? 'Edit Entry' : 'New Entry'}
                     </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X size={20} />
+                    </button>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border-b border-red-200 text-red-600 px-4 py-2 text-xs flex items-center">
+                        <span className="font-medium mr-1">Error:</span> {error}
+                    </div>
+                )}
 
                 {/* Two-column layout */}
                 <div className="flex flex-1 overflow-hidden">

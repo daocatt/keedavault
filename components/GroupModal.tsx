@@ -15,7 +15,7 @@ interface GroupModalProps {
     };
     groups: VaultGroup[]; // Root groups to build tree
     onClose: () => void;
-    onSave: (name: string, icon: number, parentGroupId: string, allowAdd: boolean) => void;
+    onSave: (name: string, icon: number, parentGroupId: string, allowAdd: boolean) => Promise<void> | void;
 }
 
 // Extended icon set with Lucide mappings
@@ -49,12 +49,16 @@ export const GroupModal: React.FC<GroupModalProps> = ({
     const [parentGroupId, setParentGroupId] = useState<string>('');
     const [allowAdd, setAllowAdd] = useState(true);
     const [showIconPicker, setShowIconPicker] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const iconPickerRef = useRef<HTMLDivElement>(null);
     const prevIsOpenRef = useRef(false);
 
     useEffect(() => {
         // Only initialize when modal is first opened (transition from closed to open)
         if (isOpen && !prevIsOpenRef.current) {
+            setError(null);
+            setIsSaving(false);
             if (mode === 'edit' && initialData) {
                 setName(initialData.name);
                 setIcon(initialData.icon);
@@ -116,12 +120,18 @@ export const GroupModal: React.FC<GroupModalProps> = ({
 
     if (!isOpen) return null;
 
-
-
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name.trim()) return;
-        onSave(name, icon, parentGroupId, allowAdd);
-        onClose();
+        setError(null);
+        setIsSaving(true);
+        try {
+            await onSave(name, icon, parentGroupId, allowAdd);
+            // Parent component handles closing on success
+        } catch (e: any) {
+            console.error(e);
+            setError(e.message || "Failed to save group");
+            setIsSaving(false);
+        }
     };
 
     const SelectedIcon = ICONS.find(i => i.id === icon)?.icon || Folder;
@@ -138,6 +148,13 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                         <X size={14} />
                     </button>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border-b border-red-200 text-red-600 px-4 py-2 text-xs flex items-center">
+                        <span className="font-medium mr-1">Error:</span> {error}
+                    </div>
+                )}
 
                 <div className="p-5 space-y-6">
                     {/* Fusion Header: Icon & Name */}

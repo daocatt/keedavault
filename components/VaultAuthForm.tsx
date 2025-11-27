@@ -35,7 +35,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             // Don't create a dummy File object - we'll use the path directly
             clearError();
         }
-    }, [initialVaultInfo]);
+    }, [initialVaultInfo?.path]);
 
     const resetForm = () => {
         setFile(null);
@@ -137,8 +137,8 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
 
             {(unlockError || formError) && (
-                <div className="mb-5 p-3 bg-red-50 text-red-600 text-[13px] font-medium rounded-xl flex items-start border border-red-100 shadow-sm">
-                    <AlertCircle size={16} className="mt-0.5 mr-2.5 flex-shrink-0" />
+                <div className="mb-5 p-3 bg-red-100 text-red-700 text-sm font-medium rounded-xl flex items-start border border-red-200 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0 text-red-600" />
                     <span>{unlockError || formError}</span>
                 </div>
             )}
@@ -182,14 +182,23 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                             </label>
                             <div className="relative">
                                 <div className="absolute left-4 top-3 text-gray-400">
-                                    <Key size={16} />
+                                    <Key size={16} className={(unlockError || formError) ? "text-red-400" : ""} />
                                 </div>
                                 <input
                                     type="password"
                                     required
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all shadow-sm"
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (unlockError || formError) {
+                                            clearError();
+                                            setFormError(null);
+                                        }
+                                    }}
+                                    className={`w-full pl-11 pr-4 py-2.5 bg-white border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:ring-4 focus:outline-none transition-all shadow-sm ${(unlockError || formError)
+                                        ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                                        : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                                        }`}
                                     placeholder="Enter password..."
                                     autoFocus
                                 />

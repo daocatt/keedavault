@@ -244,13 +244,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 return;
             }
 
-            // Delete or Backspace key - Delete selected entries
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEntryIds.size > 0 && !isModalOpen) {
-                // Prevent default behavior (like navigating back in browser)
-                e.preventDefault();
-                // Trigger delete
-                handleDelete(e as any);
-            }
+            // Delete or Backspace key mapping removed to prevent modal interruption
         };
 
         document.addEventListener('keydown', handleKeyDown);

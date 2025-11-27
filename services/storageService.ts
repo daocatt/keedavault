@@ -5,18 +5,31 @@ export interface SavedVaultInfo {
     path?: string;
     filename: string;
     lastOpened: number;
+    firstOpened?: number;
 }
 
 const STORAGE_KEY = 'keedavault_recent_vaults';
 
 export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
     try {
-        const recent = await getRecentVaults();
+        // Get raw list without sorting to avoid confusion during manipulation
+        const stored = await settingsStore.get<SavedVaultInfo[]>(STORAGE_KEY) || [];
+
+        // Find existing entry to preserve firstOpened
+        const existingEntry = stored.find(v => v.path === vaultInfo.path && v.filename === vaultInfo.filename);
+        const firstOpened = existingEntry?.firstOpened || existingEntry?.lastOpened || Date.now();
+
         // Remove if already exists
-        const filtered = recent.filter(v => v.path !== vaultInfo.path || v.filename !== vaultInfo.filename);
-        // Add to beginning
-        filtered.unshift(vaultInfo);
-        // Keep only last 5
+        const filtered = stored.filter(v => v.path !== vaultInfo.path || v.filename !== vaultInfo.filename);
+
+        // Add to beginning with updated lastOpened and preserved firstOpened
+        const newEntry: SavedVaultInfo = {
+            ...vaultInfo,
+            firstOpened: firstOpened
+        };
+        filtered.unshift(newEntry);
+
+        // Keep only last 5 (based on recency of use, which is what unshift/slice does effectively for LRU)
         const toSave = filtered.slice(0, 5);
         await settingsStore.set(STORAGE_KEY, toSave);
     } catch (e) {
@@ -29,7 +42,14 @@ export const getRecentVaults = async (): Promise<SavedVaultInfo[]> => {
         console.log('getRecentVaults called');
         const stored = await settingsStore.get<SavedVaultInfo[]>(STORAGE_KEY);
         if (!stored) return [];
-        return stored;
+
+        // Sort by firstOpened ascending (oldest known first)
+        // Fallback to lastOpened if firstOpened is missing
+        return stored.sort((a, b) => {
+            const firstA = a.firstOpened || a.lastOpened;
+            const firstB = b.firstOpened || b.lastOpened;
+            return firstA - firstB;
+        });
     } catch (e) {
         console.error('Failed to load recent vaults:', e);
         return [];
