@@ -29,6 +29,9 @@ export interface UISettings {
         field: 'title' | 'username' | 'created' | 'modified';
         asc: boolean;
     };
+    passwordGenerator?: {
+        specialChars: string;
+    };
 }
 
 const defaultSettings: UISettings = {
@@ -58,6 +61,9 @@ const defaultSettings: UISettings = {
     entrySort: {
         field: 'title',
         asc: true,
+    },
+    passwordGenerator: {
+        specialChars: '^!#&@$%*+-_()<>',
     },
 };
 

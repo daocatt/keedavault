@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, RefreshCw, X } from 'lucide-react';
+import { EFF_LARGE_WORDLIST } from '../services/effLargeWordlist';
+import { getUISettings, saveUISettings } from '../services/uiSettingsService';
 
 interface PasswordGeneratorProps {
     isOpen: boolean;
@@ -7,19 +9,15 @@ interface PasswordGeneratorProps {
     onGenerate: (password: string) => void;
     showCopyButton?: boolean;
     className?: string;
+    closeOnOutsideClick?: boolean;
+    showUseButton?: boolean;
 }
 
-const WORD_LIST = [
-    'apple', 'banana', 'cherry', 'dragon', 'elephant', 'falcon', 'giraffe', 'hammer',
-    'island', 'jungle', 'kitten', 'lemon', 'mountain', 'notebook', 'ocean', 'penguin',
-    'quantum', 'rainbow', 'sunset', 'thunder', 'umbrella', 'volcano', 'whisper', 'xylophone',
-    'yellow', 'zebra', 'anchor', 'bridge', 'castle', 'diamond', 'emerald', 'forest',
-    'galaxy', 'horizon', 'iceberg', 'jasmine', 'knight', 'lantern', 'meadow', 'nebula',
-    'orchid', 'palace', 'quartz', 'river', 'sapphire', 'temple', 'universe', 'valley',
-    'waterfall', 'crystal', 'phoenix', 'shadow', 'thunder', 'wisdom', 'zenith', 'aurora'
-];
 
-export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, onClose, onGenerate, showCopyButton = true, className }) => {
+
+const AVAILABLE_SPECIAL_CHARS = '!@#$%^&*()-_=+[]{};:,.<>?';
+
+export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, onClose, onGenerate, showCopyButton = true, className, closeOnOutsideClick = true, showUseButton = true }) => {
     const [mode, setMode] = useState<'password' | 'passphrase'>('password');
     const [length, setLength] = useState(20);
     const [wordCount, setWordCount] = useState(4);
@@ -28,18 +26,43 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
     const [useLowercase, setUseLowercase] = useState(true);
     const [useNumbers, setUseNumbers] = useState(true);
     const [useSymbols, setUseSymbols] = useState(true);
+    const [specialChars, setSpecialChars] = useState('^!#&@$%*+-_()<>');
     const [generatedPassword, setGeneratedPassword] = useState('');
     const [copied, setCopied] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const loadSettings = async () => {
+            const settings = await getUISettings();
+            if (settings.passwordGenerator?.specialChars) {
+                setSpecialChars(settings.passwordGenerator.specialChars);
+            }
+        };
+        loadSettings();
+    }, []);
+
+    useEffect(() => {
         if (isOpen) {
             generatePassword();
         }
-    }, [isOpen, mode, length, wordCount, separator, useUppercase, useLowercase, useNumbers, useSymbols]);
+    }, [isOpen, mode, length, wordCount, separator, useUppercase, useLowercase, useNumbers, useSymbols, specialChars]);
+
+    const saveSpecialChars = async (newChars: string) => {
+        setSpecialChars(newChars);
+        const settings = await getUISettings();
+        await saveUISettings({
+            ...settings,
+            passwordGenerator: {
+                ...settings.passwordGenerator,
+                specialChars: newChars
+            }
+        });
+    };
 
     // Close on click outside
     useEffect(() => {
+        if (!closeOnOutsideClick) return;
+
         const handleClickOutside = (event: MouseEvent) => {
             if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
                 onClose();
@@ -51,13 +74,13 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, closeOnOutsideClick]);
 
     const generatePassword = () => {
         if (mode === 'passphrase') {
             const words: string[] = [];
             for (let i = 0; i < wordCount; i++) {
-                const word = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+                const word = EFF_LARGE_WORDLIST[Math.floor(Math.random() * EFF_LARGE_WORDLIST.length)];
                 words.push(word.charAt(0).toUpperCase() + word.slice(1));
             }
             setGeneratedPassword(words.join(separator));
@@ -65,7 +88,7 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
             const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const lowercase = 'abcdefghijklmnopqrstuvwxyz';
             const numbers = '0123456789';
-            const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+            const symbols = specialChars;
 
             let chars = '';
             if (useUppercase) chars += uppercase;
@@ -129,14 +152,19 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                 >
-                    Passphrase
+                    Diceware
                 </button>
             </div>
 
             {/* Generated Password Display */}
-            <div className="bg-gray-100 p-2 rounded-lg mb-2 min-h-[40px] flex items-center justify-between group relative">
-                <span className="font-mono text-sm text-gray-800 break-all mr-2 flex-1 leading-tight">{generatedPassword}</span>
-                <div className="flex space-x-0.5">
+            <div className="bg-gray-100 p-2 rounded-lg mb-2 flex items-start justify-between group relative">
+                <textarea
+                    value={generatedPassword}
+                    onChange={(e) => setGeneratedPassword(e.target.value)}
+                    className="font-mono text-sm text-gray-800 bg-transparent border-none focus:ring-0 flex-1 mr-2 outline-none min-w-0 resize-none h-16 leading-tight"
+                    spellCheck={false}
+                />
+                <div className="flex flex-col space-y-1">
                     <button
                         type="button"
                         onClick={generatePassword}
@@ -177,7 +205,7 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                        <div className="flex items-center justify-between gap-2 mb-1">
                             <label className="flex items-center space-x-1.5 cursor-pointer">
                                 <input
                                     type="checkbox"
@@ -205,15 +233,61 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                                 />
                                 <span className="text-xs text-gray-600">0-9</span>
                             </label>
-                            <label className="flex items-center space-x-1.5 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={useSymbols}
-                                    onChange={(e) => setUseSymbols(e.target.checked)}
-                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
-                                />
-                                <span className="text-xs text-gray-600">!@#</span>
-                            </label>
+                        </div>
+                        <div className="mt-2">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="flex items-center space-x-1.5 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={useSymbols}
+                                        onChange={(e) => setUseSymbols(e.target.checked)}
+                                        className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                                    />
+                                    <span className="text-xs text-gray-600">Symbols</span>
+                                </label>
+                                {useSymbols && (
+                                    <div className="flex gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => saveSpecialChars(AVAILABLE_SPECIAL_CHARS)}
+                                            className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
+                                        >
+                                            All
+                                        </button>
+                                        <span className="text-[10px] text-gray-300">|</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => saveSpecialChars('')}
+                                            className="text-[10px] text-gray-500 hover:text-gray-700"
+                                        >
+                                            None
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {useSymbols && (
+                                <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                    {AVAILABLE_SPECIAL_CHARS.split('').map(char => (
+                                        <button
+                                            key={char}
+                                            type="button"
+                                            onClick={() => {
+                                                const newChars = specialChars.includes(char)
+                                                    ? specialChars.replace(char, '')
+                                                    : specialChars + char;
+                                                saveSpecialChars(newChars);
+                                            }}
+                                            className={`w-5 h-5 flex items-center justify-center text-[10px] rounded font-mono transition-all ${specialChars.includes(char)
+                                                ? 'bg-indigo-600 text-white shadow-sm border border-indigo-600'
+                                                : 'bg-white text-gray-400 border border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            {char}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -256,13 +330,15 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
             </div>
 
             {/* Use Button */}
-            <button
-                type="button"
-                onClick={handleUse}
-                className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
-            >
-                Use Password
-            </button>
+            {showUseButton && (
+                <button
+                    type="button"
+                    onClick={handleUse}
+                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+                >
+                    Use Password
+                </button>
+            )}
         </div>
     );
 };

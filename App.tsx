@@ -10,13 +10,15 @@ import { VaultProvider } from './context/VaultContext';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { LogicalSize } from '@tauri-apps/api/dpi';
 
+import { PasswordGenerator } from './components/PasswordGenerator';
+
 const AppContent: React.FC = () => {
   const [authPath, setAuthPath] = useState<string | undefined>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('path') || undefined;
   });
 
-  const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview'>(() => {
+  const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator'>(() => {
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
     const actionParam = params.get('action');
@@ -30,6 +32,7 @@ const AppContent: React.FC = () => {
     if (modeParam === 'about') return 'about';
     if (modeParam === 'large-type') return 'large-type';
     if (modeParam === 'markdown-preview') return 'markdown-preview';
+    if (modeParam === 'generator') return 'generator';
 
     if (actionParam === 'unlock' || (actionParam === null && pathParam)) return 'auth';
     if (actionParam === 'create') return 'create';
@@ -48,6 +51,27 @@ const AppContent: React.FC = () => {
 
   if (mode === 'markdown-preview') {
     return <MarkdownPreviewWindow />;
+  }
+
+  if (mode === 'generator') {
+    return (
+      <div className="h-screen w-screen bg-white">
+        <div className="h-8 bg-white/90 backdrop-blur-sm border-b border-gray-200 flex items-center justify-center drag-region" data-tauri-drag-region>
+          <span className="text-xs font-medium text-gray-500">Password Generator</span>
+        </div>
+        <div className="p-4">
+          <PasswordGenerator
+            isOpen={true}
+            onClose={() => getCurrentWebviewWindow().close()}
+            onGenerate={() => { }}
+            showCopyButton={true}
+            className="shadow-none border-0 p-0"
+            closeOnOutsideClick={false}
+            showUseButton={false}
+          />
+        </div>
+      </div>
+    );
   }
 
   // If in auth/create mode, show VaultAuthWindow
