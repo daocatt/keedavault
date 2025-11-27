@@ -3,6 +3,8 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { open, message } from '@tauri-apps/plugin-dialog';
 import { exists } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
+import { formatDistanceToNow } from 'date-fns';
 import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
@@ -12,36 +14,16 @@ export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
 
     useEffect(() => {
+        const fetchedRef = { current: false };
         const fetchAndSetVaults = async () => {
+            if (fetchedRef.current) return;
+            fetchedRef.current = true;
             setRecentVaults(await getRecentVaults());
         };
         fetchAndSetVaults();
-
-        // Check URL params for auto-browse action
-        const params = new URLSearchParams(window.location.search);
-        const action = params.get('action');
-
-        if (action === 'browse') {
-            // Auto-trigger file browse after a short delay
-            setTimeout(() => handleBrowse(), 300);
-        }
-
-        // Listen for open-file-picker event from menu
-        const unlistenOpen = getCurrentWebviewWindow().listen('open-file-picker', () => {
-            handleBrowse();
-        });
-
-        // Listen for create-new-vault event from menu
-        const unlistenCreate = getCurrentWebviewWindow().listen('create-new-vault', () => {
-            handleCreateNew();
-        });
-
-        return () => {
-            unlistenOpen.then(f => f());
-            unlistenCreate.then(f => f());
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+
 
     useEffect(() => {
         const win = getCurrentWebviewWindow();
@@ -157,7 +139,7 @@ export const Launcher: React.FC = () => {
 
             console.log('Opening vault window for:', vault.path);
             await saveRecentVault({ ...vault, lastOpened: Date.now() });
-            // Don't update the list order immediately - it will update when app reopens
+            setRecentVaults(await getRecentVaults());
             openVaultWindow(vault.path, 'unlock');
         } catch (e) {
             console.error("Error checking file or opening vault", e);
@@ -171,6 +153,32 @@ export const Launcher: React.FC = () => {
     const handleCreateNew = () => {
         openVaultWindow(undefined, 'create');
     };
+
+    useEffect(() => {
+        // Listen for open-file-picker event from menu
+        const unlistenOpen = getCurrentWebviewWindow().listen('open-file-picker', () => {
+            handleBrowse();
+        });
+
+        // Listen for create-new-vault event from menu
+        const unlistenCreate = getCurrentWebviewWindow().listen('create-new-vault', () => {
+            handleCreateNew();
+        });
+
+        // Check URL params for auto-browse action
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get('action');
+
+        if (action === 'browse') {
+            // Auto-trigger file browse after a short delay
+            setTimeout(() => handleBrowse(), 300);
+        }
+
+        return () => {
+            unlistenOpen.then(f => f());
+            unlistenCreate.then(f => f());
+        };
+    }, []);
 
     const handleBrowse = async () => {
         try {
@@ -193,7 +201,7 @@ export const Launcher: React.FC = () => {
                     lastOpened: Date.now()
                 };
                 await saveRecentVault(vaultInfo);
-                // Don't update the list order immediately - it will update when app reopens
+                setRecentVaults(await getRecentVaults());
                 openVaultWindow(selected, 'unlock');
             }
         } catch (e) {
@@ -205,6 +213,15 @@ export const Launcher: React.FC = () => {
         e.stopPropagation();
         await removeRecentVault(vault.path, vault.filename);
         setRecentVaults(await getRecentVaults());
+    };
+
+    const handleReveal = async (e: React.MouseEvent, path: string) => {
+        e.stopPropagation();
+        try {
+            await invoke('reveal_in_finder', { path });
+        } catch (error) {
+            console.error('Failed to reveal in finder:', error);
+        }
     };
 
     return (
@@ -275,30 +292,54 @@ export const Launcher: React.FC = () => {
                                                 e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)';
                                                 e.currentTarget.style.borderColor = 'var(--color-border-light)';
                                             }}
+                                            title={`${vault.filename}\n${vault.path}`}
                                         >
-                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 transition-colors" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}>
-                                                <HardDrive size={14} />
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors flex-shrink-0" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}>
+                                                <HardDrive size={16} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{vault.filename}</div>
-                                                <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>{vault.path}</div>
+                                                <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                                                    Opened {formatDistanceToNow(vault.lastOpened, { addSuffix: true })}
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => handleRemoveRecent(e, vault)}
-                                                className="ml-2 p-1 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                                                style={{ color: 'var(--color-text-tertiary)' }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
-                                                    e.currentTarget.style.color = '#dc2626';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                                    e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                                                }}
-                                                title="Remove from recent"
-                                            >
-                                                <X size={12} />
-                                            </button>
+
+                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div
+                                                    role="button"
+                                                    onClick={(e) => handleReveal(e, vault.path || '')}
+                                                    className="p-1.5 rounded-md mr-1"
+                                                    style={{ color: 'var(--color-text-tertiary)' }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                                        e.currentTarget.style.color = 'var(--color-text-primary)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                                                    }}
+                                                    title="Reveal in Finder"
+                                                >
+                                                    <FolderOpen size={14} />
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    onClick={(e) => handleRemoveRecent(e, vault)}
+                                                    className="p-1.5 rounded-md"
+                                                    style={{ color: 'var(--color-text-tertiary)' }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                        e.currentTarget.style.color = '#dc2626';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                        e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                                                    }}
+                                                    title="Remove from recent"
+                                                >
+                                                    <X size={14} />
+                                                </div>
+                                            </div>
                                         </button>
                                     ))
                                 )}

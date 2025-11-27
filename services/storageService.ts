@@ -29,7 +29,7 @@ export const getRecentVaults = async (): Promise<SavedVaultInfo[]> => {
         console.log('getRecentVaults called');
         const stored = await settingsStore.get<SavedVaultInfo[]>(STORAGE_KEY);
         if (!stored) return [];
-        return stored.sort((a, b) => b.lastOpened - a.lastOpened);
+        return stored;
     } catch (e) {
         console.error('Failed to load recent vaults:', e);
         return [];
