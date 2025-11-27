@@ -25,6 +25,9 @@ export interface Vault {
   groups: VaultGroup[];
   fileHandle?: FileSystemFileHandle;
   path?: string;
+  hasKeyFile?: boolean;
+  keyFileData?: Uint8Array;
+  password?: kdbxweb.ProtectedValue;
 }
 
 export interface VaultGroup {

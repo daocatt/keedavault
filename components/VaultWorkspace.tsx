@@ -18,11 +18,12 @@ import { PasswordPromptModal } from './PasswordPromptModal';
 import { ExportModal } from './ExportModal';
 import { PasswordGenerator } from './PasswordGenerator';
 import { CreateEntryModal } from './CreateEntryModal';
+import { ChangeCredentialsModal } from './ChangeCredentialsModal';
 import { VaultGroup, EntryFormData } from '../types';
 
 export const VaultWorkspace: React.FC = () => {
     const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
-    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, saveVault, onAddEntry } = useVault();
+    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, saveVault, onAddEntry, lockVault } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
 
@@ -87,105 +88,53 @@ export const VaultWorkspace: React.FC = () => {
 
     const [passwordGeneratorOpen, setPasswordGeneratorOpen] = useState(false);
     const [createEntryModalOpen, setCreateEntryModalOpen] = useState(false);
+    const [changeCredentialsModalOpen, setChangeCredentialsModalOpen] = useState(false);
 
     // Handle Menu Actions (Import/Export)
     useEffect(() => {
-        const onImportDatabase = () => {
-            if (!activeVault) {
-                addToast({ title: 'No active vault', type: 'error' });
-                return;
-            }
+        const listeners: Promise<() => void>[] = [];
+
+        listeners.push(getCurrentWebviewWindow().listen('import-database', () => {
+            if (!activeVaultId) { addToast({ title: 'No active vault', type: 'error' }); return; }
             setImportModalOpen(true);
-        };
+        }));
 
-        const onExportDatabase = () => {
-            if (!activeVault) {
-                addToast({ title: 'No active vault', type: 'error' });
-                return;
-            }
+        listeners.push(getCurrentWebviewWindow().listen('export-database', () => {
+            if (!activeVaultId) { addToast({ title: 'No active vault', type: 'error' }); return; }
             setExportModal({ isOpen: true, type: 'database' });
-        };
+        }));
 
-        const onExportSelected = () => {
-            if (!activeVault) {
-                addToast({ title: 'No active vault', type: 'error' });
-                return;
-            }
-            if (selectedEntryIds.size === 0) {
-                addToast({ title: 'No entries selected', type: 'info' });
-                return;
-            }
+        listeners.push(getCurrentWebviewWindow().listen('export-selected', () => {
+            if (!activeVaultId) { addToast({ title: 'No active vault', type: 'error' }); return; }
+            if (selectedEntryIds.size === 0) { addToast({ title: 'No entries selected', type: 'info' }); return; }
             setExportModal({ isOpen: true, type: 'selected' });
-        };
+        }));
 
-        const onPasswordGenerator = () => setPasswordGeneratorOpen(true);
-        const onCreateEntry = () => {
-            if (!activeVault) {
-                addToast({ title: 'No active vault', type: 'error' });
-                return;
-            }
+        listeners.push(getCurrentWebviewWindow().listen('password-generator', () => {
+            setPasswordGeneratorOpen(true);
+        }));
+
+        listeners.push(getCurrentWebviewWindow().listen('create-entry', () => {
+            if (!activeVaultId) { addToast({ title: 'No active vault', type: 'error' }); return; }
             setCreateEntryModalOpen(true);
-        };
-        const onLockDatabase = () => {
-            if (activeVault) {
-                // Use the lockVault function from context if available, but we need access to it here.
-                // Since we are inside the component that provides the context, we can't use useVault() hook directly if we were wrapping it.
-                // But VaultWorkspace is NOT the provider, it USES the provider.
-                // Wait, VaultWorkspace is the child of VaultProvider?
-                // Let's check App.tsx or main entry.
-                // Ah, line 22: const { ... } = useVault();
-                // So we have access to lockVault from useVault().
-                // But wait, lockVault is not destructured in line 22.
-                // I need to destructure it.
-            }
-        };
-        const onChangeCredentials = () => addToast({ title: 'Coming Soon', description: 'Change Credentials feature is coming soon.', type: 'info' });
-        const onDatabaseSetting = () => addToast({ title: 'Coming Soon', description: 'Database Settings feature is coming soon.', type: 'info' });
+        }));
 
+        listeners.push(getCurrentWebviewWindow().listen('lock-database', () => {
+            if (activeVaultId) lockVault(activeVaultId);
+        }));
 
-        const unlistenImportDb = getCurrentWebviewWindow().listen('import-database', onImportDatabase);
-        const unlistenExportDb = getCurrentWebviewWindow().listen('export-database', onExportDatabase);
-        const unlistenExportSel = getCurrentWebviewWindow().listen('export-selected', onExportSelected);
-        const unlistenPwdGen = getCurrentWebviewWindow().listen('password-generator', onPasswordGenerator);
-        const unlistenCreateEntry = getCurrentWebviewWindow().listen('create-entry', onCreateEntry);
-        const unlistenLockDb = getCurrentWebviewWindow().listen('lock-database', () => {
-            if (activeVaultId) {
-                // We need to call lockVault from context.
-                // Since we can't easily access the latest lockVault from closure without adding it to deps,
-                // and adding it to deps might re-trigger effect.
-                // But lockVault is stable?
-                // Actually, I'll just emit a custom event or use a ref if needed.
-                // Or better, just dispatch a custom event that VaultWorkspace listens to?
-                // No, I can just use the function if I include it in dependencies.
-                document.dispatchEvent(new CustomEvent('trigger-lock-vault', { detail: { vaultId: activeVaultId } }));
-            }
-        });
-        const unlistenChangeCred = getCurrentWebviewWindow().listen('change-credentials', onChangeCredentials);
-        const unlistenDbSetting = getCurrentWebviewWindow().listen('database-setting', onDatabaseSetting);
+        listeners.push(getCurrentWebviewWindow().listen('change-credentials', () => {
+            setChangeCredentialsModalOpen(true);
+        }));
+
+        listeners.push(getCurrentWebviewWindow().listen('database-setting', () => {
+            addToast({ title: 'Coming Soon', description: 'Database Settings feature is coming soon.', type: 'info' });
+        }));
 
         return () => {
-            unlistenImportDb.then(f => f());
-            unlistenExportDb.then(f => f());
-            unlistenExportSel.then(f => f());
-            unlistenPwdGen.then(f => f());
-            unlistenCreateEntry.then(f => f());
-            unlistenLockDb.then(f => f());
-            unlistenChangeCred.then(f => f());
-            unlistenDbSetting.then(f => f());
+            listeners.forEach(p => p.then(f => f()));
         };
-    }, [activeVault, selectedEntryIds, addToast, onAddEntry, activeVaultId]);
-
-    // Effect to handle lock vault trigger
-    const { lockVault } = useVault();
-    useEffect(() => {
-        const handleLock = (e: CustomEvent) => {
-            if (e.detail && e.detail.vaultId) {
-                lockVault(e.detail.vaultId);
-            }
-        };
-        document.addEventListener('trigger-lock-vault', handleLock as EventListener);
-        return () => document.removeEventListener('trigger-lock-vault', handleLock as EventListener);
-    }, [lockVault]);
+    }, [activeVaultId, selectedEntryIds, lockVault, addToast]);
 
     const importEntries = async (entries: EntryFormData[]) => {
         if (!activeVault) return;
@@ -774,6 +723,10 @@ export const VaultWorkspace: React.FC = () => {
             <CreateEntryModal
                 isOpen={createEntryModalOpen}
                 onClose={() => setCreateEntryModalOpen(false)}
+            />
+            <ChangeCredentialsModal
+                isOpen={changeCredentialsModalOpen}
+                onClose={() => setChangeCredentialsModalOpen(false)}
             />
         </div>
     );
