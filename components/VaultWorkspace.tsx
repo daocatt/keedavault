@@ -32,6 +32,13 @@ export const VaultWorkspace: React.FC = () => {
         loadSettings();
     }, []);
 
+    // Update window title when vault changes
+    useEffect(() => {
+        const win = getCurrentWebviewWindow();
+        const title = vaultName ? `${vaultName} - KeedaVault` : 'KeedaVault';
+        win.setTitle(title);
+    }, [vaultName]);
+
     const { addToast } = useToast();
 
     // Group Modal State
@@ -90,6 +97,14 @@ export const VaultWorkspace: React.FC = () => {
                 // Ensure visible and focused
                 await win.show();
                 await win.setFocus();
+
+                // Focus the search input to prevent sidebar buttons from stealing focus
+                setTimeout(() => {
+                    const searchInput = document.getElementById('entry-search-input');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }, 100);
 
                 console.log("VaultWorkspace: Window initialized successfully");
             } catch (e) {

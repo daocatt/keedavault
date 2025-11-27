@@ -11,6 +11,8 @@ interface VaultAuthFormProps {
     hideHeader?: boolean;
 }
 
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+
 export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: SavedVaultInfo }> = ({ onSuccess, className = '', hideHeader = false, initialVaultInfo }) => {
     const [file, setFile] = useState<File | null>(null);
     const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null);
@@ -21,6 +23,11 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     const [formError, setFormError] = useState<string | null>(null);
 
     const { addVault, isUnlocking, unlockError, clearError } = useVault();
+
+    useEffect(() => {
+        const win = getCurrentWebviewWindow();
+        win.setTitle('KeedaVault - Vault Auth');
+    }, []);
 
     useEffect(() => {
         if (initialVaultInfo?.path) {

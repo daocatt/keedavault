@@ -13,7 +13,10 @@ export const VaultBox: React.FC<VaultBoxProps> = ({ onOpenVault, onCreateNew, on
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
 
     useEffect(() => {
-        setRecentVaults(getRecentVaults());
+        const load = async () => {
+            setRecentVaults(await getRecentVaults());
+        };
+        load();
     }, []);
 
     const handleQuickOpen = (vault: SavedVaultInfo) => {
