@@ -65,12 +65,18 @@ export const createDatabase = (name: string, password: string, keyFile?: ArrayBu
     // Create standard default groups
     const root = db.getDefaultGroup();
     if (root) {
-        db.createGroup(root, 'General');
-        db.createGroup(root, 'Windows');
-        db.createGroup(root, 'Network');
-        db.createGroup(root, 'Internet');
-        db.createGroup(root, 'eMail');
-        db.createGroup(root, 'Homebanking');
+        const g1 = db.createGroup(root, 'General');
+        g1.enableSearching = true;
+        const g2 = db.createGroup(root, 'Windows');
+        g2.enableSearching = true;
+        const g3 = db.createGroup(root, 'Network');
+        g3.enableSearching = true;
+        const g4 = db.createGroup(root, 'Internet');
+        g4.enableSearching = true;
+        const g5 = db.createGroup(root, 'eMail');
+        g5.enableSearching = true;
+        const g6 = db.createGroup(root, 'Homebanking');
+        g6.enableSearching = true;
     }
 
     return db;
