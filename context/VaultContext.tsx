@@ -60,6 +60,7 @@ interface VaultContextType {
     isEntryInRecycleBin: (entryId: string) => boolean;
     onEmptyRecycleBin: () => Promise<void>;
     lockVault: (id: string) => void;
+    changeCredentials: (vaultId: string, oldPassword: string, newPassword: string | null, keyFileAction: 'keep' | 'remove' | 'change', newKeyFile?: File | Uint8Array) => Promise<void>;
 }
 
 // ...
@@ -441,6 +442,8 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(password), keyFileBuffer);
 
             const db = await kdbxweb.Kdbx.load(arrayBuffer as ArrayBuffer, credentials);
+            // Explicitly set credentials to ensure they are available for verification later
+            db.credentials = credentials;
 
             const parsedStructure = parseKdbxStructure(db);
 
@@ -451,7 +454,10 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 db: db,
                 groups: parsedStructure,
                 fileHandle: handle,
-                path: path
+                path: path,
+                hasKeyFile: !!keyFile,
+                keyFileData: keyFileBuffer ? new Uint8Array(keyFileBuffer) : undefined,
+                password: kdbxweb.ProtectedValue.fromString(password)
             };
 
             setVaults(prev => [...prev, newVault]);
@@ -470,7 +476,14 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             addToast({ title: "Vault unlocked successfully", type: "success" });
         } catch (error: any) {
             console.error("Failed to unlock vault:", error);
-            setUnlockError(error.message || "Invalid credentials or corrupted file.");
+            let errorMessage = error.message || "Invalid credentials or corrupted file.";
+
+            // Map technical kdbxweb errors to user-friendly messages
+            if (errorMessage.includes("InvalidKey") || errorMessage.includes("HMAC mismatch")) {
+                errorMessage = "Incorrect password or key file.";
+            }
+
+            setUnlockError(errorMessage);
             throw error;
         } finally {
             setIsUnlocking(false);
@@ -483,6 +496,8 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
             const keyFileBuffer = keyFile ? await keyFile.arrayBuffer() : undefined;
             const db = createDatabase(name, password, keyFileBuffer);
+            // Explicitly set credentials on the new DB instance
+            db.credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(password), keyFileBuffer);
 
             let handle: FileSystemFileHandle | undefined;
             let path: string | undefined;
@@ -556,7 +571,10 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 db: db,
                 groups: parsedStructure,
                 fileHandle: handle,
-                path: path
+                path: path,
+                hasKeyFile: !!keyFile,
+                keyFileData: keyFileBuffer ? new Uint8Array(keyFileBuffer) : undefined,
+                password: kdbxweb.ProtectedValue.fromString(password)
             };
 
             setVaults(prev => [...prev, newVault]);
@@ -649,6 +667,65 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
+    const changeCredentials = async (vaultId: string, oldPassword: string, newPassword: string | null, keyFileAction: 'keep' | 'remove' | 'change', newKeyFile?: File | Uint8Array) => {
+        const vault = vaults.find(v => v.id === vaultId);
+        if (!vault) throw new Error("Vault not found");
+
+        // 1. Verify Old Credentials
+        // We must verify that the provided oldPassword matches the current database password
+        // to prevent unauthorized changes or typos locking the user out.
+        const currentPassword = vault.password;
+        const currentPasswordText = currentPassword ? currentPassword.getText() : '';
+
+        console.log('Verifying credentials:', {
+            hasCurrentPassword: !!currentPassword,
+            currentPasswordLength: currentPasswordText.length,
+            oldPasswordLength: oldPassword.length,
+            match: oldPassword === currentPasswordText
+        });
+
+        if (oldPassword !== currentPasswordText) {
+            throw new Error("Current password is incorrect");
+        }
+
+        // 2. Set New Credentials
+        let keyFileData: Uint8Array | undefined;
+
+        if (keyFileAction === 'change') {
+            if (newKeyFile instanceof File) {
+                keyFileData = new Uint8Array(await newKeyFile.arrayBuffer());
+            } else if (newKeyFile) {
+                keyFileData = newKeyFile;
+            }
+        } else if (keyFileAction === 'keep') {
+            // Use stored key file data
+            keyFileData = vault.keyFileData;
+        } else {
+            // 'remove' - keyFileData remains undefined
+        }
+
+        // Determine the password to use for the new credentials
+        let passwordValue: kdbxweb.ProtectedValue;
+        if (newPassword !== null) {
+            // User wants to change password
+            passwordValue = kdbxweb.ProtectedValue.fromString(newPassword);
+        } else {
+            // User wants to keep existing password
+            // We reuse the ProtectedValue from the current credentials
+            passwordValue = currentPassword || kdbxweb.ProtectedValue.fromString('');
+        }
+
+        const creds = new kdbxweb.Credentials(passwordValue, keyFileData);
+        vault.db.credentials = creds;
+        vault.hasKeyFile = !!keyFileData;
+        vault.keyFileData = keyFileData;
+        vault.password = passwordValue; // Update stored password
+
+        // 3. Save Vault
+        await saveVault(vaultId);
+        addToast({ title: "Credentials updated", type: "success" });
+    };
+
     return (
         <VaultContext.Provider value={{
             vaults,
@@ -682,6 +759,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             isRecycleBinGroup,
             isEntryInRecycleBin,
             onEmptyRecycleBin,
+            changeCredentials,
             lockVault: (id: string) => {
                 const vault = vaults.find(v => v.id === id);
                 if (vault) {
