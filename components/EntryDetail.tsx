@@ -8,6 +8,7 @@ import { useToast } from './ui/Toaster';
 import { CreateEntryModal } from './CreateEntryModal';
 import { formatDistanceToNow } from 'date-fns';
 import { VaultEntry } from '../types';
+import { auditPassword } from '../utils/passwordAudit';
 
 interface EntryDetailProps {
     entryId: string;
@@ -115,11 +116,14 @@ interface FieldRowProps {
     isRevealed?: boolean;
     onToggleReveal?: () => void;
     onHistory?: () => void;
+    showAudit?: boolean;
 }
 
-const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'text', onLargeType, isRevealed, onToggleReveal, onHistory }) => {
+const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'text', onLargeType, isRevealed, onToggleReveal, onHistory, showAudit }) => {
     const { addToast } = useToast();
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const audit = showAudit && value ? auditPassword(value) : null;
 
     const handleDoubleClick = () => {
         if (!value) return;
@@ -199,7 +203,22 @@ const FieldRow: React.FC<FieldRowProps> = ({ label, value, isSecret, type = 'tex
                     )}
                 </div>
             </div>
-        </div>
+            {
+                audit && (
+                    <div className="mt-1 flex items-center space-x-2 px-1">
+                        <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full ${audit.color.replace('text-', 'bg-')} transition-all duration-500`}
+                                style={{ width: `${audit.score}%` }}
+                            />
+                        </div>
+                        <span className={`text-[10px] font-medium ${audit.color}`}>
+                            {audit.label} ({audit.entropy} bits)
+                        </span>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 
@@ -402,6 +421,7 @@ export const EntryDetail: React.FC<EntryDetailProps> = ({ entryId, onClose }) =>
                             label="Password"
                             value={entry.password || ''}
                             isSecret
+                            showAudit={true}
                             isRevealed={showPassword}
                             onToggleReveal={() => setShowPassword(!showPassword)}
                             onHistory={entry.history && entry.history.length > 0 ? () => setShowHistory(true) : undefined}
