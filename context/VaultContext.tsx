@@ -21,6 +21,7 @@ import {
     getOriginalGroupInfo,
     initializeArgon2
 } from '../services/kdbxService';
+import { auditPassword } from '../utils/passwordAudit';
 import { useToast } from '../components/ui/Toaster';
 import { saveRecentVault, getRecentVaults } from '../services/storageService';
 import { fileSystem, FileHandle } from '../services/fileSystemAdapter';
@@ -82,6 +83,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const getAllEntries = useCallback((groups: VaultGroup[]): VaultEntry[] => {
         let entries: VaultEntry[] = [];
         for (const group of groups) {
+            if (group.isRecycleBin) continue; // Skip Recycle Bin
             entries = [...entries, ...group.entries];
             if (group.subgroups.length > 0) {
                 entries = [...entries, ...getAllEntries(group.subgroups)];
@@ -151,6 +153,25 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
             });
             return duplicates;
+
+        }
+        if (activeGroupId === 'smart-weak') {
+            const all = getAllEntries(activeVault.groups);
+            return all.filter(e => {
+                if (!e.password) return false;
+                const audit = auditPassword(e.password);
+                // Consider 'Very Weak' and 'Weak' as weak
+                return audit.score < 50; // < 60 bits is 'Good', so < 36 is 'Weak' and < 28 is 'Very Weak'. Let's use < 50 as a threshold for "Weak" generally? 
+                // Wait, let's look at passwordAudit.ts again.
+                // < 28: Very Weak
+                // < 36: Weak
+                // < 60: Good
+                // Let's show anything that is NOT Good, Strong, or Excellent. So < 36 entropy?
+                // Or maybe anything less than "Good"?
+                // Let's stick to the label logic.
+                // If entropy < 36, it is Weak or Very Weak.
+                return audit.entropy < 36;
+            });
         }
 
         return getGroupEntries(activeVault.groups, activeGroupId);
