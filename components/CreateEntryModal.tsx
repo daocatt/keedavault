@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
+import { auditPassword } from '../utils/passwordAudit';
 import { GroupSelector } from './GroupSelector';
 
 interface CreateEntryModalProps {
@@ -27,10 +28,12 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     const [expiryTime, setExpiryTime] = useState('');
     const [showGen, setShowGen] = useState(false);
     const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([]);
+    const [attachments, setAttachments] = useState<{ name: string; data: ArrayBuffer }[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
+    const audit = password ? auditPassword(password) : null;
 
     // Populate fields when opening modal
     useEffect(() => {
@@ -146,7 +149,17 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
         }
     };
 
-    // ... (keep handleFileSelect)
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const newAttachments = [...attachments];
+            for (let i = 0; i < e.target.files.length; i++) {
+                const file = e.target.files[i];
+                const buffer = await file.arrayBuffer();
+                newAttachments.push({ name: file.name, data: buffer });
+            }
+            setAttachments(newAttachments);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -290,6 +303,19 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
+                                        {audit && (
+                                            <div className="mt-1 flex items-center space-x-2 px-1">
+                                                <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full ${audit.color.replace('text-', 'bg-')} transition-all duration-500`}
+                                                        style={{ width: `${audit.score}%` }}
+                                                    />
+                                                </div>
+                                                <span className={`text-[10px] font-medium ${audit.color}`}>
+                                                    {audit.label} ({audit.entropy} bits)
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* URL */}

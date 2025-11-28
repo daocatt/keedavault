@@ -10,7 +10,8 @@ import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { ICONS_MAP } from '../constants';
 import { DatabasePropertiesModal } from './DatabasePropertiesModal';
-import { Info } from 'lucide-react';
+import { Info, ShieldAlert } from 'lucide-react';
+import { auditPassword } from '../utils/passwordAudit';
 
 // Helper component for inline inputs
 const GroupInput: React.FC<{
@@ -468,12 +469,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
     // Smart View Counts
     const smartCounts = useMemo(() => {
-        const counts = { websites: 0, twoFA: 0, notes: 0, duplicated: 0 };
+        const counts = { websites: 0, twoFA: 0, notes: 0, duplicated: 0, weak: 0 };
         const activeVault = vaults.find(v => v.id === activeVaultId);
 
         const passwordMap = new Map<string, number>();
 
         const traverse = (group: VaultGroup) => {
+            if (group.isRecycleBin) return; // Skip Recycle Bin
+
             group.entries.forEach(entry => {
                 if (entry.fields.URL) counts.websites++;
                 if (entry.fields.OTP) counts.twoFA++;
@@ -481,6 +484,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
                 if (entry.password) {
                     passwordMap.set(entry.password, (passwordMap.get(entry.password) || 0) + 1);
+                    if (auditPassword(entry.password).entropy < 36) counts.weak++;
                 }
             });
             group.subgroups.forEach(traverse);
@@ -785,6 +789,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         <Smartphone size={16} className="mr-2" style={{ color: '#af52de' }} />
                                         <span className="flex-1">2FA Codes</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.twoFA}</span>
+                                    </div>
+
+                                    <div
+                                        className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-weak' ? 'font-medium' : ''}`}
+                                        style={{
+                                            backgroundColor: activeGroupId === 'smart-weak' ? 'var(--color-accent-light)' : 'transparent',
+                                            color: activeGroupId === 'smart-weak' ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (activeGroupId !== 'smart-weak') {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (activeGroupId !== 'smart-weak') {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
+                                        onClick={() => setActiveGroup('smart-weak')}
+                                    >
+                                        <ShieldAlert size={16} className="mr-2" style={{ color: '#f59e0b' }} />
+                                        <span className="flex-1">Weaks</span>
+                                        <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.weak}</span>
                                     </div>
 
                                     <div
