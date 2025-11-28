@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { listen } from '@tauri-apps/api/event';
 import { ICONS_MAP } from '../constants';
 import { DatabasePropertiesModal } from './DatabasePropertiesModal';
+import { ChangeCredentialsModal } from './ChangeCredentialsModal';
 import { Info, ShieldAlert } from 'lucide-react';
 import { auditPassword } from '../utils/passwordAudit';
 
@@ -360,6 +362,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
     const [showDbMenu, setShowDbMenu] = useState(false);
     const [showDbProperties, setShowDbProperties] = useState(false);
+    const [showChangeCredentials, setShowChangeCredentials] = useState(false);
     const dbMenuRef = useRef<HTMLDivElement>(null);
 
 
@@ -370,6 +373,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
         window.addEventListener('click', handleClick);
         return () => window.removeEventListener('click', handleClick);
     }, []);
+
+    // Listen for menu events
+    useEffect(() => {
+        const unlisten = listen('database-setting', () => {
+            if (activeVaultId) {
+                setShowDbProperties(true);
+            }
+        });
+
+        return () => {
+            unlisten.then(f => f());
+        };
+    }, [activeVaultId]);
 
     const handleGroupContextMenu = (e: React.MouseEvent, group: VaultGroup, parentId?: string) => {
         e.preventDefault();
@@ -519,7 +535,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
                 <div className="flex items-center space-x-0.5">
                     <button
-                        onClick={() => setShowSettings(true)}
+                        onClick={() => setShowDbProperties(true)}
                         className="p-1.5 rounded-md transition-all duration-200"
                         style={{
                             color: 'var(--color-text-tertiary)',
@@ -883,9 +899,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         onClose={() => setShowDbProperties(false)}
                         vault={activeVault}
                         stats={stats}
+                        onChangeCredentials={() => {
+                            setShowDbProperties(false);
+                            setShowChangeCredentials(true);
+                        }}
                     />
                 )
             }
+
+            <ChangeCredentialsModal
+                isOpen={showChangeCredentials}
+                onClose={() => setShowChangeCredentials(false)}
+            />
             {
                 showSettings && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
