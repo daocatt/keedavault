@@ -59,8 +59,8 @@ const defaultSettings: UISettings = {
         modified: 140,
     },
     entrySort: {
-        field: 'title',
-        asc: true,
+        field: 'modified',
+        asc: false,
     },
     passwordGenerator: {
         specialChars: '^!#&@$%*+-_()<>',

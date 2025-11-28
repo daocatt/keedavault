@@ -46,8 +46,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const defaultColumnWidths = { group: 120, title: 250, username: 150, email: 180, password: 120, url: 180, created: 140, modified: 140 };
     const [columnWidths, setColumnWidths] = useState<any>(defaultColumnWidths);
     // Sorting state
-    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>('title');
-    const [sortAsc, setSortAsc] = useState(true);
+    const [sortField, setSortField] = useState<'title' | 'username' | 'created' | 'modified'>('modified');
+    const [sortAsc, setSortAsc] = useState(false);
 
     useEffect(() => {
         const loadSettings = async () => {
