@@ -6,7 +6,7 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f7;
   --color-bg-tertiary: #fafafa;
-  --color-bg-sidebar: #f9fafb;
+  --color-bg-sidebar: rgba(249, 250, 251, 0.65);
   --color-bg-hover: #f0f0f2;
   --color-bg-active: #e8e8ea;
 
@@ -44,6 +44,45 @@
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
+}
+
+.dark {
+  /* Stylish Dark Palette (Deep Blue-Grey) */
+  --color-bg-primary: #1c1c1e;
+  /* Apple Dark Gray */
+  --color-bg-secondary: #000000;
+  /* Deep Black for contrast */
+  --color-bg-tertiary: #2c2c2e;
+  /* Lighter Gray */
+  --color-bg-sidebar: rgba(21, 21, 22, 0.65);
+  /* Sidebar Dark */
+  --color-bg-hover: #3a3a3c;
+  --color-bg-active: #48484a;
+
+  /* Accent Colors */
+  --color-accent: #0a84ff;
+  /* Apple Dark Mode Blue */
+  --color-accent-hover: #0071e3;
+  --color-accent-light: rgba(10, 132, 255, 0.15);
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #ebebf599;
+  /* Apple Secondary Label */
+  --color-text-tertiary: #ebebf54d;
+  /* Apple Tertiary Label */
+  --color-text-placeholder: #ebebf54d;
+
+  /* Border Colors */
+  --color-border-light: #38383a;
+  --color-border-medium: #48484a;
+  --color-border-dark: #636366;
+
+  /* Shadows - lighter for visibility on dark */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px 0 rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 @theme {

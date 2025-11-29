@@ -24,12 +24,13 @@ export const LargeTypeWindow: React.FC = () => {
     }, [title]);
 
     // Helper to colorize text
+    // Helper to colorize text
     const renderColorfulText = (str: string) => {
         return str.split('').map((char, index) => {
-            let color = 'text-gray-800';
-            if (/[0-9]/.test(char)) color = 'text-blue-600';
-            else if (/[A-Z]/.test(char)) color = 'text-orange-600';
-            else if (/[^a-zA-Z0-9]/.test(char)) color = 'text-purple-600';
+            let color = 'text-gray-800 dark:text-gray-200';
+            if (/[0-9]/.test(char)) color = 'text-blue-600 dark:text-blue-400';
+            else if (/[A-Z]/.test(char)) color = 'text-orange-600 dark:text-orange-400';
+            else if (/[^a-zA-Z0-9]/.test(char)) color = 'text-purple-600 dark:text-purple-400';
 
             return (
                 <span key={index} className={color}>
@@ -40,7 +41,7 @@ export const LargeTypeWindow: React.FC = () => {
     };
 
     return (
-        <div className="h-screen w-screen bg-white flex flex-col overflow-hidden">
+        <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
             {/* Draggable Header Area */}
             <div className="h-12 w-full flex-shrink-0" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
 
@@ -48,16 +49,16 @@ export const LargeTypeWindow: React.FC = () => {
                 <div className="flex flex-col items-center space-y-8 w-full max-w-4xl">
                     {/* Large Password Display */}
                     <div className="text-center w-full">
-                        <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 break-all whitespace-normal px-4">{username}</div>
-                        <div className="text-6xl font-mono font-bold break-all leading-tight tracking-wide bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-inner select-all cursor-text">
+                        <div className="text-sm font-bold uppercase tracking-wider mb-2 break-all whitespace-normal px-4" style={{ color: 'var(--color-text-tertiary)' }}>{username}</div>
+                        <div className="text-6xl font-mono font-bold break-all leading-tight tracking-wide p-8 rounded-2xl border shadow-inner select-all cursor-text" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}>
                             {renderColorfulText(text)}
                         </div>
                     </div>
 
                     {/* QR Code */}
                     <div className="flex flex-col items-center">
-                        <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">QR Code</div>
-                        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+                        <div className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--color-text-tertiary)' }}>QR Code</div>
+                        <div className="p-4 border rounded-xl shadow-sm" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}>
                             <QRCodeSVG value={text} size={160} />
                         </div>
                     </div>

@@ -8,6 +8,8 @@ import { PasswordGenerator } from './PasswordGenerator';
 import { VaultEntry, VaultGroup } from '../types';
 import { auditPassword } from '../utils/passwordAudit';
 import { GroupSelector } from './GroupSelector';
+import { IconSelector } from './IconSelector';
+import { ICONS_MAP } from '../constants';
 
 interface CreateEntryModalProps {
     isOpen: boolean;
@@ -18,6 +20,7 @@ interface CreateEntryModalProps {
 export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onClose, editEntry }) => {
     const { onAddEntry, onEditEntry, vaults, activeVaultId, activeGroupId } = useVault();
     const [groupUuid, setGroupUuid] = useState('');
+    const [icon, setIcon] = useState(0);
     const [title, setTitle] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -41,6 +44,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             setError(null);
             setIsSaving(false);
             if (editEntry) {
+                setIcon(editEntry.icon !== undefined ? editEntry.icon : 0);
                 setTitle(editEntry.title);
                 setUsername(editEntry.username);
                 setEmail(editEntry.fields['Email'] || '');
@@ -60,6 +64,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 setAttachments(editEntry.attachments || []);
             } else {
                 reset();
+                setIcon(0);
                 setGroupUuid(activeGroupId || '');
             }
         }
@@ -96,6 +101,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     }, [isOpen]);
 
     const reset = () => {
+        setIcon(0);
         setTitle('');
         setUsername('');
         setEmail('');
@@ -118,6 +124,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
         const formData = {
             groupUuid,
+            icon,
             title,
             username,
             email,
@@ -165,20 +172,20 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex flex-col p-2 pt-10 bg-black/50 backdrop-blur-md">
-            <div className="bg-white rounded-xl flex-1 w-full overflow-hidden border border-gray-300 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transform transition-all relative flex flex-col">
+            <div className="rounded-xl flex-1 w-full overflow-hidden border shadow-[0_20px_60px_rgba(0,0,0,0.3)] transform transition-all relative flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
 
                 {/* Header / Title Area */}
                 <div
-                    className="px-4 py-2.5 flex justify-between items-center border-b border-gray-200 pl-4"
+                    className="px-4 py-2.5 flex justify-between items-center border-b pl-4"
                     data-tauri-drag-region
-                    style={{ WebkitAppRegion: 'drag', cursor: 'default' } as React.CSSProperties}
+                    style={{ WebkitAppRegion: 'drag', cursor: 'default', borderColor: 'var(--color-border-light)' } as React.CSSProperties}
                 >
-                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                        {editEntry ? <Pencil size={16} className="text-gray-500" /> : <Plus size={16} className="text-gray-500" />}
+                    <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+                        {editEntry ? <Pencil size={16} strokeWidth={1.5} className="text-gray-500" /> : <Plus size={16} strokeWidth={1.5} className="text-gray-500" />}
                         {editEntry ? 'Edit Entry' : 'New Entry'}
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <X size={20} />
+                        <X size={20} strokeWidth={1.5} />
                     </button>
                 </div>
 
@@ -197,19 +204,45 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                             <form id="entry-form" onSubmit={handleSubmit} className="space-y-4">
                                 {/* Title & Group Block */}
                                 <div className="space-y-3">
-                                    <div>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={title}
-                                            onChange={e => setTitle(e.target.value)}
-                                            className="w-full text-xl font-bold text-gray-900 bg-transparent border-b-2 border-gray-400 hover:border-gray-600 focus:border-indigo-600 focus:outline-none transition-all placeholder:text-gray-400 pb-2"
-                                            placeholder="Title (e.g. Google)"
-                                            autoFocus
-                                        />
+                                    <div className="flex items-center gap-3">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors hover:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                                                    style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)', color: 'var(--color-text-primary)' }}
+                                                    title="Select Icon"
+                                                >
+                                                    {(() => {
+                                                        const Icon = ICONS_MAP[icon] || Key;
+                                                        return <Icon size={22} strokeWidth={2} fill="currentColor" fillOpacity={0.2} />;
+                                                    })()}
+                                                </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent side="bottom" align="start" className="w-80 p-0 z-[10000]">
+                                                <div className="rounded-xl shadow-xl border p-2" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                                                    <IconSelector
+                                                        selectedIcon={icon}
+                                                        onSelect={(newIcon) => setIcon(newIcon)}
+                                                    />
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                required
+                                                value={title}
+                                                onChange={e => setTitle(e.target.value)}
+                                                className="w-full text-xl font-bold bg-transparent border-b-2 hover:border-gray-600 focus:border-indigo-600 focus:outline-none transition-all pb-2"
+                                                style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)', '--tw-placeholder-opacity': '0.5' } as React.CSSProperties}
+                                                placeholder="Title (e.g. Google)"
+                                                autoFocus
+                                            />
+                                        </div>
                                     </div>
                                     <div className="bg-transparent">
-                                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Location</label>
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--color-text-secondary)' }}>Location</label>
                                         {activeVault && (
                                             <GroupSelector
                                                 groups={activeVault.groups}
@@ -228,13 +261,14 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Username</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <User size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
+                                                <User size={16} strokeWidth={1.5} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
                                             </div>
                                             <input
                                                 type="text"
                                                 value={username}
                                                 onChange={e => setUsername(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400"
+                                                className="block w-full pl-10 pr-3 py-2 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="johndoe"
                                             />
                                         </div>
@@ -245,13 +279,14 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Email</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Mail size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
+                                                <Mail size={16} strokeWidth={1.5} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
                                             </div>
                                             <input
                                                 type="email"
                                                 value={email}
                                                 onChange={e => setEmail(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400"
+                                                className="block w-full pl-10 pr-3 py-2 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="john@example.com"
                                             />
                                         </div>
@@ -266,7 +301,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         <div className="relative flex items-center">
                                             {/* Icon on the left */}
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Key size={16} className="text-gray-500" />
+                                                <Key size={16} strokeWidth={1.5} className="text-gray-500" />
                                             </div>
 
                                             {/* Input */}
@@ -274,7 +309,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                 type="text"
                                                 value={password}
                                                 onChange={e => setPassword(e.target.value)}
-                                                className="block w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 font-mono"
+                                                className="block w-full pl-10 pr-10 py-2.5 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="••••••••"
                                             />
 
@@ -285,11 +321,11 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                         type="button"
                                                         className="absolute inset-y-0 right-0 flex items-center justify-center pr-3 cursor-pointer text-gray-400 hover:text-indigo-600 transition-colors"
                                                     >
-                                                        <Wand2 size={16} />
+                                                        <Wand2 size={16} strokeWidth={1.5} />
                                                     </button>
                                                 </PopoverTrigger>
                                                 <PopoverContent side="right" align="start" className="w-80 p-0 z-[10000]">
-                                                    <div className="bg-bg-primary rounded-xl shadow-none border-0 p-4">
+                                                    <div className="rounded-xl shadow-none border-0 p-4" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
                                                         <PasswordGenerator
                                                             isOpen={true}
                                                             onGenerate={(pw: string) => {
@@ -305,9 +341,9 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         </div>
                                         {audit && (
                                             <div className="mt-1 flex items-center space-x-2 px-1">
-                                                <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="flex-1 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                                                     <div
-                                                        className={`h-full ${audit.color.replace('text-', 'bg-')} transition-all duration-500`}
+                                                        className={`h-full ${audit.color.replace('text-', 'bg-')} transition-all duration-500 dark:brightness-75`}
                                                         style={{ width: `${audit.score}%` }}
                                                     />
                                                 </div>
@@ -323,13 +359,14 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">URL</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Globe size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
+                                                <Globe size={16} strokeWidth={1.5} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
                                             </div>
                                             <input
                                                 type="text"
                                                 value={url}
                                                 onChange={e => setUrl(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400"
+                                                className="block w-full pl-10 pr-3 py-2 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="https://example.com"
                                             />
                                         </div>
@@ -342,13 +379,14 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">TOTP Secret</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Clock size={16} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
+                                                <Clock size={16} strokeWidth={1.5} className="text-gray-500 group-focus-within:text-indigo-600 transition-colors" />
                                             </div>
                                             <input
                                                 type="text"
                                                 value={totpSecret}
                                                 onChange={e => setTotpSecret(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400"
+                                                className="block w-full pl-10 pr-3 py-2 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="Secret Key"
                                             />
                                         </div>
@@ -375,18 +413,19 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                     </div>
 
                     {/* Right Column: Notes, Attachments, Attributes (40%) */}
-                    <div className="w-[50%] border-l border-gray-200 flex flex-col h-full">
+                    <div className="w-[50%] border-l flex flex-col h-full" style={{ borderColor: 'var(--color-border-light)' }}>
                         {/* Top Section: Notes & Attachments (60% height) */}
-                        <div className="h-[60%] flex flex-row border-b border-gray-200">
+                        <div className="h-[60%] flex flex-row border-b" style={{ borderColor: 'var(--color-border-light)' }}>
                             {/* Notes (40% width) */}
-                            <div className="w-[60%] border-r border-gray-200 flex flex-col h-full">
+                            <div className="w-[60%] border-r flex flex-col h-full" style={{ borderColor: 'var(--color-border-light)' }}>
                                 <div className="flex-1 overflow-y-auto px-4 py-3">
                                     <div className="space-y-1 h-full flex flex-col">
                                         <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Notes</label>
                                         <textarea
                                             value={notes}
                                             onChange={e => setNotes(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-gray-400 resize-none flex-1"
+                                            className="w-full px-4 py-2 border rounded-lg text-sm hover:border-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none flex-1"
+                                            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                             placeholder="Add any additional notes here..."
                                         />
                                     </div>
@@ -410,16 +449,16 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                 className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors cursor-pointer flex items-center"
                                                 title="Add Attachment"
                                             >
-                                                <Plus size={14} />
+                                                <Plus size={14} strokeWidth={1.5} />
                                             </label>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         {attachments.map((att, index) => (
-                                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200">
+                                            <div key={index} className="flex items-center justify-between p-2 rounded-md border" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-medium)' }}>
                                                 <div className="flex items-center overflow-hidden min-w-0">
-                                                    <Paperclip size={14} className="text-gray-400 mr-1 flex-shrink-0" />
-                                                    <span className="text-xs text-gray-700 truncate" title={att.name}>{att.name}</span>
+                                                    <Paperclip size={14} strokeWidth={1.5} className="mr-1 flex-shrink-0" style={{ color: 'var(--color-text-tertiary)' }} />
+                                                    <span className="text-xs truncate" style={{ color: 'var(--color-text-primary)' }} title={att.name}>{att.name}</span>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -429,7 +468,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                     }}
                                                     className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors ml-1 flex-shrink-0"
                                                 >
-                                                    <Trash2 size={14} />
+                                                    <Trash2 size={14} strokeWidth={1.5} />
                                                 </button>
                                             </div>
                                         ))}
@@ -454,7 +493,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                         className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
                                         title="Add Attribute"
                                     >
-                                        <Plus size={14} />
+                                        <Plus size={14} strokeWidth={1.5} />
                                     </button>
                                 </div>
                                 <div className="space-y-2">
@@ -468,7 +507,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                     newFields[index].key = e.target.value;
                                                     setCustomFields(newFields);
                                                 }}
-                                                className="w-1/3 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                                className="w-1/3 px-2 py-1.5 border rounded text-xs focus:border-indigo-500 focus:outline-none"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="Name"
                                             />
                                             <input
@@ -479,7 +519,8 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                     newFields[index].value = e.target.value;
                                                     setCustomFields(newFields);
                                                 }}
-                                                className="flex-1 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none"
+                                                className="flex-1 px-2 py-1.5 border rounded text-xs focus:border-indigo-500 focus:outline-none"
+                                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                                 placeholder="Value"
                                             />
                                             <button
@@ -490,7 +531,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                                 }}
                                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                                             >
-                                                <Trash2 size={14} />
+                                                <Trash2 size={14} strokeWidth={1.5} />
                                             </button>
                                         </div>
                                     ))}
@@ -506,7 +547,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                 </div>
 
                 {/* Footer actions */}
-                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-white/90 backdrop-blur-sm border-t border-gray-200 flex justify-end space-x-2 z-10">
+                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-sm border-t flex justify-end space-x-2 z-10" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', opacity: 0.9 }}>
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"
@@ -518,7 +559,7 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                         type="submit"
                         className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md shadow-sm transition-all flex items-center transform active:scale-95"
                     >
-                        <Save size={14} className="mr-1.5" />
+                        <Save size={14} strokeWidth={1.5} className="mr-1.5" />
                         {editEntry ? 'Update' : 'Save'}
                     </button>
                 </div>

@@ -90,7 +90,8 @@ fn main() {
         
         // App Menu
         let app_menu = SubmenuBuilder::new(handle, "App")
-            .item(&MenuItemBuilder::with_id("about", "About KeedaVault").build(handle)?)
+            .item(&MenuItemBuilder::with_id("about", "About").build(handle)?)
+            .item(&MenuItemBuilder::with_id("settings", "Settings...").accelerator("CmdOrCtrl+,").build(handle)?)
             .separator()
             .quit()
             .build()?;
@@ -239,6 +240,26 @@ fn main() {
                     )
                     .title("About KeedaVault")
                     .inner_size(360.0, 480.0)
+                    .resizable(false)
+                    .hidden_title(true)
+                    .title_bar_style(tauri::TitleBarStyle::Overlay)
+                    .center()
+                    .build()
+                    .unwrap();
+                }
+            }
+            "settings" => {
+                // Open Settings window
+                if let Some(window) = app_handle.get_webview_window("settings") {
+                    let _ = window.set_focus();
+                } else {
+                    let _window = tauri::WebviewWindowBuilder::new(
+                        app_handle,
+                        "settings",
+                        tauri::WebviewUrl::App("/?mode=settings".into())
+                    )
+                    .title("Settings")
+                    .inner_size(750.0, 600.0)
                     .resizable(false)
                     .hidden_title(true)
                     .title_bar_style(tauri::TitleBarStyle::Overlay)

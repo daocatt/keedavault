@@ -247,6 +247,9 @@ export const addEntryToDb = (db: kdbxweb.Kdbx, groupUuid: string, data: EntryFor
     entry.fields.set('Password', kdbxweb.ProtectedValue.fromString(data.password));
     entry.fields.set('URL', data.url);
     entry.fields.set('Notes', data.notes);
+    if (data.icon !== undefined) {
+        entry.icon = data.icon;
+    }
 
     if (data.email) {
         entry.fields.set('Email', data.email);
@@ -313,6 +316,9 @@ export const updateEntryInDb = (db: kdbxweb.Kdbx, data: EntryFormData) => {
     entry.fields.set('Password', kdbxweb.ProtectedValue.fromString(data.password));
     entry.fields.set('URL', data.url);
     entry.fields.set('Notes', data.notes);
+    if (data.icon !== undefined) {
+        entry.icon = data.icon;
+    }
 
     if (data.email) {
         entry.fields.set('Email', data.email);

@@ -32,6 +32,25 @@ export interface UISettings {
     passwordGenerator?: {
         specialChars: string;
     };
+    general?: {
+        recentFileCount: number;
+        markdownNotes: boolean;
+        colorizedPassword: boolean;
+        appearance: 'light' | 'dark' | 'system';
+        appIcon?: string;
+    };
+    security?: {
+        clipboardClearDelay: number; // seconds
+        clearClipboardOnLock: boolean;
+        lockOnInactivity: number; // seconds, 0 = disabled
+        lockOnMinimize: boolean; // "lock after in background" - simplified to minimize/blur? User said "lock after in background"
+        lockOnBackgroundDelay: number; // seconds
+        lockOnWindowClose: boolean;
+        lockOnSwitchDatabase: boolean;
+        lockOnSystemSleep: boolean;
+        quickUnlockTouchId: boolean;
+        rememberKeyFiles: boolean;
+    };
 }
 
 const defaultSettings: UISettings = {
@@ -65,9 +84,29 @@ const defaultSettings: UISettings = {
     passwordGenerator: {
         specialChars: '^!#&@$%*+-_()<>',
     },
+    general: {
+        recentFileCount: 5,
+        markdownNotes: false,
+        colorizedPassword: true,
+        appearance: 'system',
+        appIcon: 'default',
+    },
+    security: {
+        clipboardClearDelay: 30,
+        clearClipboardOnLock: true,
+        lockOnInactivity: 0,
+        lockOnMinimize: false,
+        lockOnBackgroundDelay: 0,
+        lockOnWindowClose: true,
+        lockOnSwitchDatabase: true,
+        lockOnSystemSleep: true,
+        quickUnlockTouchId: false,
+        rememberKeyFiles: false,
+    },
 };
 
 import { settingsStore } from './settingsStore';
+import { emit } from '@tauri-apps/api/event';
 
 // ... (imports and interface definitions remain same)
 
@@ -101,6 +140,7 @@ export const saveUISettings = async (settings: Partial<UISettings>): Promise<voi
         const current = await getUISettings();
         const updated = { ...current, ...settings };
         await settingsStore.set(UI_SETTINGS_KEY, updated);
+        await emit('settings-changed', updated);
     } catch (e) {
         console.error('Failed to save UI settings:', e);
     }

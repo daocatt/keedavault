@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useVault } from '../context/VaultContext';
 import { useToast } from './ui/Toaster';
 import {
@@ -10,8 +11,7 @@ import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { ICONS_MAP } from '../constants';
-import { DatabasePropertiesModal } from './DatabasePropertiesModal';
-import { ChangeCredentialsModal } from './ChangeCredentialsModal';
+
 import { Info, ShieldAlert } from 'lucide-react';
 import { auditPassword } from '../utils/passwordAudit';
 
@@ -256,15 +256,15 @@ const GroupItem: React.FC<{
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                        {expanded ? <ChevronDown size={12} strokeWidth={1.5} /> : <ChevronRight size={12} strokeWidth={1.5} />}
                     </button>
 
                     {group.isRecycleBin ? (
-                        <Trash2 size={16} className="mr-2 flex-shrink-0 relative z-10" style={{ color: '#ff3b30' }} />
+                        <Trash2 size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0 relative z-10" style={{ color: '#ff3b30' }} />
                     ) : (
                         (() => {
                             const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                            return <IconComponent size={16} className="mr-2 flex-shrink-0 relative z-10" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
+                            return <IconComponent size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0 relative z-10" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }} />;
                         })()
                     )}
 
@@ -320,7 +320,7 @@ const GroupItem: React.FC<{
                                 style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
                             >
                                 <div className="w-4 mr-1"></div> {/* Indent for chevron placeholder */}
-                                <Folder size={16} className="mr-2 text-gray-500 flex-shrink-0" />
+                                <Folder size={16} strokeWidth={1.5} className="mr-2 text-gray-500 flex-shrink-0" />
                                 <GroupInput
                                     initialValue=""
                                     placeholder="New Group Name"
@@ -340,11 +340,12 @@ interface SidebarProps {
     onNewGroup: (vaultId: string, parentId?: string) => void;
     onEditGroup: (vaultId: string, group: VaultGroup, parentId?: string) => void;
     onMoveEntry: (entryId: string, targetGroupId: string) => void;
+    onOpenDbProperties: () => void;
     className?: string;
     style?: React.CSSProperties;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry, className = '', style }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEditGroup, onMoveEntry, onOpenDbProperties, className = '', style }) => {
     const {
         vaults, activeVaultId, setActiveVault,
         activeGroupId, setActiveGroup,
@@ -361,8 +362,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: VaultGroup; parentId?: string } | null>(null);
 
     const [showDbMenu, setShowDbMenu] = useState(false);
-    const [showDbProperties, setShowDbProperties] = useState(false);
-    const [showChangeCredentials, setShowChangeCredentials] = useState(false);
+
     const dbMenuRef = useRef<HTMLDivElement>(null);
 
 
@@ -374,18 +374,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
         return () => window.removeEventListener('click', handleClick);
     }, []);
 
-    // Listen for menu events
-    useEffect(() => {
-        const unlisten = listen('database-setting', () => {
-            if (activeVaultId) {
-                setShowDbProperties(true);
-            }
-        });
 
-        return () => {
-            unlisten.then(f => f());
-        };
-    }, [activeVaultId]);
 
     const handleGroupContextMenu = (e: React.MouseEvent, group: VaultGroup, parentId?: string) => {
         e.preventDefault();
@@ -466,22 +455,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
         return count;
     };
 
-    // Calculate total stats
-    const stats = useMemo(() => {
-        let totalFolders = 0;
-        let totalEntries = 0;
-        const countRecursive = (group: VaultGroup) => {
-            totalFolders++;
-            totalEntries += group.entries.length;
-            group.subgroups.forEach(countRecursive);
-        };
 
-        const activeVault = vaults.find(v => v.id === activeVaultId);
-        if (activeVault) {
-            activeVault.groups.forEach(countRecursive);
-        }
-        return { totalFolders, totalEntries };
-    }, [vaults, activeVaultId]);
 
     // Smart View Counts
     const smartCounts = useMemo(() => {
@@ -535,7 +509,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
                 <div className="flex items-center space-x-0.5">
                     <button
-                        onClick={() => setShowDbProperties(true)}
+                        onClick={onOpenDbProperties}
                         className="p-1.5 rounded-md transition-all duration-200"
                         style={{
                             color: 'var(--color-text-tertiary)',
@@ -551,7 +525,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Settings"
                     >
-                        <Settings size={16} />
+                        <Settings size={16} strokeWidth={1.5} />
                     </button>
                     <button
                         onClick={() => activeVaultId && lockVault(activeVaultId)}
@@ -570,7 +544,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Lock Vault"
                     >
-                        <Lock size={16} />
+                        <Lock size={16} strokeWidth={1.5} />
                     </button>
                 </div>
             </div>
@@ -580,7 +554,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                 <div
                     role="button"
                     tabIndex={0}
-                    className={`flex items-center font-medium text-sm text-gray-900 flex-1 mr-2 select-none rounded px-1 py-0.5 transition-colors relative min-w-0 ${activeVault ? 'cursor-pointer hover:bg-gray-100 active:bg-gray-200' : ''}`}
+                    className={`flex items-center font-medium text-sm flex-1 mr-2 select-none rounded px-1 py-0.5 transition-colors relative min-w-0 ${activeVault ? 'cursor-pointer' : ''}`}
+                    style={{
+                        color: 'var(--color-text-primary)',
+                        zIndex: 30,
+                        WebkitAppRegion: 'no-drag'
+                    } as React.CSSProperties}
                     onClick={(e) => {
                         e.stopPropagation();
                         console.log('Database name clicked', { activeVault });
@@ -592,11 +571,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                             if (activeVault) setShowDbMenu((prev) => !prev);
                         }
                     }}
-                    style={{ zIndex: 30, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
-                    <Database size={14} className="mr-2 opacity-50 flex-shrink-0" />
+                    <Database size={14} strokeWidth={1.5} className="mr-2 opacity-50 flex-shrink-0" />
                     <span className="truncate">{activeVault ? activeVault.name : 'KeedaVault'}</span>
-                    {activeVault && <ChevronDown size={12} className="ml-1 opacity-50" />}
+                    {activeVault && <ChevronDown size={12} strokeWidth={1.5} className="ml-1 opacity-50" />}
 
                     {/* Dropdown Menu */}
                     {showDbMenu && activeVault && (
@@ -608,16 +586,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                     setShowDbMenu(false);
                                 }}
                             />
-                            <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                            <div className="absolute top-full left-0 mt-1 w-48 rounded-md shadow-lg border py-1 z-50" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
                                 <button
-                                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                                    className="w-full text-left px-4 py-2 text-xs flex items-center"
+                                    style={{ color: 'var(--color-text-primary)' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setShowDbProperties(true);
+                                        onOpenDbProperties();
                                         setShowDbMenu(false);
                                     }}
                                 >
-                                    <Info size={14} className="mr-2" />
+                                    <Info size={14} strokeWidth={1.5} className="mr-2" />
                                     Properties
                                 </button>
                             </div>
@@ -640,7 +621,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Add Group"
                     >
-                        <SquarePlus size={16} />
+                        <SquarePlus size={16} strokeWidth={1.5} />
                     </button>
                     <button
                         onClick={() => activeVaultId && saveVault(activeVaultId)}
@@ -656,7 +637,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Save Vault"
                     >
-                        <Save size={16} />
+                        <Save size={16} strokeWidth={1.5} />
                     </button>
                     <button
                         onClick={handleRefresh}
@@ -677,7 +658,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                         }}
                         title="Sync Vault"
                     >
-                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                        <RefreshCw size={14} strokeWidth={1.5} className={isSyncing ? 'animate-spin' : ''} />
                     </button>
                 </div>
             </div>
@@ -695,11 +676,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                     <div key={vault.id} className="mb-2">
                         {vaults.length > 1 && activeVaultId !== vault.id && (
                             <div
-                                className="px-3 py-1.5 flex items-center justify-between group cursor-pointer hover:bg-gray-100"
+                                className="px-3 py-1.5 flex items-center justify-between group cursor-pointer"
+                                style={{ backgroundColor: 'transparent' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 onClick={(e) => { e.stopPropagation(); setActiveVault(vault.id); }}
                             >
-                                <div className="flex items-center text-xs font-bold text-gray-700 uppercase tracking-wider overflow-hidden flex-1">
-                                    <Database size={12} className="mr-1.5 flex-shrink-0" />
+                                <div className="flex items-center text-xs font-bold uppercase tracking-wider overflow-hidden flex-1" style={{ color: 'var(--color-text-secondary)' }}>
+                                    <Database size={12} strokeWidth={1.5} className="mr-1.5 flex-shrink-0" />
                                     <span className="truncate">{vault.name}</span>
                                     {vault.fileHandle && <span className="ml-1 text-[10px] text-green-600 bg-green-100 px-1 rounded">Sync</span>}
                                 </div>
@@ -760,7 +744,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                 {/* Smart Views */}
                                 <div className="mt-6 pt-2 px-3" style={{ borderTop: '1px solid var(--color-border-light)' }}>
                                     <div className="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center" style={{ color: 'var(--color-text-tertiary)' }}>
-                                        <Sparkles size={10} className="mr-1" /> Smart Views
+                                        <Sparkles size={10} strokeWidth={1.5} className="mr-1" /> Smart Views
                                     </div>
                                     <div
                                         className={`flex items-center px-2 py-1 rounded-md cursor-pointer text-sm transition-all duration-200 mb-0.5 ${activeGroupId === 'smart-duplicated' ? 'font-medium' : ''}`}
@@ -780,7 +764,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         }}
                                         onClick={() => setActiveGroup('smart-duplicated')}
                                     >
-                                        <Copy size={16} className="mr-2" style={{ color: '#ff3b30' }} />
+                                        <Copy size={16} strokeWidth={1.5} className="mr-2" style={{ color: '#ff3b30' }} />
                                         <span className="flex-1">Duplicated</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.duplicated}</span>
                                     </div>
@@ -802,7 +786,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         }}
                                         onClick={() => setActiveGroup('smart-2fa')}
                                     >
-                                        <Smartphone size={16} className="mr-2" style={{ color: '#af52de' }} />
+                                        <Smartphone size={16} strokeWidth={1.5} className="mr-2" style={{ color: '#af52de' }} />
                                         <span className="flex-1">2FA Codes</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.twoFA}</span>
                                     </div>
@@ -825,7 +809,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         }}
                                         onClick={() => setActiveGroup('smart-weak')}
                                     >
-                                        <ShieldAlert size={16} className="mr-2" style={{ color: '#f59e0b' }} />
+                                        <ShieldAlert size={16} strokeWidth={1.5} className="mr-2" style={{ color: '#f59e0b' }} />
                                         <span className="flex-1">Weaks</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.weak}</span>
                                     </div>
@@ -848,7 +832,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         }}
                                         onClick={() => setActiveGroup('smart-websites')}
                                     >
-                                        <Globe size={16} className="mr-2" style={{ color: '#007aff' }} />
+                                        <Globe size={16} strokeWidth={1.5} className="mr-2" style={{ color: '#007aff' }} />
                                         <span className="flex-1">URLs</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.websites}</span>
                                     </div>
@@ -870,7 +854,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                         }}
                                         onClick={() => setActiveGroup('smart-notes')}
                                     >
-                                        <StickyNote size={16} className="mr-2" style={{ color: '#ffcc00' }} />
+                                        <StickyNote size={16} strokeWidth={1.5} className="mr-2" style={{ color: '#ffcc00' }} />
                                         <span className="flex-1">Notes</span>
                                         <span className="text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{smartCounts.notes}</span>
                                     </div>
@@ -881,36 +865,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                 ))}
             </div>
 
-            {/* Footer Stats & Action */}
-            <div style={{ borderTop: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-bg-tertiary)' }}>
-                {activeVaultId && (
-                    <div className="px-4 py-2 text-[10px] flex justify-between" style={{ color: 'var(--color-text-tertiary)', borderBottom: '1px solid var(--color-border-light)' }}>
-                        <span>{stats.totalFolders} Folders</span>
-                        <span>{stats.totalEntries} Entries</span>
-                    </div>
-                )}
-            </div>
+
 
             {/* Settings Modal */}
-            {
-                activeVault && (
-                    <DatabasePropertiesModal
-                        isOpen={showDbProperties}
-                        onClose={() => setShowDbProperties(false)}
-                        vault={activeVault}
-                        stats={stats}
-                        onChangeCredentials={() => {
-                            setShowDbProperties(false);
-                            setShowChangeCredentials(true);
-                        }}
-                    />
-                )
-            }
-
-            <ChangeCredentialsModal
-                isOpen={showChangeCredentials}
-                onClose={() => setShowChangeCredentials(false)}
-            />
             {
                 showSettings && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
@@ -934,12 +891,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
 
             {/* Context Menu */}
             {
-                contextMenu && (
+                contextMenu && createPortal(
                     <div
-                        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                        style={{ top: contextMenu.y, left: contextMenu.x }}
+                        className="fixed z-50 rounded-xl shadow-xl border py-1 w-48 backdrop-blur-md"
+                        style={{
+                            top: contextMenu.y,
+                            left: contextMenu.x,
+                            backgroundColor: 'var(--color-bg-primary)',
+                            borderColor: 'var(--color-border-light)'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-50 truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                            {contextMenu.group.name}
+                        </div>
                         <button
                             onClick={() => {
                                 if (activeVaultId) {
@@ -947,18 +912,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                 }
                                 setContextMenu(null);
                             }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                            className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center transition-colors rounded-md"
+                            style={{ color: 'var(--color-text-primary)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                            <FolderPlus size={14} className="mr-2 text-gray-400" /> New Group
+                            <FolderPlus size={14} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> New Group
                         </button>
                         <button
                             onClick={() => {
                                 onEditGroup(activeVaultId!, contextMenu.group, contextMenu.parentId);
                                 setContextMenu(null);
                             }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                            className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center transition-colors rounded-md"
+                            style={{ color: 'var(--color-text-primary)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                            <Edit size={14} className="mr-2 text-gray-400" /> Edit Group
+                            <Edit size={14} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Edit Group
                         </button>
                         {/* Show Recycle (Delete) for non-root groups and not the Recycle Bin itself */}
                         {!contextMenu.group.isRecycleBin && contextMenu.parentId && (
@@ -967,12 +938,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
                                     await onDeleteGroup(contextMenu.group.uuid);
                                     setContextMenu(null);
                                 }}
-                                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center"
+                                className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors rounded-md"
                             >
                                 <Trash2 size={14} className="mr-2" /> Delete
                             </button>
                         )}
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
 

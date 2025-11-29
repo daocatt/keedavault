@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Folder, Check, ChevronDown, Key, Globe, AlertTriangle, Server, PenTool, Settings, Home, Star, Lock, Wrench, FolderOpen, FileText, Image, Music, Video, Code } from 'lucide-react';
+import {
+    X, Check, ChevronDown,
+    Folder, LifeBuoy, Compass, Plane, Pyramid, Receipt, Zap, DraftingCompass, Gem, Gamepad2, Server, Mail, House, Glasses, StickyNote, Trophy, FolderLock, Image, Video, Flag, Map, Book, Heart
+} from 'lucide-react';
 import { VaultGroup } from '../types';
 import { GroupSelector } from './GroupSelector';
 
@@ -21,24 +24,28 @@ interface GroupModalProps {
 // Extended icon set with Lucide mappings
 const ICONS = [
     { id: 48, label: 'Folder', icon: Folder },
-    { id: 49, label: 'Open Folder', icon: FolderOpen },
-    { id: 0, label: 'Key', icon: Key },
-    { id: 1, label: 'World', icon: Globe },
-    { id: 2, label: 'Warning', icon: AlertTriangle },
+    { id: 78, label: 'Life Buoy', icon: LifeBuoy },
+    { id: 11, label: 'Compass', icon: Compass },
+    { id: 14, label: 'Plane', icon: Plane },
+    { id: 15, label: 'Pyramid', icon: Pyramid },
+    { id: 16, label: 'Receipt', icon: Receipt },
+    { id: 22, label: 'Bolt', icon: Zap },
+    { id: 23, label: 'Drafting Compass', icon: DraftingCompass },
+    { id: 70, label: 'Gem', icon: Gem },
+    { id: 67, label: 'Gamepad', icon: Gamepad2 },
     { id: 3, label: 'Server', icon: Server },
-    { id: 6, label: 'Pen', icon: PenTool },
-    { id: 7, label: 'Settings', icon: Settings },
-    { id: 60, label: 'Home', icon: Home },
-    { id: 61, label: 'Star', icon: Star },
-    { id: 68, label: 'Lock', icon: Lock },
-    { id: 69, label: 'Tools', icon: Wrench },
-    // Additional common icons mapped to arbitrary IDs for UI demo purposes
-    // In a real app, these should match KeePass standard icon IDs
-    { id: 4, label: 'Text', icon: FileText },
+    { id: 62, label: 'Mail', icon: Mail },
+    { id: 59, label: 'House', icon: House },
+    { id: 37, label: 'Glasses', icon: Glasses },
+    { id: 35, label: 'Sticky Note', icon: StickyNote },
+    { id: 33, label: 'Trophy', icon: Trophy },
+    { id: 54, label: 'Folder Lock', icon: FolderLock },
     { id: 5, label: 'Image', icon: Image },
-    { id: 8, label: 'Music', icon: Music },
     { id: 9, label: 'Video', icon: Video },
-    { id: 10, label: 'Code', icon: Code },
+    { id: 77, label: 'Flag', icon: Flag },
+    { id: 28, label: 'Map', icon: Map },
+    { id: 31, label: 'Book', icon: Book },
+    { id: 38, label: 'Heart', icon: Heart },
 ];
 
 export const GroupModal: React.FC<GroupModalProps> = ({
@@ -139,9 +146,9 @@ export const GroupModal: React.FC<GroupModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-xl w-full max-w-md overflow-visible border border-gray-200/60 transform transition-all" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <div className="flex items-center justify-between px-4 py-2.5 bg-white rounded-t-xl">
-                    <h3 className="text-sm font-medium text-gray-700">
+            <div className="rounded-xl w-full max-w-md overflow-visible border transform transition-all" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-t-xl" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+                    <h3 className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                         {mode === 'add' ? 'New Group' : 'Edit Group'}
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-md">
@@ -164,13 +171,14 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setShowIconPicker(!showIconPicker)}
-                                className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group relative"
+                                className="w-16 h-16 flex items-center justify-center border rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group relative"
+                                style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}
                             >
-                                <SelectedIcon size={32} className="text-indigo-500 group-hover:scale-110 transition-transform duration-200" strokeWidth={1.5} />
+                                <SelectedIcon size={32} className="text-indigo-500 group-hover:scale-110 transition-transform duration-200" strokeWidth={2} fill="currentColor" fillOpacity={0.2} />
 
                                 {/* Edit Badge */}
-                                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-gray-100">
-                                    <div className="bg-gray-50 rounded-full p-1">
+                                <div className="absolute -bottom-1 -right-1 rounded-full p-0.5 shadow-sm border" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                                    <div className="rounded-full p-1" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                                         <ChevronDown size={10} className="text-gray-400" />
                                     </div>
                                 </div>
@@ -178,7 +186,7 @@ export const GroupModal: React.FC<GroupModalProps> = ({
 
                             {/* Popover Icon Grid */}
                             {showIconPicker && (
-                                <div className="absolute top-full left-0 mt-2 p-3 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 w-72 z-50 grid grid-cols-6 gap-2 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="absolute top-full left-0 mt-2 p-3 backdrop-blur-xl rounded-xl shadow-2xl border w-72 z-50 grid grid-cols-6 gap-2 animate-in fade-in zoom-in-95 duration-100" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', opacity: 0.95 }}>
                                     {ICONS.map(ic => (
                                         <button
                                             key={ic.id}
@@ -193,7 +201,12 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                                                 }`}
                                             title={ic.label}
                                         >
-                                            <ic.icon size={18} strokeWidth={2} />
+                                            <ic.icon
+                                                size={20}
+                                                strokeWidth={icon === ic.id ? 2.5 : 2}
+                                                fill={icon === ic.id ? "currentColor" : "none"}
+                                                fillOpacity={icon === ic.id ? 0.2 : 0}
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -202,12 +215,13 @@ export const GroupModal: React.FC<GroupModalProps> = ({
 
                         {/* Name Input */}
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Group Name</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>Group Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
-                                className="w-full text-xl font-semibold text-gray-900 bg-transparent border-b-2 border-gray-100 hover:border-gray-300 focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-300 pb-1"
+                                className="w-full text-xl font-semibold bg-transparent border-b-2 hover:border-gray-300 focus:border-indigo-500 focus:outline-none transition-all pb-1"
+                                style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)', '--tw-placeholder-opacity': '0.5' } as React.CSSProperties}
                                 placeholder="Enter Name"
                                 autoFocus
                             />
@@ -216,7 +230,7 @@ export const GroupModal: React.FC<GroupModalProps> = ({
 
                     {/* Parent Group Selector */}
                     <div className="bg-transparent">
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Location</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-secondary)' }}>Location</label>
                         <GroupSelector
                             groups={groups}
                             selectedGroupId={parentGroupId}
@@ -229,7 +243,7 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                     </div>
                 </div>
 
-                <div className="px-4 py-2.5 bg-gray-50/50 border-t border-gray-100 flex justify-end space-x-2 rounded-b-xl">
+                <div className="px-4 py-2.5 border-t flex justify-end space-x-2 rounded-b-xl" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200/60 rounded-md transition-colors"

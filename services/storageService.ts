@@ -10,6 +10,8 @@ export interface SavedVaultInfo {
 
 const STORAGE_KEY = 'keedavault_recent_vaults';
 
+import { getUISettings } from './uiSettingsService';
+
 export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
     try {
         // Get raw list without sorting to avoid confusion during manipulation
@@ -29,8 +31,12 @@ export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
         };
         filtered.unshift(newEntry);
 
-        // Keep only last 5 (based on recency of use, which is what unshift/slice does effectively for LRU)
-        const toSave = filtered.slice(0, 5);
+        // Get configured limit
+        const settings = await getUISettings();
+        const limit = settings.general?.recentFileCount || 5;
+
+        // Keep only last N (based on recency of use, which is what unshift/slice does effectively for LRU)
+        const toSave = filtered.slice(0, limit);
         await settingsStore.set(STORAGE_KEY, toSave);
     } catch (e) {
         console.error('Failed to save recent vault:', e);
