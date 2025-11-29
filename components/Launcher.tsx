@@ -10,17 +10,34 @@ import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react
 import appIcon from '../app-icon.png';
 import { FlowBackground } from './FlowBackground';
 
+import { settingsStore } from '../services/settingsStore';
+import { getUISettings } from '../services/uiSettingsService';
+import { listen } from '@tauri-apps/api/event';
+
 export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
+    const [recentCount, setRecentCount] = useState(5);
 
     useEffect(() => {
-        const fetchedRef = { current: false };
         const fetchAndSetVaults = async () => {
-            if (fetchedRef.current) return;
-            fetchedRef.current = true;
             setRecentVaults(await getRecentVaults());
+
+            const settings = await getUISettings();
+            if (settings?.general?.recentFileCount) {
+                setRecentCount(settings.general.recentFileCount);
+            }
         };
         fetchAndSetVaults();
+
+        const unlisten = listen('settings-changed', (event: any) => {
+            if (event.payload?.general?.recentFileCount) {
+                setRecentCount(event.payload.general.recentFileCount);
+            }
+        });
+
+        return () => {
+            unlisten.then(f => f());
+        };
     }, []);
 
 
@@ -275,7 +292,7 @@ export const Launcher: React.FC = () => {
                                         No recent files found.
                                     </div>
                                 ) : (
-                                    recentVaults.slice(0, 5).map((vault, idx) => (
+                                    recentVaults.slice(0, recentCount).map((vault, idx) => (
                                         <button
                                             key={idx}
                                             onDoubleClick={() => handleOpenRecent(vault)}

@@ -19,6 +19,7 @@ import { ExportModal } from './ExportModal';
 import { PasswordGenerator } from './PasswordGenerator';
 import { CreateEntryModal } from './CreateEntryModal';
 import { ChangeCredentialsModal } from './ChangeCredentialsModal';
+import { DatabasePropertiesModal } from './DatabasePropertiesModal';
 import { VaultGroup, EntryFormData } from '../types';
 
 export const VaultWorkspace: React.FC = () => {
@@ -89,6 +90,39 @@ export const VaultWorkspace: React.FC = () => {
     const [passwordGeneratorOpen, setPasswordGeneratorOpen] = useState(false);
     const [createEntryModalOpen, setCreateEntryModalOpen] = useState(false);
     const [changeCredentialsModalOpen, setChangeCredentialsModalOpen] = useState(false);
+    const [showDbProperties, setShowDbProperties] = useState(false);
+    const [clipboardTimer, setClipboardTimer] = useState<number | null>(null);
+
+    // Clipboard Timer Logic
+    useEffect(() => {
+        const handleClipboardCopy = async () => {
+            const settings = await getUISettings();
+            const delay = settings.security?.clipboardClearDelay || 0;
+            if (delay > 0) {
+                setClipboardTimer(delay);
+            }
+        };
+
+        document.addEventListener('clipboard-copy', handleClipboardCopy);
+        return () => document.removeEventListener('clipboard-copy', handleClipboardCopy);
+    }, []);
+
+    useEffect(() => {
+        if (clipboardTimer === null) return;
+
+        if (clipboardTimer <= 0) {
+            navigator.clipboard.writeText('');
+            addToast({ title: 'Clipboard cleared', type: 'info' });
+            setClipboardTimer(null);
+            return;
+        }
+
+        const timer = setInterval(() => {
+            setClipboardTimer(prev => (prev !== null ? prev - 1 : null));
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [clipboardTimer, addToast]);
 
     // Handle Menu Actions (Import/Export)
     useEffect(() => {
@@ -128,7 +162,9 @@ export const VaultWorkspace: React.FC = () => {
         }));
 
         listeners.push(getCurrentWebviewWindow().listen('database-setting', () => {
-            addToast({ title: 'Coming Soon', description: 'Database Settings feature is coming soon.', type: 'info' });
+            if (activeVaultId) {
+                setShowDbProperties(true);
+            }
         }));
 
         return () => {
@@ -616,8 +652,24 @@ export const VaultWorkspace: React.FC = () => {
         }
     }, [activeGroupId, activeEntries]);
 
+    // Calculate stats for DatabasePropertiesModal
+    const stats = React.useMemo(() => {
+        let totalFolders = 0;
+        let totalEntries = 0;
+        const countRecursive = (group: VaultGroup) => {
+            totalFolders++;
+            totalEntries += group.entries.length;
+            group.subgroups.forEach(countRecursive);
+        };
+
+        if (activeVault) {
+            activeVault.groups.forEach(countRecursive);
+        }
+        return { totalFolders, totalEntries };
+    }, [activeVault]);
+
     return (
-        <div className="flex h-screen w-screen bg-gray-50 overflow-hidden text-sm select-none">
+        <div className="flex h-screen w-screen overflow-hidden text-sm select-none" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
             <Toaster />
 
 
@@ -625,8 +677,14 @@ export const VaultWorkspace: React.FC = () => {
             {/* Left Sidebar - Conditionally rendered */}
             {leftSidebarVisible && (
                 <div
-                    className="flex-shrink-0 border-r border-gray-200 bg-gray-50/50"
-                    style={{ width: 230 }}
+                    className="flex-shrink-0 border-r"
+                    style={{
+                        width: 230,
+                        borderColor: 'var(--color-border-light)',
+                        backgroundColor: 'var(--color-bg-sidebar)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)'
+                    }}
                 >
                     <Sidebar
                         className="h-full"
@@ -634,12 +692,13 @@ export const VaultWorkspace: React.FC = () => {
                         onNewGroup={handleNewGroup}
                         onEditGroup={handleEditGroup}
                         onMoveEntry={onMoveEntry}
+                        onOpenDbProperties={() => setShowDbProperties(true)}
                     />
                 </div>
             )}
 
             {/* Main Content Area - EntryList with flexible width */}
-            <div className="flex-1 flex flex-col bg-white relative z-0" style={{ minWidth: 300 }}>
+            <div className="flex-1 flex flex-col relative z-0" style={{ minWidth: 300, backgroundColor: 'var(--color-bg-primary)' }}>
                 {/* Entry List */}
                 <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                     <EntryList
@@ -656,8 +715,8 @@ export const VaultWorkspace: React.FC = () => {
             {/* Right Sidebar (Entry Detail) - Conditionally rendered */}
             {rightSidebarVisible && (
                 <div
-                    className="flex-shrink-0 border-l border-gray-200 bg-white"
-                    style={{ width: 300 }}
+                    className="flex-shrink-0 border-l"
+                    style={{ width: 300, borderColor: 'var(--color-border-light)', backgroundColor: 'var(--color-bg-primary)' }}
                 >
                     <div className="h-full flex flex-col">
                         {selectedEntryIds.size > 0 ? (
@@ -668,7 +727,7 @@ export const VaultWorkspace: React.FC = () => {
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
                                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                    <FileText className="w-8 h-8 opacity-30" />
+                                    <FileText className="w-8 h-8 opacity-30" strokeWidth={1.5} />
                                 </div>
                                 Select an entry to view details
                             </div>
@@ -728,6 +787,37 @@ export const VaultWorkspace: React.FC = () => {
                 isOpen={changeCredentialsModalOpen}
                 onClose={() => setChangeCredentialsModalOpen(false)}
             />
+            {activeVault && (
+                <DatabasePropertiesModal
+                    isOpen={showDbProperties}
+                    onClose={() => setShowDbProperties(false)}
+                    vault={activeVault}
+                    stats={stats}
+                    onChangeCredentials={() => {
+                        setShowDbProperties(false);
+                        setChangeCredentialsModalOpen(true);
+                    }}
+                />
+            )}
+
+            {/* Clipboard Timer Indicator */}
+            {clipboardTimer !== null && clipboardTimer > 0 && (
+                <div className="fixed bottom-4 right-4 z-50 px-3 py-2 rounded-lg shadow-lg flex items-center space-x-2 text-xs font-medium animate-in slide-in-from-bottom-2 border" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)', color: 'var(--color-text-primary)' }}>
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span>Clipboard clears in {clipboardTimer}s</span>
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText('');
+                            setClipboardTimer(null);
+                            addToast({ title: 'Clipboard cleared', type: 'info' });
+                        }}
+                        className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                        title="Clear now"
+                    >
+                        <PanelLeftClose size={12} strokeWidth={1.5} className="rotate-45" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

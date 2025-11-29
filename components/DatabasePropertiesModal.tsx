@@ -26,8 +26,8 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
     useEffect(() => {
         if (isOpen && vault) {
             setDbName(vault.db.meta.name || vault.name || '');
-            setDbDesc(vault.db.meta.description || '');
-            setDbUser(vault.db.meta.defaultUserName || '');
+            setDbDesc((vault.db.meta as any).description || '');
+            setDbUser(vault.db.meta.defaultUser || '');
             setActiveTab('general');
         }
     }, [isOpen, vault]);
@@ -39,8 +39,8 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
         try {
             // Update DB Meta
             vault.db.meta.name = dbName;
-            vault.db.meta.description = dbDesc;
-            vault.db.meta.defaultUserName = dbUser;
+            (vault.db.meta as any).description = dbDesc;
+            vault.db.meta.defaultUser = dbUser;
 
             // Update Vault object name if it changed
             if (dbName && dbName !== vault.name) {
@@ -49,8 +49,8 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
 
             // Mark as modified
             vault.db.meta.nameChanged = new Date();
-            vault.db.meta.descriptionChanged = new Date();
-            vault.db.meta.defaultUserNameChanged = new Date();
+            (vault.db.meta as any).descriptionChanged = new Date();
+            vault.db.meta.defaultUserChanged = new Date();
 
             await saveVault(vault.id);
             refreshVault(vault.id);
@@ -75,35 +75,38 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--color-bg-primary)' }}>
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <div className="flex items-center justify-between px-6 py-4 border-b" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
+                    <h3 className="text-lg font-semibold flex items-center" style={{ color: 'var(--color-text-primary)' }}>
                         <Database size={20} className="mr-2 text-indigo-600" />
                         Database Settings
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button onClick={onClose} className="hover:text-gray-600 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-200 px-6">
+                <div className="flex border-b px-6" style={{ borderColor: 'var(--color-border-light)' }}>
                     <button
-                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'general' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'general' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-700'}`}
+                        style={activeTab !== 'general' ? { color: 'var(--color-text-secondary)' } : {}}
                         onClick={() => setActiveTab('general')}
                     >
                         General
                     </button>
                     <button
-                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'security' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'security' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-700'}`}
+                        style={activeTab !== 'security' ? { color: 'var(--color-text-secondary)' } : {}}
                         onClick={() => setActiveTab('security')}
                     >
                         Security
                     </button>
                     <button
-                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'browser' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'browser' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-700'}`}
+                        style={activeTab !== 'browser' ? { color: 'var(--color-text-secondary)' } : {}}
                         onClick={() => setActiveTab('browser')}
                     >
                         Browser Integration
@@ -118,45 +121,48 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Database Name</label>
+                                        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Database Name</label>
                                         <input
                                             type="text"
                                             value={dbName}
                                             onChange={(e) => setDbName(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                            className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                             placeholder="My Database"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Default Username</label>
+                                        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Default Username</label>
                                         <input
                                             type="text"
                                             value={dbUser}
                                             onChange={(e) => setDbUser(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                            className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                             placeholder="jdoe"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Description</label>
                                     <textarea
                                         value={dbDesc}
                                         onChange={(e) => setDbDesc(e.target.value)}
                                         rows={4}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
+                                        className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
+                                        style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                         placeholder="Database description..."
                                     />
                                 </div>
                             </div>
 
-                            <div className="border-t border-gray-100 pt-6">
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Database Metadata</h4>
-                                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-3">
+                            <div className="border-t pt-6" style={{ borderColor: 'var(--color-border-light)' }}>
+                                <h4 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--color-text-secondary)' }}>Database Metadata</h4>
+                                <div className="rounded-lg border p-4 space-y-3" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 flex items-center"><HardDrive size={14} className="mr-2" /> File Path</span>
+                                        <span className="flex items-center" style={{ color: 'var(--color-text-secondary)' }}><HardDrive size={14} className="mr-2" /> File Path</span>
                                         <div className="flex items-center">
-                                            <span className="font-mono text-gray-700 truncate max-w-[200px]" title={vault.path}>{vault.path || 'In-memory'}</span>
+                                            <span className="font-mono truncate max-w-[200px]" title={vault.path} style={{ color: 'var(--color-text-primary)' }}>{vault.path || 'In-memory'}</span>
                                             {vault.path && (
                                                 <button onClick={handleRevealInFinder} className="ml-2 text-indigo-600 hover:text-indigo-800">
                                                     <Folder size={14} />
@@ -165,18 +171,18 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 flex items-center"><Calendar size={14} className="mr-2" /> Created</span>
-                                        <span className="font-mono text-gray-700">
+                                        <span className="flex items-center" style={{ color: 'var(--color-text-secondary)' }}><Calendar size={14} className="mr-2" /> Created</span>
+                                        <span className="font-mono" style={{ color: 'var(--color-text-primary)' }}>
                                             {vault.db.getDefaultGroup()?.times?.creationTime ? format(vault.db.getDefaultGroup()!.times.creationTime as Date, 'PP pp') : 'N/A'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 flex items-center"><Folder size={14} className="mr-2" /> Groups</span>
-                                        <span className="font-mono text-gray-700">{stats.totalFolders}</span>
+                                        <span className="flex items-center" style={{ color: 'var(--color-text-secondary)' }}><Folder size={14} className="mr-2" /> Groups</span>
+                                        <span className="font-mono" style={{ color: 'var(--color-text-primary)' }}>{stats.totalFolders}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 flex items-center"><File size={14} className="mr-2" /> Entries</span>
-                                        <span className="font-mono text-gray-700">{stats.totalEntries}</span>
+                                        <span className="flex items-center" style={{ color: 'var(--color-text-secondary)' }}><File size={14} className="mr-2" /> Entries</span>
+                                        <span className="font-mono" style={{ color: 'var(--color-text-primary)' }}>{stats.totalEntries}</span>
                                     </div>
                                 </div>
                             </div>
@@ -185,56 +191,57 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
 
                     {activeTab === 'security' && (
                         <div className="space-y-6">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="border rounded-lg p-6 shadow-sm" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-light)' }}>
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-4">
                                         <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
                                             <Key size={24} />
                                         </div>
                                         <div>
-                                            <h4 className="text-base font-semibold text-gray-900">Database Credentials</h4>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <h4 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>Database Credentials</h4>
+                                            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
                                                 Change the master password or key file used to unlock this database.
                                             </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={onChangeCredentials}
-                                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                        className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                        style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                     >
                                         Change Credentials
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="border rounded-lg p-6 shadow-sm" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-light)' }}>
                                 <div className="flex items-start space-x-4">
                                     <div className="p-3 bg-green-50 rounded-lg text-green-600">
                                         <Lock size={24} />
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="text-base font-semibold text-gray-900">Encryption Settings</h4>
-                                        <p className="text-sm text-gray-500 mt-1 mb-4">
+                                        <h4 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>Encryption Settings</h4>
+                                        <p className="text-sm mt-1 mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                                             Information about the encryption standards used by this database.
                                         </p>
 
-                                        <div className="bg-gray-50 rounded-md p-4 border border-gray-100">
+                                        <div className="rounded-md p-4 border" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                 <div>
-                                                    <span className="text-gray-500 block mb-1">Database Format</span>
-                                                    <span className="font-medium text-gray-900">KDBX 4.0</span>
+                                                    <span className="block mb-1" style={{ color: 'var(--color-text-secondary)' }}>Database Format</span>
+                                                    <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>KDBX 4.0</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500 block mb-1">Encryption Algorithm</span>
-                                                    <span className="font-medium text-gray-900">AES-256 (ChaCha20)</span>
+                                                    <span className="block mb-1" style={{ color: 'var(--color-text-secondary)' }}>Encryption Algorithm</span>
+                                                    <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>AES-256 (ChaCha20)</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500 block mb-1">Key Derivation</span>
-                                                    <span className="font-medium text-gray-900">Argon2d</span>
+                                                    <span className="block mb-1" style={{ color: 'var(--color-text-secondary)' }}>Key Derivation</span>
+                                                    <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Argon2d</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500 block mb-1">Compression</span>
-                                                    <span className="font-medium text-gray-900">GZip</span>
+                                                    <span className="block mb-1" style={{ color: 'var(--color-text-secondary)' }}>Compression</span>
+                                                    <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>GZip</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -249,12 +256,12 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
 
                     {activeTab === 'browser' && (
                         <div className="flex flex-col items-center justify-center h-64 text-center space-y-4">
-                            <div className="p-4 bg-gray-100 rounded-full text-gray-400">
+                            <div className="p-4 rounded-full" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-tertiary)' }}>
                                 <Globe size={48} />
                             </div>
                             <div>
-                                <h4 className="text-lg font-semibold text-gray-900">Browser Integration</h4>
-                                <p className="text-gray-500 mt-1">Connect KeedaVault with your favorite browser.</p>
+                                <h4 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Browser Integration</h4>
+                                <p className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>Connect KeedaVault with your favorite browser.</p>
                             </div>
                             <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium uppercase tracking-wide">
                                 Coming Soon
@@ -264,10 +271,11 @@ export const DatabasePropertiesModal: React.FC<DatabasePropertiesModalProps> = (
                 </div>
 
                 {/* Footer */}
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <div className="px-6 py-4 border-t flex justify-end space-x-3" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                     >
                         Close
                     </button>

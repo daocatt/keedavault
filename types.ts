@@ -93,4 +93,5 @@ export interface EntryFormData {
   expiryTime?: Date;
   customFields?: Record<string, string>;
   attachments?: { name: string; data: ArrayBuffer }[];
+  icon?: number;
 }
