@@ -196,10 +196,10 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="text-lg font-semibold text-gray-800">Change Credentials</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <div className="rounded-xl shadow-2xl w-full max-w-md overflow-hidden border" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                <div className="px-6 py-4 border-b flex justify-between items-center" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
+                    <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Change Credentials</h3>
+                    <button onClick={onClose} className="hover:text-gray-600 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
                         <X size={20} />
                     </button>
                 </div>
@@ -216,18 +216,18 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
                     )}
 
                     {/* Database Name */}
-                    <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                        <label className="block text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
+                    <div className="px-4 py-3 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}>
+                        <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--color-accent)' }}>
                             Database
                         </label>
-                        <div className="text-sm font-medium text-gray-800 truncate">
+                        <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
                             {activeVault.name}
                         </div>
                     </div>
 
                     {/* Old Password */}
                     <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                             Current Password
                         </label>
                         {activeVault.password && activeVault.password.getText().length > 0 ? (
@@ -240,7 +240,8 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
                                     required
                                     value={oldPassword}
                                     onChange={(e) => setOldPassword(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                    className="block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                    style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                     placeholder="Enter current password"
                                 />
                             </div>
@@ -275,27 +276,29 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
                     {/* New Password */}
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="block text-sm font-medium text-gray-700">
-                                New Password <span className="text-gray-400 font-normal">(Optional)</span>
+                            <label className="block text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                                New Password <span className="font-normal" style={{ color: 'var(--color-text-tertiary)' }}>(Optional)</span>
                             </label>
                             <input
                                 type="password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                 placeholder="Leave blank to keep current password"
                             />
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                                 Confirm New Password
                             </label>
                             <input
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                 placeholder="Confirm new password"
                             />
                         </div>
@@ -303,7 +306,7 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
 
                     {/* Key File Section */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                             Key File (Optional)
                         </label>
 
@@ -357,17 +360,19 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
                                 <button
                                     type="button"
                                     onClick={handleSelectKeyFile}
-                                    className="flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+                                    className="flex items-center justify-center px-4 py-2.5 border rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
+                                    style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                 >
-                                    <FileKey size={16} className="mr-2 text-gray-500" />
+                                    <FileKey size={16} className="mr-2" style={{ color: 'var(--color-text-secondary)' }} />
                                     Select File
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleCreateKeyFile}
-                                    className="flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+                                    className="flex items-center justify-center px-4 py-2.5 border rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
+                                    style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                                 >
-                                    <RefreshCw size={16} className="mr-2 text-gray-500" />
+                                    <RefreshCw size={16} className="mr-2" style={{ color: 'var(--color-text-secondary)' }} />
                                     Create New
                                 </button>
                             </div>
@@ -390,7 +395,8 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({ 
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                            className="px-4 py-2 text-sm font-medium border rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
                         >
                             Cancel
                         </button>

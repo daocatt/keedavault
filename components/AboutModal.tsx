@@ -73,14 +73,24 @@ export const AboutModal: React.FC = () => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
             <div
-                className="bg-white rounded-xl w-80 overflow-hidden shadow-2xl border border-gray-200/50 transform transition-all animate-in fade-in zoom-in-95 duration-200"
+                className="rounded-xl w-80 overflow-hidden shadow-2xl border transform transition-all animate-in fade-in zoom-in-95 duration-200"
+                style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header with Close Button */}
                 <div className="absolute top-3 right-3 z-10">
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        className="p-1 rounded-full transition-colors"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--color-text-primary)';
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                     >
                         <X size={16} />
                     </button>
@@ -91,11 +101,11 @@ export const AboutModal: React.FC = () => {
                     <img src={logo} alt="App Logo" className="w-24 h-24 mb-5 drop-shadow-xl" />
 
                     {/* App Name & Version */}
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">{appName}</h2>
-                    <p className="text-sm text-gray-500 font-medium mb-6">Version {appVersion}</p>
+                    <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>{appName}</h2>
+                    <p className="text-sm font-medium mb-6" style={{ color: 'var(--color-text-secondary)' }}>Version {appVersion}</p>
 
                     {/* Description */}
-                    <p className="text-xs text-gray-500 mb-8 leading-relaxed">
+                    <p className="text-xs mb-8 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                         A modern, secure, and open-source password manager designed for simplicity and privacy.
                     </p>
 
@@ -105,26 +115,32 @@ export const AboutModal: React.FC = () => {
                             href="https://github.com/daocatt/keedavault"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center w-full py-2 px-4 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors group"
+                            className="flex items-center justify-center w-full py-2 px-4 text-xs font-medium border rounded-lg transition-colors group"
+                            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-light)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)'}
                         >
-                            <Github size={14} className="mr-2 text-gray-500 group-hover:text-gray-900" />
+                            <Github size={14} className="mr-2 group-hover:text-gray-900" style={{ color: 'var(--color-text-secondary)' }} />
                             GitHub Repository
                         </a>
                         <a
                             href="https://keedavault.zwq.me"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center w-full py-2 px-4 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors group"
+                            className="flex items-center justify-center w-full py-2 px-4 text-xs font-medium border rounded-lg transition-colors group"
+                            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-light)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)'}
                         >
-                            <Globe size={14} className="mr-2 text-gray-500 group-hover:text-blue-500" />
+                            <Globe size={14} className="mr-2 group-hover:text-blue-500" style={{ color: 'var(--color-text-secondary)' }} />
                             Release Note
                         </a>
                     </div>
 
                     {/* Footer / Credits */}
-                    <div className="mt-8 pt-6 border-t border-gray-100 w-full">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">Created By</p>
-                        <p className="text-xs text-gray-600 font-medium">AI & Daocatt</p>
+                    <div className="mt-8 pt-6 border-t w-full" style={{ borderColor: 'var(--color-border-light)' }}>
+                        <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--color-text-tertiary)' }}>Created By</p>
+                        <p className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>AI & Daocatt</p>
                     </div>
                 </div>
             </div>

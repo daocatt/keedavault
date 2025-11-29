@@ -6,9 +6,11 @@ import { AboutWindow } from './components/AboutWindow';
 import { VaultAuthWindow } from './components/VaultAuthWindow';
 import { LargeTypeWindow } from './components/LargeTypeWindow';
 import { MarkdownPreviewWindow } from './components/MarkdownPreviewWindow';
+import { SettingsWindow } from './components/SettingsWindow';
 import { VaultProvider } from './context/VaultContext';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { LogicalSize } from '@tauri-apps/api/dpi';
+import { ThemeManager } from './components/ThemeManager';
 
 import { PasswordGenerator } from './components/PasswordGenerator';
 
@@ -18,7 +20,7 @@ const AppContent: React.FC = () => {
     return params.get('path') || undefined;
   });
 
-  const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator'>(() => {
+  const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator' | 'settings'>(() => {
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
     const actionParam = params.get('action');
@@ -33,6 +35,7 @@ const AppContent: React.FC = () => {
     if (modeParam === 'large-type') return 'large-type';
     if (modeParam === 'markdown-preview') return 'markdown-preview';
     if (modeParam === 'generator') return 'generator';
+    if (modeParam === 'settings') return 'settings';
 
     if (actionParam === 'unlock' || (actionParam === null && pathParam)) return 'auth';
     if (actionParam === 'create') return 'create';
@@ -53,11 +56,22 @@ const AppContent: React.FC = () => {
     return <MarkdownPreviewWindow />;
   }
 
+  if (mode === 'settings') {
+    return <SettingsWindow />;
+  }
+
   if (mode === 'generator') {
     return (
-      <div className="h-screen w-screen bg-white">
-        <div className="h-8 bg-white/90 backdrop-blur-sm border-b border-gray-200 flex items-center justify-center drag-region" data-tauri-drag-region>
-          <span className="text-xs font-medium text-gray-500">Password Generator</span>
+      <div className="h-screen w-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <div className="h-8 backdrop-blur-sm border-b flex items-center justify-center drag-region select-none"
+          data-tauri-drag-region
+          style={{
+            backgroundColor: 'var(--color-bg-primary)',
+            borderColor: 'var(--color-border-light)',
+            opacity: 0.95
+          }}
+        >
+          <span className="text-xs font-medium pointer-events-none" style={{ color: 'var(--color-text-secondary)' }}>Password Generator</span>
         </div>
         <div className="p-4">
           <PasswordGenerator
@@ -110,6 +124,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <VaultProvider>
+      <ThemeManager />
       <AppContent />
     </VaultProvider>
   );

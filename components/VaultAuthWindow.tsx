@@ -46,7 +46,7 @@ export const VaultAuthWindow: React.FC<VaultAuthWindowProps> = ({ mode, path, on
     };
 
     return (
-        <div className="h-screen w-screen bg-gray-50 flex flex-col">
+        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
             {/* Drag Region */}
             <div
                 className="h-8 w-full flex-shrink-0"

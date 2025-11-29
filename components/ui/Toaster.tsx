@@ -17,20 +17,29 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
     return (
         <div
-            className={`pointer-events-auto flex items-start p-3 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[300px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-x-full' : 'animate-in slide-in-from-right-full fade-in'
+            className={`pointer-events-auto flex items-center p-3 rounded-xl shadow-xl border backdrop-blur-md min-w-[320px] max-w-[420px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-y-2 scale-95' : 'animate-in slide-in-from-bottom-5 fade-in zoom-in-95'
                 }`}
+            style={{
+                backgroundColor: 'var(--color-bg-tertiary)',
+                borderColor: 'var(--color-border-light)',
+                color: 'var(--color-text-primary)'
+            }}
         >
-            {toast.type === 'success' && <CheckCircle size={20} className="text-green-500 mr-3 mt-0.5" />}
-            {toast.type === 'error' && <AlertCircle size={20} className="text-red-500 mr-3 mt-0.5" />}
-            {toast.type === 'info' && <Info size={20} className="text-blue-500 mr-3 mt-0.5" />}
-            <div className="flex-1">
-                <div className="text-sm font-medium text-gray-800">{toast.title}</div>
+            {toast.type === 'success' && <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full mr-3"><CheckCircle size={16} className="text-green-600 dark:text-green-400" /></div>}
+            {toast.type === 'error' && <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded-full mr-3"><AlertCircle size={16} className="text-red-600 dark:text-red-400" /></div>}
+            {toast.type === 'info' && <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-full mr-3"><Info size={16} className="text-blue-600 dark:text-blue-400" /></div>}
+            <div className="flex-1 mr-2">
+                <div className="text-sm font-medium">{toast.title}</div>
                 {toast.description && (
-                    <div className="text-xs text-gray-600 mt-1">{toast.description}</div>
+                    <div className="text-xs mt-0.5 opacity-80">{toast.description}</div>
                 )}
             </div>
-            <button onClick={() => { setIsExiting(true); setTimeout(() => onDismiss(toast.id), 300); }} className="text-gray-400 hover:text-gray-600 ml-2">
-                <X size={16} />
+            <button
+                onClick={() => { setIsExiting(true); setTimeout(() => onDismiss(toast.id), 300); }}
+                className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                style={{ color: 'var(--color-text-tertiary)' }}
+            >
+                <X size={14} />
             </button>
         </div>
     );
@@ -65,7 +74,7 @@ export const Toaster: React.FC = () => {
     }, []);
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col space-y-2 pointer-events-none items-center">
             {toasts.map(toast => (
                 <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
             ))}

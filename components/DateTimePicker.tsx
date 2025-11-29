@@ -57,11 +57,16 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange 
                     {/* Display Input */}
                     <div
                         className={cn(
-                            "w-full pl-10 pr-8 py-2.5 text-sm rounded-lg border transition-all bg-white",
+                            "w-full pl-10 pr-8 py-2.5 text-sm rounded-lg border transition-all",
                             value
-                                ? "border-indigo-200 text-gray-900 hover:border-indigo-300"
-                                : "border-gray-300 text-gray-400 hover:border-gray-400"
+                                ? "border-indigo-200 hover:border-indigo-300"
+                                : "hover:border-gray-400"
                         )}
+                        style={{
+                            backgroundColor: 'var(--color-bg-primary)',
+                            borderColor: value ? undefined : 'var(--color-border-medium)',
+                            color: value ? 'var(--color-text-primary)' : 'var(--color-text-placeholder)'
+                        }}
                     >
                         {value ? format(value, 'PPP HH:mm') : "Select expiry date..."}
                     </div>
@@ -81,8 +86,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange 
                     )}
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 border-border-light bg-bg-primary z-[10000]" align="start">
-                <div className="p-3 border-b border-border-light">
+            <PopoverContent className="w-auto p-0 z-[10000]" align="start" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                <div className="p-3 border-b" style={{ borderColor: 'var(--color-border-light)' }}>
                     <Calendar
                         mode="single"
                         selected={value || undefined}
@@ -90,11 +95,12 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange 
                         initialFocus
                     />
                 </div>
-                <div className="p-3 bg-bg-tertiary flex items-center gap-2">
+                <div className="p-3 flex items-center gap-2" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                     <Clock size={16} className="text-gray-500" />
                     <input
                         type="time"
-                        className="flex-1 bg-transparent border border-border-medium rounded-md px-2 py-1 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                        className="flex-1 bg-transparent border rounded-md px-2 py-1 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                        style={{ borderColor: 'var(--color-border-medium)', color: 'var(--color-text-primary)' }}
                         value={timeValue}
                         onChange={handleTimeChange}
                     />

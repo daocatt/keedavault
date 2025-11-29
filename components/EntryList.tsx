@@ -10,6 +10,7 @@ import { CreateEntryModal } from './CreateEntryModal';
 import { useToast } from './ui/Toaster';
 import { VaultEntry, VaultGroup } from '../types';
 import { ICONS_MAP } from '../constants';
+import { EntryIcon } from './EntryIcon';
 
 interface EntryListProps {
     onSelectEntry: (ids: Set<string>) => void;
@@ -195,6 +196,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 return;
             }
             setContextMenu(null);
+            setToolbarContextMenu(null);
+            setColumnMenuOpen(false);
         };
 
         // Use mousedown for better control
@@ -434,7 +437,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     }, [activeVaultId, saveVault]); // Removed addToast from dependencies
 
     return (
-        <div className="flex-1 overflow-hidden flex flex-col bg-white relative" onClick={(e) => {
+        <div className="flex-1 overflow-hidden flex flex-col relative" onClick={(e) => {
             // Don't clear selection if clicking on context menu
             const target = e.target as HTMLElement;
             if (target.closest('.context-menu')) {
@@ -473,7 +476,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title={leftSidebarVisible ? "Hide sidebar" : "Show sidebar"}
                 >
-                    {leftSidebarVisible ? <PanelLeftClose size={18} className="pointer-events-none" /> : <PanelLeftOpen size={18} className="pointer-events-none" />}
+                    {leftSidebarVisible ? <PanelLeftClose size={18} strokeWidth={1.5} className="pointer-events-none" /> : <PanelLeftOpen size={18} strokeWidth={1.5} className="pointer-events-none" />}
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium pointer-events-none">Sidebar</span>}
                 </button>
 
@@ -491,7 +494,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             title="Empty Recycle Bin"
                         >
-                            <Trash2 size={16} />
+                            <Trash2 size={16} strokeWidth={1.5} />
                             {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Empty</span>}
                         </button>
                     </>
@@ -508,7 +511,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     title="New"
                 >
-                    <Plus size={16} />
+                    <Plus size={16} strokeWidth={1.5} />
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">New</span>}
                 </button>
 
@@ -533,7 +536,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     }}
                     title="Password Generator"
                 >
-                    <Key size={14} />
+                    <Key size={14} strokeWidth={1.5} />
                     {toolbarMode !== 'icon' && <span className="ml-1.5 text-xs font-medium">Generator</span>}
                 </button>
 
@@ -542,7 +545,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 <div className="flex-1 h-full" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}></div>
 
                 <div className="relative w-56 z-10">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--color-text-placeholder)' }} />
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5" strokeWidth={1.5} style={{ color: 'var(--color-text-placeholder)' }} />
                     <input
                         id="entry-search-input"
                         type="text"
@@ -601,22 +604,22 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             {/* Toolbar Context Menu */}
             {toolbarContextMenu && (
                 <div
-                    className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-2 w-48"
-                    style={{ top: toolbarContextMenu.y, left: toolbarContextMenu.x }}
+                    className="fixed z-50 rounded-xl shadow-xl border py-1 w-48 context-menu backdrop-blur-md"
+                    style={{ top: toolbarContextMenu.y, left: toolbarContextMenu.x, backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}
                 >
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Toolbar</div>
-                    <button onClick={() => handleSetToolbarMode('icon')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--color-text-tertiary)' }}>Toolbar</div>
+                    <button onClick={() => handleSetToolbarMode('icon')} className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center justify-between rounded-md transition-colors" style={{ color: 'var(--color-text-primary)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         <span>Icon Only</span>
-                        {toolbarMode === 'icon' && <Check size={14} className="text-indigo-600" />}
+                        {toolbarMode === 'icon' && <Check size={14} strokeWidth={1.5} className="text-indigo-600" />}
                     </button>
-                    <button onClick={() => handleSetToolbarMode('both')} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                    <button onClick={() => handleSetToolbarMode('both')} className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center justify-between rounded-md transition-colors" style={{ color: 'var(--color-text-primary)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         <span>Icon and Text</span>
-                        {toolbarMode === 'both' && <Check size={14} className="text-indigo-600" />}
+                        {toolbarMode === 'both' && <Check size={14} strokeWidth={1.5} className="text-indigo-600" />}
                     </button>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center">
+                    {/* <div className="border-t my-1 mx-1" style={{ borderColor: 'var(--color-border-light)' }}></div>
+                    <button className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-xs flex items-center rounded-md transition-colors" style={{ color: 'var(--color-text-primary)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         <Settings size={14} className="mr-2 text-gray-400" /> Customize...
-                    </button>
+                    </button> */}
                 </div>
             )
             }
@@ -625,8 +628,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             <div className="sticky top-0 z-10 h-6 flex items-center text-xs uppercase tracking-wider select-none" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderBottom: '1px solid var(--color-border-light)', color: 'var(--color-text-secondary)' }}>
                 {visibleColumns.group && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-2 overflow-hidden whitespace-nowrap border-r border-gray-200"
-                        style={{ width: `${columnWidths.group}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer transition-colors px-2 overflow-hidden whitespace-nowrap border-r"
+                        style={{ width: `${columnWidths.group}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Group</span>
                         <div
@@ -645,7 +650,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                     >
                         <span className="flex-1 truncate">Title</span>
                         {sortField === 'title' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
+                            sortAsc ? <ChevronUp size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" />
                         )}
                         <div
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
@@ -655,13 +660,15 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.username && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer hover:bg-gray-100 transition-colors px-2 overflow-hidden whitespace-nowrap border-r border-gray-200"
-                        style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left cursor-pointer transition-colors px-2 overflow-hidden whitespace-nowrap border-r"
+                        style={{ width: `${columnWidths.username}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
                         onClick={() => changeSort('username')}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Username</span>
                         {sortField === 'username' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
+                            sortAsc ? <ChevronUp size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" />
                         )}
                         <div
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
@@ -671,8 +678,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.email && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap border-r"
+                        style={{ width: `${columnWidths.email}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Email</span>
                         <div
@@ -683,8 +692,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.password && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap border-r"
+                        style={{ width: `${columnWidths.password}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Password</span>
                         <div
@@ -695,8 +706,10 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.url && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 overflow-hidden whitespace-nowrap border-r"
+                        style={{ width: `${columnWidths.url}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">URL</span>
                         <div
@@ -707,13 +720,15 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.created && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer border-r"
+                        style={{ width: `${columnWidths.created}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
                         onClick={() => changeSort('created')}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Created</span>
                         {sortField === 'created' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
+                            sortAsc ? <ChevronUp size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" />
                         )}
                         <div
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
@@ -723,13 +738,15 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
                 {visibleColumns.modified && (
                     <div
-                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer hover:bg-gray-100 border-r border-gray-200"
-                        style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
+                        className="relative hidden sm:flex items-center justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap cursor-pointer border-r"
+                        style={{ width: `${columnWidths.modified}px`, minWidth: '80px', borderColor: 'var(--color-border-light)' }}
                         onClick={() => changeSort('modified')}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span className="flex-1 truncate">Modified</span>
                         {sortField === 'modified' && (
-                            sortAsc ? <ChevronUp size={14} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} className="ml-1 flex-shrink-0" />
+                            sortAsc ? <ChevronUp size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" /> : <ChevronDown size={14} strokeWidth={1.5} className="ml-1 flex-shrink-0" />
                         )}
                         <div
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 active:bg-indigo-600"
@@ -742,9 +759,12 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 <div className="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-center bg-[var(--color-bg-tertiary)] border-l border-[var(--color-border-light)] z-20">
                     <button
                         onClick={(e) => { e.stopPropagation(); setColumnMenuOpen(!columnMenuOpen); }}
-                        className="p-0.5 hover:bg-gray-200 rounded transition-colors text-gray-500"
+                        className="p-0.5 rounded transition-colors"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <Settings size={12} />
+                        <Settings size={12} strokeWidth={1.5} />
                     </button>
                 </div>
             </div>
@@ -752,19 +772,22 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             {/* Column Settings Menu - Absolute position relative to EntryList */}
             {columnMenuOpen && (
                 <div
-                    className="absolute top-10 right-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                    style={{ maxHeight: '400px', overflow: 'auto' }}
+                    className="absolute top-10 right-2 z-50 rounded-xl shadow-xl border py-1 w-48 context-menu backdrop-blur-md"
+                    style={{ maxHeight: '400px', overflow: 'auto', backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Columns</div>
+                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--color-text-tertiary)' }}>Columns</div>
                     {['group', 'title', 'username', 'email', 'password', 'url', 'created', 'modified'].map((col) => (
                         <button
                             key={col}
                             onClick={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                            className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center justify-between rounded-md transition-colors"
+                            style={{ color: 'var(--color-text-primary)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
                             <span>{col.charAt(0).toUpperCase() + col.slice(1)}</span>
-                            {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} className="text-indigo-600" />}
+                            {visibleColumns[col as keyof typeof visibleColumns] && <Check size={14} strokeWidth={1.5} className="text-indigo-600" />}
                         </button>
                     ))}
                 </div>
@@ -773,9 +796,9 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             {/* List Content */}
             <div className="flex-1 overflow-auto">
                 {activeEntries.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <FileText className="w-8 h-8 opacity-30" />
+                    <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--color-text-placeholder)' }}>
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+                            <FileText className="w-8 h-8 opacity-30" strokeWidth={1.5} />
                         </div>
                         <p>{searchQuery ? 'No entries found matching your search.' : 'No entries in this group.'}</p>
                         {!searchQuery && (
@@ -909,32 +932,43 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                             }}
 
                             className={`py-1.5 flex items-center cursor-pointer transition-colors group select-none ${selectedEntryIds.has(entry.uuid)
-                                ? 'bg-indigo-100 hover:bg-indigo-100 text-indigo-900'
-                                : 'even:bg-gray-50 hover:bg-gray-100 text-gray-900'
+                                ? 'font-medium'
+                                : ''
                                 }`}
-                            style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
+                            style={{
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                backgroundColor: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent-light)' : 'transparent',
+                                color: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent)' : 'var(--color-text-primary)'
+                            } as React.CSSProperties}
+                            onMouseEnter={(e) => {
+                                if (!selectedEntryIds.has(entry.uuid)) {
+                                    e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!selectedEntryIds.has(entry.uuid)) {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                            }}
                         >
                             {/* Group Column */}
                             {visibleColumns.group && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.group}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.group}px`, minWidth: '80px', color: 'inherit' }}
                                     title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>
-                                    {(() => {
-                                        const group = entryGroupMap.get(entry.uuid);
-                                        const Icon = group ? (ICONS_MAP[group.icon] || Folder) : Folder;
-                                        return <Icon size={12} className="mr-1.5 flex-shrink-0 text-gray-400" />;
-                                    })()}
                                     <span className="truncate" title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>{entryGroupMap.get(entry.uuid)?.name || 'Unknown'}</span>
                                 </div>
                             )}
 
                             {/* Title Column */}
                             {visibleColumns.title && (
-                                <div className="flex items-center min-w-0 justify-start text-left px-2 text-xs overflow-hidden whitespace-nowrap"
+                                <div className="flex items-center min-w-0 justify-start text-left px-2 text-sm overflow-hidden whitespace-nowrap"
                                     style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
                                     title={entry.title}>
+                                    <EntryIcon entry={entry} group={entryGroupMap.get(entry.uuid)} size={16} className="mr-2 flex-shrink-0 text-gray-400" />
                                     <div className="min-w-0 flex-1">
-                                        <p className={`text-xs truncate whitespace-nowrap ${selectedEntryIds.has(entry.uuid) ? 'text-indigo-900' : 'text-gray-900'}`} title={entry.title}>
+                                        <p className="text-sm truncate whitespace-nowrap" style={{ color: 'inherit' }} title={entry.title}>
                                             {entry.title}
                                         </p>
                                     </div>
@@ -943,8 +977,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Username Column */}
                             {visibleColumns.username && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.username}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.username}px`, minWidth: '80px', color: 'inherit' }}
                                     title={entry.username}>
                                     <span className="truncate" title={entry.username}>{entry.username}</span>
                                 </div>
@@ -952,8 +986,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Email Column */}
                             {visibleColumns.email && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.email}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.email}px`, minWidth: '80px', color: 'inherit' }}
                                     title={entry.email || entry.fields?.Email || ''}>
                                     <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
                                 </div>
@@ -961,8 +995,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Password Column */}
                             {visibleColumns.password && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.password}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.password}px`, minWidth: '80px', color: 'inherit' }}
                                     title={entry.password ? '••••••' : ''}>
                                     <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
                                 </div>
@@ -970,8 +1004,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* URL Column */}
                             {visibleColumns.url && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.url}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.url}px`, minWidth: '80px', color: 'inherit' }}
                                     title={entry.url}>
                                     <span className="truncate" title={entry.url}>{entry.url}</span>
                                 </div>
@@ -979,8 +1013,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Created Column */}
                             {visibleColumns.created && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-700 truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.created}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.created}px`, minWidth: '80px', color: 'inherit' }}
                                     title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
                                 </div>
@@ -988,8 +1022,8 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
 
                             {/* Modified Column */}
                             {visibleColumns.modified && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-xs text-gray-600 px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.modified}px`, minWidth: '80px' }}
+                                <div className="hidden sm:flex items-center justify-start text-left text-sm px-2 overflow-hidden whitespace-nowrap"
+                                    style={{ width: `${columnWidths.modified}px`, minWidth: '80px', color: 'inherit' }}
                                     title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
                                     <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
                                         {formatDistanceToNow(entry.lastModTime, { addSuffix: true })}
@@ -1005,62 +1039,77 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
             {
                 contextMenu && (
                     <div
-                        className="context-menu fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-48"
-                        style={{ top: contextMenu.y, left: contextMenu.x }}
+                        className="context-menu fixed z-50 rounded-xl shadow-xl border py-1 w-48 backdrop-blur-md"
+                        style={{ top: contextMenu.y, left: contextMenu.x, backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
                     >
                         {(() => {
                             const isMultiSelect = selectedEntryIds.size > 1;
                             const disabledClass = isMultiSelect
-                                ? "w-full text-left px-4 py-2 text-xs text-gray-400 cursor-not-allowed flex items-center opacity-50"
-                                : "w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center cursor-pointer";
+                                ? "w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm cursor-not-allowed flex items-center opacity-50 rounded-md"
+                                : "w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center cursor-pointer rounded-md transition-colors";
 
                             return (
                                 <>
                                     <button
                                         onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.username, 'Username')}
                                         className={disabledClass}
+                                        style={{ color: isMultiSelect ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)' }}
+                                        onMouseEnter={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
+                                        onMouseLeave={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'transparent')}
                                         disabled={isMultiSelect}
                                     >
-                                        <User size={14} className="mr-2 text-gray-400" /> Copy Username
+                                        <User size={14} strokeWidth={1.5} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Copy Username
                                     </button>
                                     <button
                                         onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.password || '', 'Password')}
                                         className={disabledClass}
+                                        style={{ color: isMultiSelect ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)' }}
+                                        onMouseEnter={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
+                                        onMouseLeave={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'transparent')}
                                         disabled={isMultiSelect}
                                     >
-                                        <Key size={14} className="mr-2 text-gray-400" /> Copy Password
+                                        <Key size={14} strokeWidth={1.5} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Copy Password
                                     </button>
                                     <button
                                         onClick={() => !isMultiSelect && copyToClipboard(contextMenu.entry.url, 'URL')}
                                         className={disabledClass}
+                                        style={{ color: isMultiSelect ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)' }}
+                                        onMouseEnter={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
+                                        onMouseLeave={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'transparent')}
                                         disabled={isMultiSelect}
                                     >
-                                        <Link size={14} className="mr-2 text-gray-400" /> Copy URL
+                                        <Link size={14} strokeWidth={1.5} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Copy URL
                                     </button>
-                                    <div className="border-t border-gray-100 my-1"></div>
+                                    <div className="border-t my-1 mx-1" style={{ borderColor: 'var(--color-border-light)' }}></div>
                                     <button
                                         onClick={() => !isMultiSelect && handleEdit(contextMenu.entry)}
                                         className={disabledClass}
+                                        style={{ color: isMultiSelect ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)' }}
+                                        onMouseEnter={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
+                                        onMouseLeave={(e) => !isMultiSelect && (e.currentTarget.style.backgroundColor = 'transparent')}
                                         disabled={isMultiSelect}
                                     >
-                                        <Edit size={14} className="mr-2 text-gray-400" /> Edit Entry
+                                        <Edit size={14} strokeWidth={1.5} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Edit Entry
                                     </button>
                                     <button
                                         onClick={() => !isMultiSelect && !getActiveGroup()?.isRecycleBin && handleDuplicate(contextMenu.entry)}
                                         className={isMultiSelect || getActiveGroup()?.isRecycleBin
-                                            ? "w-full text-left px-4 py-2 text-xs text-gray-400 cursor-not-allowed flex items-center opacity-50"
-                                            : "w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center cursor-pointer"}
+                                            ? "w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm cursor-not-allowed flex items-center opacity-50 rounded-md"
+                                            : "w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm flex items-center cursor-pointer rounded-md transition-colors"}
+                                        style={{ color: (isMultiSelect || getActiveGroup()?.isRecycleBin) ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)' }}
+                                        onMouseEnter={(e) => !(isMultiSelect || getActiveGroup()?.isRecycleBin) && (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
+                                        onMouseLeave={(e) => !(isMultiSelect || getActiveGroup()?.isRecycleBin) && (e.currentTarget.style.backgroundColor = 'transparent')}
                                         disabled={isMultiSelect || !!getActiveGroup()?.isRecycleBin}
                                     >
-                                        <Copy size={14} className="mr-2 text-gray-400" /> Duplicate
+                                        <Copy size={14} strokeWidth={1.5} className="mr-2" style={{ color: 'var(--color-text-tertiary)' }} /> Duplicate
                                     </button>
                                     <button
                                         onClick={(e) => { handleDelete(e); setContextMenu(null); }}
-                                        className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
+                                        className="w-[calc(100%-8px)] mx-1 text-left px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center cursor-pointer rounded-md transition-colors"
                                     >
-                                        <Trash2 size={14} className="mr-2" /> {getActiveGroup()?.isRecycleBin ? 'Delete Permanently' : 'Recycle'} {selectedEntryIds.size > 1 ? `(${selectedEntryIds.size})` : ''}
+                                        <Trash2 size={14} strokeWidth={1.5} className="mr-2" /> {getActiveGroup()?.isRecycleBin ? 'Delete Permanently' : 'Recycle'} {selectedEntryIds.size > 1 ? `(${selectedEntryIds.size})` : ''}
                                     </button>
                                 </>
                             );

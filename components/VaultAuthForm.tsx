@@ -109,24 +109,24 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                             <div className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto">
                                 <HardDrive size={32} strokeWidth={1.5} />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-900 tracking-tight truncate max-w-[280px] mx-auto">
+                            <h2 className="text-xl font-semibold tracking-tight truncate max-w-[280px] mx-auto" style={{ color: 'var(--color-text-primary)' }}>
                                 {file?.name || (path ? path.split(/[/\\]/).pop() : 'Database')}
                             </h2>
                             {path && (
-                                <p className="text-[11px] font-medium text-gray-400 mt-1 truncate max-w-[280px] px-4 mx-auto">
+                                <p className="text-[11px] font-medium mt-1 truncate max-w-[280px] px-4 mx-auto" style={{ color: 'var(--color-text-placeholder)' }}>
                                     {path}
                                 </p>
                             )}
                         </div>
                     ) : (
                         <div>
-                            <div className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm bg-white border border-gray-100 mx-auto">
-                                <Lock size={32} className="text-gray-400" strokeWidth={1.5} />
+                            <div className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm border mx-auto" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                                <Lock size={32} style={{ color: 'var(--color-text-placeholder)' }} strokeWidth={1.5} />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                            <h2 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>
                                 Welcome Back
                             </h2>
-                            <p className="text-[13px] text-gray-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                            <p className="text-[13px] mt-2 max-w-xs mx-auto leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                                 Select a database to get started.
                             </p>
                         </div>
@@ -137,8 +137,8 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
 
             {(unlockError || formError) && (
-                <div className="mb-5 p-3 bg-red-100 text-red-700 text-sm font-medium rounded-xl flex items-start border border-red-200 shadow-sm animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0 text-red-600" />
+                <div className="mb-5 p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl flex items-start border border-red-200 dark:border-red-800 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0 text-red-600 dark:text-red-400" />
                     <span>{unlockError || formError}</span>
                 </div>
             )}
@@ -154,20 +154,30 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
                 {!file && !path && (
                     <div className="space-y-1">
-                        <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider ml-1">
+                        <label className="block text-[11px] font-semibold uppercase tracking-wider ml-1" style={{ color: 'var(--color-text-secondary)' }}>
                             Database File
                         </label>
                         <div
                             onClick={!initialVaultInfo ? handleFileBoxClick : undefined}
                             className="relative cursor-pointer group"
                         >
-                            <div className="absolute left-4 top-3 text-gray-400 group-hover:text-blue-500 transition-colors">
+                            <div className="absolute left-4 top-3 group-hover:text-blue-500 transition-colors" style={{ color: 'var(--color-text-placeholder)' }}>
                                 <FolderOpen size={16} />
                             </div>
-                            <div className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:ring-4 hover:ring-blue-500/10 transition-all shadow-sm truncate">
+                            <div className="w-full pl-11 pr-4 py-2.5 border rounded-xl text-sm hover:border-blue-400 hover:ring-4 hover:ring-blue-500/10 transition-all shadow-sm truncate"
+                                style={{
+                                    backgroundColor: 'var(--color-bg-primary)',
+                                    borderColor: 'var(--color-border-medium)',
+                                    color: 'var(--color-text-secondary)'
+                                }}>
                                 Click to open database...
                             </div>
-                            <div className="absolute right-3 top-2.5 bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md border border-gray-200 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
+                            <div className="absolute right-3 top-2.5 text-[10px] px-2 py-1 rounded-md border group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors"
+                                style={{
+                                    backgroundColor: 'var(--color-bg-secondary)',
+                                    color: 'var(--color-text-secondary)',
+                                    borderColor: 'var(--color-border-light)'
+                                }}>
                                 Browse
                             </div>
                         </div>
@@ -177,12 +187,12 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                 {(file || fileHandle || path) && (
                     <div className="space-y-3">
                         <div className="space-y-1">
-                            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider ml-1">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider ml-1" style={{ color: 'var(--color-text-secondary)' }}>
                                 Master Password
                             </label>
                             <div className="relative">
-                                <div className="absolute left-4 top-3 text-gray-400">
-                                    <Key size={16} className={(unlockError || formError) ? "text-red-400" : ""} />
+                                <div className="absolute left-4 top-3" style={{ color: (unlockError || formError) ? '#ef4444' : 'var(--color-text-placeholder)' }}>
+                                    <Key size={16} />
                                 </div>
                                 <input
                                     type="password"
@@ -195,10 +205,15 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                                             setFormError(null);
                                         }
                                     }}
-                                    className={`w-full pl-11 pr-4 py-2.5 bg-white border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:ring-4 focus:outline-none transition-all shadow-sm ${(unlockError || formError)
+                                    className={`w-full pl-11 pr-4 py-2.5 border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all shadow-sm ${(unlockError || formError)
                                         ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                                        : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                                        : "focus:border-blue-500 focus:ring-blue-500/10"
                                         }`}
+                                    style={{
+                                        backgroundColor: 'var(--color-bg-primary)',
+                                        borderColor: (unlockError || formError) ? undefined : 'var(--color-border-medium)',
+                                        color: 'var(--color-text-primary)'
+                                    }}
                                     placeholder="Enter password..."
                                     autoFocus
                                 />
@@ -214,10 +229,16 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                                     className="absolute inset-0 opacity-0 cursor-pointer w-full z-10"
                                 />
                                 <div className={`flex items-center px-4 py-2.5 border rounded-xl text-sm transition-all ${keyFile
-                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                    : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-white hover:border-gray-300'
-                                    }`}>
-                                    <FileKey size={16} className={`mr-3 ${keyFile ? 'text-blue-500' : 'text-gray-400'}`} />
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+                                    : 'hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}
+                                    style={!keyFile ? {
+                                        backgroundColor: 'var(--color-bg-secondary)',
+                                        borderColor: 'var(--color-border-medium)',
+                                        color: 'var(--color-text-secondary)'
+                                    } : {}}
+                                >
+                                    <FileKey size={16} className={`mr-3 ${keyFile ? 'text-blue-500' : ''}`} style={!keyFile ? { color: 'var(--color-text-placeholder)' } : {}} />
                                     <span className="flex-1 truncate font-medium">
                                         {keyFile ? keyFile.name : 'Use Key File (Optional)'}
                                     </span>
@@ -234,7 +255,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                                             <X size={14} />
                                         </button>
                                     ) : (
-                                        <PlusCircle size={14} className="text-gray-400 group-hover:text-gray-600" />
+                                        <PlusCircle size={14} className="group-hover:text-gray-600" style={{ color: 'var(--color-text-placeholder)' }} />
                                     )}
                                 </div>
                             </div>
@@ -248,9 +269,13 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                         disabled={isUnlocking || (!file && !fileHandle && !path)}
                         className={`w-full py-3 text-[13px] font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center
                         ${isUnlocking
-                                ? 'bg-gray-100 text-gray-400 cursor-wait'
-                                : 'bg-[#007AFF] text-white hover:bg-[#0062cc] active:scale-[0.98] shadow-blue-500/20 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed'
+                                ? 'cursor-wait'
+                                : 'hover:bg-[#0062cc] active:scale-[0.98] shadow-blue-500/20 disabled:shadow-none disabled:cursor-not-allowed'
                             }`}
+                        style={{
+                            backgroundColor: (isUnlocking || (!file && !fileHandle && !path)) ? 'var(--color-bg-active)' : 'var(--color-accent)',
+                            color: (isUnlocking || (!file && !fileHandle && !path)) ? 'var(--color-text-placeholder)' : '#ffffff'
+                        }}
                     >
                         {isUnlocking && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />}
                         {isUnlocking ? 'Decrypting...' : 'Unlock Vault'}
