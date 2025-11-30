@@ -45,16 +45,39 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     // Check biometric availability and settings
     useEffect(() => {
         const checkBiometric = async () => {
+            console.log('=== Touch ID Debug Start ===');
+            console.log('Touch ID Debug - Path value:', path);
+            console.log('Touch ID Debug - Path type:', typeof path);
+
             const available = await biometricService.isAvailable();
             setBiometricAvailable(available);
+            console.log('Touch ID Debug - Available:', available);
 
             const settings = await getUISettings();
-            setTouchIdEnabled(settings.security?.quickUnlockTouchId ?? false);
+            const enabled = settings.security?.quickUnlockTouchId ?? false;
+            setTouchIdEnabled(enabled);
+            console.log('Touch ID Debug - Enabled in settings:', enabled);
+            console.log('Touch ID Debug - Settings object:', settings.security);
 
             if (path && available) {
+                console.log('Touch ID Debug - Checking for saved password...');
                 const hasSaved = await biometricService.hasStoredPassword(path);
                 setHasSavedPassword(hasSaved);
+                console.log('Touch ID Debug - Has saved password for', path, ':', hasSaved);
+            } else {
+                console.log('Touch ID Debug - Skipping password check. Path:', path, 'Available:', available);
+                setHasSavedPassword(false);
             }
+
+            const willShow = available && enabled && hasSavedPassword && !!path;
+            console.log('Touch ID Debug - Button will show:', willShow);
+            console.log('Touch ID Debug - Conditions:', {
+                available,
+                enabled,
+                hasSavedPassword,
+                hasPath: !!path
+            });
+            console.log('=== Touch ID Debug End ===');
         };
         checkBiometric();
     }, [path]);
@@ -100,39 +123,59 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     };
 
     const handleTouchIdUnlock = async () => {
-        if (!path) return;
+        if (!path) {
+            console.error('Touch ID: No path available');
+            return;
+        }
+
+        console.log('Touch ID: Starting authentication for', path);
 
         try {
+            console.log('Touch ID: Requesting biometric authentication...');
             const authenticated = await biometricService.authenticate('Unlock ' + (file?.name || 'database'));
+            console.log('Touch ID: Authentication result:', authenticated);
+
             if (!authenticated) {
                 setFormError('Touch ID authentication failed');
+                console.error('Touch ID: Authentication failed or cancelled');
                 return;
             }
 
+            console.log('Touch ID: Retrieving saved password...');
             const savedPassword = await biometricService.getPassword(path);
+            console.log('Touch ID: Password retrieved:', !!savedPassword);
+
             if (!savedPassword) {
                 setFormError('No saved password found. Please unlock with password first.');
+                console.error('Touch ID: No saved password in Keychain');
                 return;
             }
 
+            console.log('Touch ID: Unlocking vault with saved password...');
             await addVault(path, savedPassword, keyFile || undefined);
             resetForm();
             onSuccess?.();
+            console.log('Touch ID: Unlock successful!');
         } catch (err) {
-            setFormError('Touch ID unlock failed');
+            console.error('Touch ID: Error during unlock:', err);
+            setFormError('Touch ID unlock failed: ' + String(err));
         }
     };
 
     const handleFileBoxClick = async () => {
+        console.log('VaultAuthForm: handleFileBoxClick');
         try {
             const handle = await fileSystem.openFile();
+            console.log('VaultAuthForm: openFile result:', handle);
             if (!handle) return;
 
             if (handle.path) {
+                console.log('VaultAuthForm: Setting path from handle:', handle.path);
                 setPath(handle.path);
                 setFile(new File([], handle.name));
                 setFileHandle(null);
             } else if (handle.webHandle) {
+                console.log('VaultAuthForm: Setting webHandle (no path)');
                 const file = await handle.webHandle.getFile();
                 setFile(file);
                 setFileHandle(handle.webHandle as any);
@@ -141,6 +184,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             clearError();
         } catch (err) {
             console.error('File open failed:', err);
+            console.log('VaultAuthForm: Falling back to file input');
             fileInputRef.current?.click();
         }
     };

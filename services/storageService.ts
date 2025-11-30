@@ -14,8 +14,10 @@ import { getUISettings } from './uiSettingsService';
 
 export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
     try {
+        console.log('saveRecentVault called with:', vaultInfo);
         // Get raw list without sorting to avoid confusion during manipulation
         const stored = await settingsStore.get<SavedVaultInfo[]>(STORAGE_KEY) || [];
+        console.log('Current stored vaults:', stored.length);
 
         // Find existing entry to preserve firstOpened
         const existingEntry = stored.find(v => v.path === vaultInfo.path && v.filename === vaultInfo.filename);
@@ -34,9 +36,12 @@ export const saveRecentVault = async (vaultInfo: SavedVaultInfo) => {
         // Get configured limit
         const settings = await getUISettings();
         const limit = settings.general?.recentFileCount || 5;
+        console.log('Recent file limit:', limit);
 
         // Keep only last N (based on recency of use, which is what unshift/slice does effectively for LRU)
         const toSave = filtered.slice(0, limit);
+        console.log('Saving vaults count:', toSave.length);
+
         await settingsStore.set(STORAGE_KEY, toSave);
     } catch (e) {
         console.error('Failed to save recent vault:', e);
