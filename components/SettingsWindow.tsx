@@ -62,6 +62,18 @@ export const SettingsWindow: React.FC = () => {
 
     useEffect(() => {
         loadSettings();
+
+        // Show window after content is ready to prevent flash
+        const showWindow = async () => {
+            const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+            // Delay to ensure the background is fully painted and stable
+            setTimeout(async () => {
+                const window = getCurrentWebviewWindow();
+                await window.show();
+                await window.setFocus();
+            }, 100);
+        };
+        showWindow();
     }, []);
 
     const loadSettings = async () => {
@@ -281,8 +293,8 @@ export const SettingsWindow: React.FC = () => {
                                                         type="button"
                                                         onClick={() => updateSetting('security', 'clipboardClearDelay', option.value)}
                                                         className={`relative px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${settings.security.clipboardClearDelay === option.value
-                                                                ? 'bg-indigo-600 text-white shadow-md scale-105'
-                                                                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                                            ? 'bg-indigo-600 text-white shadow-md scale-105'
+                                                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                                                             }`}
                                                         style={
                                                             settings.security.clipboardClearDelay !== option.value
