@@ -798,7 +798,7 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 {activeEntries.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--color-text-placeholder)' }}>
                         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
-                            <FileText className="w-8 h-8 opacity-30" strokeWidth={1.5} />
+                            <FileText className="w-8 h-8 opacity-50" strokeWidth={1.5} style={{ color: 'var(--color-text-tertiary)' }} />
                         </div>
                         <p>{searchQuery ? 'No entries found matching your search.' : 'No entries in this group.'}</p>
                         {!searchQuery && (

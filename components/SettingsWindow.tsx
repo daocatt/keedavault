@@ -3,6 +3,7 @@ import { Settings, Shield, Globe, Terminal, Check, Moon, Sun, Monitor, ChevronRi
 import { getUISettings, saveUISettings, UISettings } from '../services/uiSettingsService';
 import { Image } from '@tauri-apps/api/image';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 type Tab = 'general' | 'security' | 'browser' | 'ssh';
 
@@ -63,15 +64,19 @@ export const SettingsWindow: React.FC = () => {
     useEffect(() => {
         loadSettings();
 
-        // Show window after content is ready to prevent flash
-        const showWindow = async () => {
-            const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-            // Delay to ensure the background is fully painted and stable
-            setTimeout(async () => {
-                const window = getCurrentWebviewWindow();
-                await window.show();
-                await window.setFocus();
-            }, 100);
+        // Show window after content is ready - use RAF for optimal timing
+        const showWindow = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(async () => {
+                    try {
+                        const window = getCurrentWebviewWindow();
+                        await window.show();
+                        await window.setFocus();
+                    } catch (e) {
+                        console.error("Failed to show Settings window:", e);
+                    }
+                });
+            });
         };
         showWindow();
     }, []);

@@ -78,6 +78,56 @@ fn set_database_menu_state(app_handle: tauri::AppHandle, unlocked: bool) {
     }
 }
 
+// Helper function to get background color based on system theme
+fn get_background_color() -> Color {
+    #[cfg(target_os = "macos")]
+    {
+        use cocoa::appkit::NSApplication;
+        use cocoa::base::nil;
+        use objc::{msg_send, sel, sel_impl};
+        
+        unsafe {
+            let app = NSApplication::sharedApplication(nil);
+            let appearance: *mut objc::runtime::Object = msg_send![app, effectiveAppearance];
+            let name: *mut objc::runtime::Object = msg_send![appearance, name];
+            let name_str: *const i8 = msg_send![name, UTF8String];
+            let name_string = std::ffi::CStr::from_ptr(name_str).to_string_lossy();
+            
+            // Check if dark mode
+            if name_string.contains("Dark") {
+                Color(28, 28, 30, 255) // Dark background
+            } else {
+                Color(255, 255, 255, 255) // Light background
+            }
+        }
+    }
+    
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Default to light on other platforms
+        Color(255, 255, 255, 255)
+    }
+}
+
+fn create_main_window(app_handle: &tauri::AppHandle, url: &str) -> tauri::WebviewWindow {
+    tauri::WebviewWindowBuilder::new(
+        app_handle,
+        "main",
+        tauri::WebviewUrl::App(url.into())
+    )
+    .title("KeedaVault")
+    .inner_size(700.0, 580.0)
+    .min_inner_size(700.0, 450.0)
+    .resizable(false)
+    .center()
+    .visible(true)
+    .hidden_title(true)
+    .title_bar_style(tauri::TitleBarStyle::Overlay)
+    .background_color(get_background_color())
+    .build()
+    .unwrap()
+}
+
 fn main() {
   tauri::Builder::default()
     .plugin(tauri_plugin_fs::init())
@@ -96,6 +146,12 @@ fn main() {
     ])
     .setup(|app| {
       #[cfg(target_os = "macos")]
+      app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
+      // Create the main window programmatically to ensure dynamic background color
+      let _window = create_main_window(app.handle(), "index.html");
+
+      #[cfg(target_os = "macos")]
       {
         use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
         
@@ -113,6 +169,8 @@ fn main() {
         let file_menu = SubmenuBuilder::new(handle, "File")
             .item(&MenuItemBuilder::with_id("open_vault", "Open Vault...").accelerator("CmdOrCtrl+O").build(handle)?)
             .item(&MenuItemBuilder::with_id("create_vault", "New Vault...").accelerator("CmdOrCtrl+N").build(handle)?)
+            .separator()
+            .item(&MenuItemBuilder::with_id("open_launcher", "Launcher").accelerator("CmdOrCtrl+Shift+L").build(handle)?)
             .separator()
             .item(&MenuItemBuilder::with_id("import_database", "Import...").build(handle)?)
             .item(&MenuItemBuilder::with_id("export_database", "Export Database...").build(handle)?)
@@ -166,44 +224,27 @@ fn main() {
          match event.id().as_ref() {
             "open_vault" => {
               // Open the Launcher window
-              if let Some(window) = app_handle.get_webview_window("launcher") {
+              if let Some(window) = app_handle.get_webview_window("main") {
                  let _ = window.set_focus();
                  let _ = window.emit("open-file-picker", ());
               } else {
-                  let _window = tauri::WebviewWindowBuilder::new(
-                    app_handle,
-                    "launcher",
-                    tauri::WebviewUrl::App("/?action=browse".into())
-                  )
-                  .title("KeedaVault")
-                  .hidden_title(true)
-                  .title_bar_style(tauri::TitleBarStyle::Overlay)
-                  .inner_size(700.0, 580.0)
-                  .resizable(false)
-                  .center()
-                  .build()
-                  .unwrap();
+                  let _window = create_main_window(app_handle, "/?action=browse");
               }
             }
             "create_vault" => {
               // Open the Launcher window
-              if let Some(window) = app_handle.get_webview_window("launcher") {
+              if let Some(window) = app_handle.get_webview_window("main") {
                  let _ = window.set_focus();
                  let _ = window.emit("create-new-vault", ());
               } else {
-                  let _window = tauri::WebviewWindowBuilder::new(
-                    app_handle,
-                    "launcher",
-                    tauri::WebviewUrl::App("/?action=create".into())
-                  )
-                  .title("KeedaVault")
-                  .hidden_title(true)
-                  .title_bar_style(tauri::TitleBarStyle::Overlay)
-                  .inner_size(700.0, 580.0)
-                  .resizable(false)
-                  .center()
-                  .build()
-                  .unwrap();
+                  let _window = create_main_window(app_handle, "/?action=create");
+              }
+            }
+            "open_launcher" => {
+              if let Some(window) = app_handle.get_webview_window("main") {
+                 let _ = window.set_focus();
+              } else {
+                  let _window = create_main_window(app_handle, "index.html");
               }
             }
             "import_database" => {
@@ -231,7 +272,7 @@ fn main() {
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .center()
                     .visible(false)
-                    .background_color(Color(28, 28, 30, 255))
+                    .background_color(get_background_color())
                     .build()
                     .unwrap();
                 }
@@ -264,6 +305,8 @@ fn main() {
                     .hidden_title(true)
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .center()
+                    .visible(false)
+                    .background_color(get_background_color())
                     .build()
                     .unwrap();
                 }
@@ -285,7 +328,7 @@ fn main() {
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .center()
                     .visible(false)
-                    .background_color(Color(28, 28, 30, 255))
+                    .background_color(get_background_color())
                     .build()
                     .unwrap();
                 }
@@ -329,6 +372,16 @@ fn main() {
 
       Ok(())
     })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app_handle, event| {
+        if let tauri::RunEvent::Reopen { .. } = event {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = window.set_focus();
+                let _ = window.show();
+            } else {
+                let _ = create_main_window(app_handle, "index.html");
+            }
+        }
+    });
 }
