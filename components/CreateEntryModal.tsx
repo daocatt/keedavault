@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Plus, Trash2, Paperclip, Pencil } from 'lucide-react';
+import { X, Save, User, Lock, Globe, FileText, Key, Mail, Clock, Folder, Wand2, Plus, Trash2, Paperclip, Pencil, ChevronDown } from 'lucide-react';
 import { DateTimePicker } from './DateTimePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
-import { VaultEntry, VaultGroup } from '../types';
+import { VaultEntry, VaultGroup, ProtectedValue } from '../types';
 import { auditPassword } from '../utils/passwordAudit';
+import { getEntryIconColor, getNeutralIconColor } from '../utils/iconColor';
 import { GroupSelector } from './GroupSelector';
+import { getUISettings } from '../services/uiSettingsService';
 import { IconSelector } from './IconSelector';
 import { ICONS_MAP } from '../constants';
+import { PasswordStrength } from './PasswordStrength';
 
 interface CreateEntryModalProps {
     isOpen: boolean;
@@ -34,6 +37,10 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
     const [attachments, setAttachments] = useState<{ name: string; data: ArrayBuffer }[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [showIconPicker, setShowIconPicker] = useState(false);
+    const [colorizeIcons, setColorizeIcons] = useState(true);
+    const [isDark, setIsDark] = useState(false);
+    const iconPickerRef = useRef<HTMLDivElement>(null);
 
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const audit = password ? auditPassword(password) : null;
@@ -99,6 +106,37 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
             document.removeEventListener('keydown', handleKeyDown, true);
         };
     }, [isOpen]);
+
+    // Close icon picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node)) {
+                setShowIconPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Load colorize icons setting
+    useEffect(() => {
+        const loadSettings = async () => {
+            const settings = await getUISettings();
+            setColorizeIcons(settings.general?.colorizedEntryIcons ?? true);
+        };
+        loadSettings();
+
+        // Detect dark mode
+        const checkDarkMode = () => {
+            setIsDark(document.documentElement.classList.contains('dark'));
+        };
+        checkDarkMode();
+
+        const observer = new MutationObserver(checkDarkMode);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+        return () => observer.disconnect();
+    }, []);
 
     const reset = () => {
         setIcon(0);
@@ -205,29 +243,76 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                                 {/* Title & Group Block */}
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors hover:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                                                    style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)', color: 'var(--color-text-primary)' }}
-                                                    title="Select Icon"
-                                                >
-                                                    {(() => {
-                                                        const Icon = ICONS_MAP[icon] || Key;
-                                                        return <Icon size={22} strokeWidth={2} fill="currentColor" fillOpacity={0.2} />;
-                                                    })()}
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent side="bottom" align="start" className="w-80 p-0 z-[10000]">
-                                                <div className="rounded-xl shadow-xl border p-2" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
-                                                    <IconSelector
-                                                        selectedIcon={icon}
-                                                        onSelect={(newIcon) => setIcon(newIcon)}
-                                                    />
+                                        {/* Icon Picker */}
+                                        <div className="relative flex-shrink-0" ref={iconPickerRef}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowIconPicker(!showIconPicker)}
+                                                className="w-10 h-10 flex items-center justify-center border rounded-lg shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group relative"
+                                                style={{
+                                                    backgroundColor: 'var(--color-bg-secondary)',
+                                                    borderColor: 'var(--color-border-medium)'
+                                                }}
+                                            >
+                                                {(() => {
+                                                    const Icon = ICONS_MAP[icon] || Key;
+                                                    const iconColor = colorizeIcons
+                                                        ? getEntryIconColor(editEntry?.uuid || '', title || 'New Entry')
+                                                        : getNeutralIconColor(isDark);
+
+                                                    return <Icon size={20} strokeWidth={2} style={{ color: iconColor }} fill="currentColor" fillOpacity={0.2} className="group-hover:scale-110 transition-transform duration-200" />;
+                                                })()}
+
+                                                {/* Edit Badge */}
+                                                <div className="absolute -bottom-0.5 -right-0.5 rounded-full p-0.5 shadow-sm border" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)' }}>
+                                                    <div className="rounded-full p-0.5" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                                                        <ChevronDown size={8} className="text-gray-400" />
+                                                    </div>
                                                 </div>
-                                            </PopoverContent>
-                                        </Popover>
+                                            </button>
+
+                                            {/* Inline Icon Grid */}
+                                            {showIconPicker && (
+                                                <div className="absolute top-full left-0 mt-2 p-3 backdrop-blur-xl rounded-xl shadow-2xl border w-72 z-50 grid grid-cols-6 gap-2 animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto overflow-x-hidden" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', opacity: 0.95 }}>
+                                                    {Object.entries(ICONS_MAP).map(([idStr, IconComponent]) => {
+                                                        const id = parseInt(idStr);
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setIcon(id);
+                                                                    setShowIconPicker(false);
+                                                                }}
+                                                                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${icon === id
+                                                                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                                                                    : 'text-gray-500 hover:text-gray-900'
+                                                                    }`}
+                                                                style={icon !== id ? { backgroundColor: 'transparent' } : {}}
+                                                                onMouseEnter={(e) => {
+                                                                    if (icon !== id) {
+                                                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+                                                                    }
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    if (icon !== id) {
+                                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                                    }
+                                                                }}
+                                                                title={`Icon ${id}`}
+                                                            >
+                                                                <IconComponent
+                                                                    size={20}
+                                                                    strokeWidth={icon === id ? 2.5 : 2}
+                                                                    fill={icon === id ? "currentColor" : "none"}
+                                                                    fillOpacity={icon === id ? 0.2 : 0}
+                                                                />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="flex-1">
                                             <input
                                                 type="text"

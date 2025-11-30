@@ -80,8 +80,15 @@ export const VaultCreateForm: React.FC<VaultCreateFormProps> = ({ onSuccess, cla
             )}
 
             {(unlockError || formError) && (
-                <div className="mb-5 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[13px] font-medium rounded-xl flex items-start border border-red-100 dark:border-red-800 shadow-sm animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle size={16} className="mt-0.5 mr-2.5 flex-shrink-0" />
+                <div
+                    className="mb-5 p-3 text-sm font-medium rounded-xl flex items-start border shadow-sm animate-in fade-in slide-in-from-top-2"
+                    style={{
+                        backgroundColor: '#fee2e2',
+                        color: '#991b1b',
+                        borderColor: '#fecaca'
+                    }}
+                >
+                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0" style={{ color: '#dc2626' }} />
                     <span>{unlockError || formError}</span>
                 </div>
             )}

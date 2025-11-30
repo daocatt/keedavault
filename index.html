@@ -9,10 +9,68 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // Apply theme class immediately to prevent flash
+    (function () {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   <style>
+    /* Critical CSS - Inline to prevent flash */
+    :root {
+      --color-bg-primary: #ffffff;
+      --color-bg-secondary: #f5f5f7;
+      --color-bg-tertiary: #fafafa;
+      --color-bg-sidebar: rgba(249, 250, 251, 0.65);
+      --color-bg-hover: #f0f0f2;
+      --color-bg-active: #e8e8ea;
+      --color-accent: #007aff;
+      --color-accent-hover: #0051d5;
+      --color-accent-light: #e5f1ff;
+      --color-text-primary: #111827;
+      --color-text-secondary: #4b5563;
+      --color-text-tertiary: #6b7280;
+      --color-text-placeholder: #9ca3af;
+      --color-border-light: #e5e5e7;
+      --color-border-medium: #d2d2d7;
+      --color-border-dark: #b0b0b5;
+    }
+
+    .dark {
+      --color-bg-primary: #1c1c1e;
+      --color-bg-secondary: #000000;
+      --color-bg-tertiary: #2c2c2e;
+      --color-bg-sidebar: rgba(21, 21, 22, 0.65);
+      --color-bg-hover: #3a3a3c;
+      --color-bg-active: #48484a;
+      --color-accent: #0a84ff;
+      --color-accent-hover: #0071e3;
+      --color-accent-light: rgba(10, 132, 255, 0.15);
+      --color-text-primary: #ffffff;
+      --color-text-secondary: #ebebf599;
+      --color-text-tertiary: #ebebf54d;
+      --color-text-placeholder: #ebebf54d;
+      --color-border-light: #38383a;
+      --color-border-medium: #48484a;
+      --color-border-dark: #636366;
+    }
+
+    html {
+      background-color: #ffffff;
+    }
+
+    html.dark {
+      background-color: #1c1c1e;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #f3f4f6;
+      background-color: transparent;
+      margin: 0;
+      padding: 0;
     }
 
     /* Custom Scrollbar for Mac-like feel */
@@ -30,8 +88,16 @@
       border-radius: 4px;
     }
 
+    .dark ::-webkit-scrollbar-thumb {
+      background: #48484a;
+    }
+
     ::-webkit-scrollbar-thumb:hover {
       background: #9ca3af;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #636366;
     }
   </style>
 

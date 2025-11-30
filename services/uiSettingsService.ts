@@ -36,6 +36,7 @@ export interface UISettings {
         recentFileCount: number;
         markdownNotes: boolean;
         colorizedPassword: boolean;
+        colorizedEntryIcons: boolean;
         appearance: 'light' | 'dark' | 'system';
         appIcon?: string;
     };
@@ -88,6 +89,7 @@ const defaultSettings: UISettings = {
         recentFileCount: 5,
         markdownNotes: false,
         colorizedPassword: true,
+        colorizedEntryIcons: true,
         appearance: 'system',
         appIcon: 'default',
     },

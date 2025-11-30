@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Shield, Globe, Terminal, Check, Moon, Sun, Monitor, ChevronRight, Clock, Lock, FileText as FileTextIcon, Hash, Eye, Fingerprint, Save, XCircle, Power } from 'lucide-react';
+import { Settings, Shield, Globe, Terminal, Check, Moon, Sun, Monitor, ChevronRight, Clock, Lock, FileText as FileTextIcon, Hash, Eye, Fingerprint, Save, XCircle, Power, Info } from 'lucide-react';
 import { getUISettings, saveUISettings, UISettings } from '../services/uiSettingsService';
 import { Image } from '@tauri-apps/api/image';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -53,7 +53,7 @@ const Select: React.FC<{ value: any; onChange: (val: any) => void; options: { la
 const AVAILABLE_ICONS = [
     { id: 'default', label: 'Default', path: '/icons/icon-default.png' },
     // Add more icons here by placing them in public/icons/ and adding to this list
-    // { id: 'dark', label: 'Dark', path: '/icons/icon-dark.png' },
+    { id: 'dark', label: 'Dark', path: '/icons/icon-dark.png' },
 ];
 
 export const SettingsWindow: React.FC = () => {
@@ -89,17 +89,46 @@ export const SettingsWindow: React.FC = () => {
         if (!icon) return;
 
         try {
-            // Update setting
-            await updateSetting('general', 'appIcon', iconId);
+            // Update setting first
+            if (!settings) return;
+            const newSettings = {
+                ...settings,
+                general: {
+                    ...settings.general,
+                    appIcon: iconId
+                }
+            };
+            setSettings(newSettings);
+            await saveUISettings(newSettings);
 
-            // Update window icon
+            // Update window icon (titlebar only - dock icon requires app restart)
             const response = await fetch(icon.path);
             const blob = await response.blob();
             const buffer = await blob.arrayBuffer();
             const image = await Image.fromBytes(new Uint8Array(buffer));
+
+            // Set icon for current window
             await getCurrentWindow().setIcon(image);
+
+            // Show notification
+            document.dispatchEvent(new CustomEvent('show-toast', {
+                detail: {
+                    id: crypto.randomUUID(),
+                    type: 'info',
+                    title: 'Window Icon Updated',
+                    description: 'Restart the app to see the new dock icon'
+                }
+            }));
         } catch (e) {
             console.error('Failed to change app icon:', e);
+            document.dispatchEvent(new CustomEvent('show-toast', {
+                detail: {
+                    id: crypto.randomUUID(),
+                    type: 'error',
+                    title: 'Failed to Change Icon',
+                    description: String(e)
+                }
+            }));
         }
     };
 
@@ -167,6 +196,13 @@ export const SettingsWindow: React.FC = () => {
                                             checked={settings.general.colorizedPassword}
                                             onChange={(v) => updateSetting('general', 'colorizedPassword', v)}
                                         />
+                                        <Toggle
+                                            label="Colorize Entry Icons"
+                                            icon={Eye}
+                                            description="Show entry icons in unique colors"
+                                            checked={settings.general.colorizedEntryIcons}
+                                            onChange={(v) => updateSetting('general', 'colorizedEntryIcons', v)}
+                                        />
                                     </div>
                                 </div>
 
@@ -193,23 +229,25 @@ export const SettingsWindow: React.FC = () => {
 
                                 <div>
                                     <h3 className="text-xs font-semibold uppercase tracking-wider mb-4 px-1" style={{ color: 'var(--color-text-secondary)' }}>App Icon</h3>
-                                    <div className="grid grid-cols-4 gap-4">
+                                    <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
                                         {AVAILABLE_ICONS.map((icon) => (
                                             <button
                                                 key={icon.id}
                                                 onClick={() => changeAppIcon(icon.id)}
-                                                className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 ${settings.general?.appIcon === icon.id ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'hover:bg-gray-50'}`}
+                                                className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 ${settings.general?.appIcon === icon.id ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                                 style={settings.general?.appIcon !== icon.id ? { borderColor: 'var(--color-border-light)', color: 'var(--color-text-secondary)' } : {}}
                                             >
-                                                <img src={icon.path} alt={icon.label} className="w-12 h-12 mb-3 rounded-xl shadow-sm object-cover" />
+                                                <img src={icon.path} alt={icon.label} className="w-16 h-16 mb-3 rounded-xl shadow-sm object-cover" />
                                                 <span className="text-sm font-medium">{icon.label}</span>
                                             </button>
                                         ))}
-                                        {/* Placeholder for "Add New" instruction */}
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed text-center opacity-50 hover:opacity-100 transition-opacity" style={{ borderColor: 'var(--color-border-medium)', color: 'var(--color-text-tertiary)' }}>
-                                            <span className="text-xs">Add more in public/icons</span>
-                                        </div>
                                     </div>
+                                    <p className="text-xs mt-3 px-1" style={{ color: 'var(--color-text-tertiary)' }}>
+                                        <span className="inline-flex items-center">
+                                            <Info size={12} className="mr-1" />
+                                            Dock icon will update after restarting the app
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -219,19 +257,45 @@ export const SettingsWindow: React.FC = () => {
                                 <div>
                                     <h3 className="text-xs font-semibold uppercase tracking-wider mb-4 px-1" style={{ color: 'var(--color-text-secondary)' }}>Clipboard Security</h3>
                                     <div className="rounded-xl border shadow-sm divide-y px-4" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-light)' }}>
-                                        <Select
-                                            label="Clear Clipboard After"
-                                            icon={Clock}
-                                            value={settings.security.clipboardClearDelay}
-                                            onChange={(v) => updateSetting('security', 'clipboardClearDelay', parseInt(v))}
-                                            options={[
-                                                { label: 'Never', value: 0 },
-                                                { label: '10 seconds', value: 10 },
-                                                { label: '30 seconds', value: 30 },
-                                                { label: '1 minute', value: 60 },
-                                                { label: '2 minutes', value: 120 },
-                                            ]}
-                                        />
+                                        {/* Clipboard Clear Delay - Modern Time Tracker */}
+                                        <div className="py-3">
+                                            <div className="flex items-start flex-1 pr-4 mb-3">
+                                                <div className="mr-3 mt-0.5 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                                    <Clock size={18} strokeWidth={1.5} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium block" style={{ color: 'var(--color-text-primary)' }}>Clear Clipboard After</label>
+                                                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>Automatically clear copied passwords</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-2 ml-9">
+                                                {[
+                                                    { label: 'Never', value: 0, icon: '∞' },
+                                                    { label: '10s', value: 10, icon: '10' },
+                                                    { label: '30s', value: 30, icon: '30' },
+                                                    { label: '1m', value: 60, icon: '60' },
+                                                    { label: '2m', value: 120, icon: '120' },
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        type="button"
+                                                        onClick={() => updateSetting('security', 'clipboardClearDelay', option.value)}
+                                                        className={`relative px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${settings.security.clipboardClearDelay === option.value
+                                                                ? 'bg-indigo-600 text-white shadow-md scale-105'
+                                                                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                                            }`}
+                                                        style={
+                                                            settings.security.clipboardClearDelay !== option.value
+                                                                ? { backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }
+                                                                : {}
+                                                        }
+                                                    >
+                                                        <div className="text-base font-bold mb-0.5">{option.icon}</div>
+                                                        <div className="text-[10px] opacity-90">{option.label}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <Toggle
                                             label="Clear on Lock"
                                             icon={Lock}
@@ -321,7 +385,7 @@ export const SettingsWindow: React.FC = () => {
 
                         {activeTab === 'browser' && (
                             <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in zoom-in duration-300 py-12">
-                                <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-indigo-600 dark:text-indigo-400">
+                                <div className="p-6 rounded-full" style={{ backgroundColor: 'var(--color-accent-light)', color: 'var(--color-accent)' }}>
                                     <Globe size={64} strokeWidth={1.5} />
                                 </div>
                                 <div className="max-w-sm">
@@ -330,7 +394,7 @@ export const SettingsWindow: React.FC = () => {
                                         Connect KeedaVault with Chrome, Safari, and Firefox to autofill passwords seamlessly.
                                     </p>
                                 </div>
-                                <span className="px-4 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm">
+                                <span className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm" style={{ backgroundColor: 'var(--color-accent-light)', color: 'var(--color-accent)' }}>
                                     Coming Soon
                                 </span>
                             </div>
@@ -338,7 +402,7 @@ export const SettingsWindow: React.FC = () => {
 
                         {activeTab === 'ssh' && (
                             <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in zoom-in duration-300 py-12">
-                                <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400">
+                                <div className="p-6 rounded-full" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}>
                                     <Terminal size={64} strokeWidth={1.5} />
                                 </div>
                                 <div className="max-w-sm">
@@ -347,7 +411,7 @@ export const SettingsWindow: React.FC = () => {
                                         Use KeedaVault as your system SSH agent to manage SSH keys securely.
                                     </p>
                                 </div>
-                                <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-5 py-2.5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
+                                <div className="flex items-center space-x-2 px-5 py-2.5 rounded-xl border shadow-sm" style={{ color: '#d97706', backgroundColor: '#fef3c7', borderColor: '#fde68a' }}>
                                     <Shield size={18} strokeWidth={1.5} />
                                     <span className="font-medium">Feature disabled for now</span>
                                 </div>

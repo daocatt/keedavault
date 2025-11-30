@@ -39,9 +39,23 @@ const AppContent: React.FC = () => {
 
     if (actionParam === 'unlock' || (actionParam === null && pathParam)) return 'auth';
     if (actionParam === 'create') return 'create';
+    if (actionParam === 'browse') return 'launcher';
 
     return 'launcher';
   });
+
+  // Show window after content is ready to prevent flash
+  useEffect(() => {
+    const showWindow = async () => {
+      // Delay to ensure the background is fully painted and stable
+      setTimeout(async () => {
+        const window = getCurrentWebviewWindow();
+        await window.show();
+        await window.setFocus();
+      }, 200);
+    };
+    showWindow();
+  }, []);
 
   // If in about mode, only show AboutWindow
   if (mode === 'about') {
