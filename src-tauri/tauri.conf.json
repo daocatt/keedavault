@@ -132,23 +132,6 @@
       ],
       "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src ipc: http://ipc.localhost 'self' https://generativelanguage.googleapis.com https://aistudiocdn.com data: blob:; img-src 'self' data: https: blob:;"
     },
-    "windows": [
-      {
-        "fullscreen": false,
-        "resizable": false,
-        "title": "KeedaVault",
-        "width": 700,
-        "height": 580,
-        "minWidth": 700,
-        "minHeight": 450,
-        "center": true,
-        "visible": false,
-        "hiddenTitle": true,
-        "titleBarStyle": "Overlay",
-        "dragDropEnabled": false,
-        "useHttpsScheme": true,
-        "backgroundColor": "#1c1c1e"
-      }
-    ]
+    "windows": []
   }
 }

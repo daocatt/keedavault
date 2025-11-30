@@ -13,6 +13,7 @@ import { LogicalSize } from '@tauri-apps/api/dpi';
 import { ThemeManager } from './components/ThemeManager';
 
 import { PasswordGenerator } from './components/PasswordGenerator';
+import { GeneratorWindow } from './components/GeneratorWindow';
 
 const AppContent: React.FC = () => {
   const [authPath, setAuthPath] = useState<string | undefined>(() => {
@@ -45,17 +46,49 @@ const AppContent: React.FC = () => {
   });
 
   // Show window after content is ready to prevent flash
+  // Only for modes that don't handle their own show logic
   useEffect(() => {
-    const showWindow = async () => {
-      // Delay to ensure the background is fully painted and stable
-      setTimeout(async () => {
+    console.log('[App] Mode:', mode, 'Initializing window show');
+
+    // Use a reliable timeout approach for ALL windows as a safety net
+    // Components (Settings, About, etc.) try to show themselves via RAF for speed
+    // This effect ensures they definitely get shown if that fails
+    const delay = mode === 'launcher' ? 200 : 150;
+
+    const timer = setTimeout(async () => {
+      try {
+        console.log(`[App] Showing window for mode: ${mode}`);
         const window = getCurrentWebviewWindow();
-        await window.show();
+
+        // Ensure window is ready
+        const isVisible = await window.isVisible();
+        console.log(`[App] Window visible before show: ${isVisible}`);
+
+        if (!isVisible) {
+          await window.show();
+          console.log('[App] Window.show() called');
+        }
+
         await window.setFocus();
-      }, 200);
-    };
-    showWindow();
-  }, []);
+        console.log('[App] Window shown and focused successfully');
+      } catch (error) {
+        console.error(`[App] Failed to show window for mode ${mode}:`, error);
+        // Try one more time after a delay
+        setTimeout(async () => {
+          try {
+            const window = getCurrentWebviewWindow();
+            await window.show();
+            await window.setFocus();
+            console.log('[App] Window shown on retry');
+          } catch (retryError) {
+            console.error('[App] Retry failed:', retryError);
+          }
+        }, 500);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [mode]);
 
   // If in about mode, only show AboutWindow
   if (mode === 'about') {
@@ -75,31 +108,7 @@ const AppContent: React.FC = () => {
   }
 
   if (mode === 'generator') {
-    return (
-      <div className="h-screen w-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-        <div className="h-8 backdrop-blur-sm border-b flex items-center justify-center drag-region select-none"
-          data-tauri-drag-region
-          style={{
-            backgroundColor: 'var(--color-bg-primary)',
-            borderColor: 'var(--color-border-light)',
-            opacity: 0.95
-          }}
-        >
-          <span className="text-xs font-medium pointer-events-none" style={{ color: 'var(--color-text-secondary)' }}>Password Generator</span>
-        </div>
-        <div className="p-4">
-          <PasswordGenerator
-            isOpen={true}
-            onClose={() => getCurrentWebviewWindow().close()}
-            onGenerate={() => { }}
-            showCopyButton={true}
-            className="shadow-none border-0 p-0"
-            closeOnOutsideClick={false}
-            showUseButton={false}
-          />
-        </div>
-      </div>
-    );
+    return <GeneratorWindow />;
   }
 
   // If in auth/create mode, show VaultAuthWindow

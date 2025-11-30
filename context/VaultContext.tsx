@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
-import { save, ask } from '@tauri-apps/plugin-dialog';
+import { save, ask, message } from '@tauri-apps/plugin-dialog';
 import { emit } from '@tauri-apps/api/event';
 import * as kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
@@ -493,6 +493,47 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 filename: filename,
                 lastOpened: Date.now()
             });
+
+            // Save password for Touch ID if enabled and vault has a path
+            console.log('VaultContext: Checking Touch ID save conditions...');
+            console.log('VaultContext: Path:', path);
+            console.log('VaultContext: Path type:', typeof path);
+
+            if (path) {
+                try {
+                    const { biometricService } = await import('../services/biometricService');
+                    const { getUISettings } = await import('../services/uiSettingsService');
+
+                    const settings = await getUISettings();
+                    const touchIdEnabled = settings.security?.quickUnlockTouchId ?? false;
+                    console.log('VaultContext: Touch ID enabled in settings:', touchIdEnabled);
+
+                    if (touchIdEnabled) {
+                        const available = await biometricService.isAvailable();
+                        console.log('VaultContext: Biometric available:', available);
+
+                        if (available) {
+                            console.log('Touch ID: Auto-saving password for', path);
+                            try {
+                                await biometricService.storePassword(path, password);
+                                console.log('Touch ID: Password saved successfully');
+                                addToast({ title: "Touch ID enabled for this vault", type: "success" });
+                                // Explicitly tell user it worked (for debugging)
+                                // await message('Touch ID has been enabled for this vault.', { title: 'Touch ID Setup', kind: 'info' });
+                            } catch (saveErr) {
+                                console.error('Touch ID: Failed to save password:', saveErr);
+                                await message(`Failed to enable Touch ID: ${saveErr}`, { title: 'Touch ID Error', kind: 'error' });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Touch ID: Error in setup:', err);
+                    await message(`Touch ID setup error: ${err}`, { title: 'Touch ID Error', kind: 'error' });
+                }
+            } else {
+                console.log('VaultContext: Path is missing, skipping Touch ID save.');
+                // await message('Touch ID skipped: No file path available.', { title: 'Touch ID Skipped', kind: 'warning' });
+            }
 
             addToast({ title: "Vault unlocked successfully", type: "success" });
         } catch (error: any) {

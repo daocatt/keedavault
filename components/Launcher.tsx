@@ -112,6 +112,11 @@ export const Launcher: React.FC = () => {
                     try {
                         await webview.show();
                         await webview.setFocus();
+
+                        // Close the launcher window after opening the new one
+                        setTimeout(() => {
+                            getCurrentWebviewWindow().close();
+                        }, 100);
                     } catch (e) {
                         // Ignore if window is already destroyed
                     }

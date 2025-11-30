@@ -725,9 +725,9 @@ export const VaultWorkspace: React.FC = () => {
                                 onClose={() => setSelectedEntryIds(new Set())}
                             />
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                    <FileText className="w-8 h-8 opacity-30" strokeWidth={1.5} />
+                            <div className="flex-1 flex flex-col items-center justify-center text-sm" style={{ color: 'var(--color-text-placeholder)' }}>
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+                                    <FileText className="w-8 h-8 opacity-50" strokeWidth={1.5} style={{ color: 'var(--color-text-tertiary)' }} />
                                 </div>
                                 Select an entry to view details
                             </div>

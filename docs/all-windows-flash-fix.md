@@ -73,6 +73,10 @@ All windows should now open without any white/black flash:
   - Open in dark mode → No white flash
   - Open in light mode → No black flash
 
+- [ ] **About Window** (Menu → About)
+  - Open in dark mode → No white flash
+  - Open in light mode → No black flash
+
 - [ ] **Theme Switching**
   - Change from light to dark → All windows update immediately
   - Change from dark to light → All windows update immediately
@@ -125,8 +129,9 @@ This ensures both speed (no flash) and reliability (settings persist).
 1. `/index.html` - Synchronous theme detection script
 2. `/components/ThemeManager.tsx` - localStorage caching
 3. `/components/SettingsWindow.tsx` - Window show logic
-4. `/src-tauri/tauri.conf.json` - Default background color
-5. `/src-tauri/src/main.rs` - Window configurations + Color import
+4. `/components/AboutWindow.tsx` - Window show logic
+5. `/src-tauri/tauri.conf.json` - Default background color
+6. `/src-tauri/src/main.rs` - Window configurations + Color import
 
 ## Future Considerations
 
