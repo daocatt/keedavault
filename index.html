@@ -10,11 +10,34 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
-    // Apply theme class immediately to prevent flash
+    // CRITICAL: Apply theme class SYNCHRONOUSLY before any content renders
+    // This must run before the style tag below to prevent flash
     (function () {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (isDark) {
-        document.documentElement.classList.add('dark');
+      try {
+        // Try to get theme from localStorage first (faster than async store)
+        // The ThemeManager will sync this with the Tauri store
+        let appearance = localStorage.getItem('keedavault_theme_cache') || 'system';
+
+        // Determine if we should use dark mode
+        const isDark = appearance === 'dark' ||
+          (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        // Apply theme immediately BEFORE CSS loads
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+
+        // Update background color to match theme
+        document.documentElement.style.backgroundColor = isDark ? '#1c1c1e' : '#ffffff';
+      } catch (e) {
+        // Fallback to system preference
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.backgroundColor = '#1c1c1e';
+        } else {
+          document.documentElement.style.backgroundColor = '#ffffff';
+        }
       }
     })();
   </script>
@@ -60,6 +83,12 @@
 
     html {
       background-color: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html {
+        background-color: #1c1c1e;
+      }
     }
 
     html.dark {

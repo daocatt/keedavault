@@ -147,7 +147,7 @@
         "titleBarStyle": "Overlay",
         "dragDropEnabled": false,
         "useHttpsScheme": true,
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1c1c1e"
       }
     ]
   }

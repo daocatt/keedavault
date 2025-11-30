@@ -8,10 +8,19 @@ export const ThemeManager: React.FC = () => {
             const root = document.documentElement;
             const isDark = appearance === 'dark' || (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+            // Cache theme in localStorage for instant access on next load
+            try {
+                localStorage.setItem('keedavault_theme_cache', appearance);
+            } catch (e) {
+                console.warn('Failed to cache theme in localStorage:', e);
+            }
+
             if (isDark) {
                 root.classList.add('dark');
+                root.style.backgroundColor = '#1c1c1e';
             } else {
                 root.classList.remove('dark');
+                root.style.backgroundColor = '#ffffff';
             }
         };
 
