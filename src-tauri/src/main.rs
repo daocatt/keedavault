@@ -1,6 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod biometric;
+mod secure_storage;
+
 use tauri::{Manager, Emitter};
 
 #[tauri::command]
@@ -80,7 +83,16 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_store::Builder::new().build())
-    .invoke_handler(tauri::generate_handler![reveal_in_finder, set_database_menu_state])
+    .invoke_handler(tauri::generate_handler![
+        reveal_in_finder, 
+        set_database_menu_state,
+        biometric::check_biometric_available,
+        biometric::authenticate_biometric,
+        secure_storage::secure_store_password,
+        secure_storage::secure_get_password,
+        secure_storage::secure_delete_password,
+        secure_storage::secure_has_password
+    ])
     .setup(|app| {
       #[cfg(target_os = "macos")]
       {
@@ -123,6 +135,11 @@ fn main() {
         let window_menu = SubmenuBuilder::new(handle, "Window")
             .minimize()
             .maximize()
+            .separator()
+            .item(&MenuItemBuilder::with_id("center_window", "Center Window").build(handle)?)
+            .item(&MenuItemBuilder::with_id("zoom_window", "Zoom").build(handle)?)
+            .separator()
+            .item(&MenuItemBuilder::with_id("always_on_top", "Keep on Top").build(handle)?)
             .separator()
             .item(&MenuItemBuilder::with_id("close", "Close").accelerator("CmdOrCtrl+W").build(handle)?)
             .build()?;
@@ -267,6 +284,30 @@ fn main() {
                     .build()
                     .unwrap();
                 }
+            }
+            "center_window" => {
+              // Center all visible windows
+              for (_, window) in app_handle.webview_windows() {
+                let _ = window.center();
+              }
+            }
+            "zoom_window" => {
+              // Toggle maximize for all visible windows
+              for (_, window) in app_handle.webview_windows() {
+                let is_maximized = window.is_maximized().unwrap_or(false);
+                if is_maximized {
+                  let _ = window.unmaximize();
+                } else {
+                  let _ = window.maximize();
+                }
+              }
+            }
+            "always_on_top" => {
+              // Toggle always on top for all visible windows
+              for (_, window) in app_handle.webview_windows() {
+                let is_on_top = window.is_always_on_top().unwrap_or(false);
+                let _ = window.set_always_on_top(!is_on_top);
+              }
             }
             "close" => {
               // Close the currently focused window

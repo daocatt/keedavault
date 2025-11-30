@@ -142,10 +142,12 @@
         "minWidth": 700,
         "minHeight": 450,
         "center": true,
+        "visible": false,
         "hiddenTitle": true,
         "titleBarStyle": "Overlay",
         "dragDropEnabled": false,
-        "useHttpsScheme": true
+        "useHttpsScheme": true,
+        "backgroundColor": "#ffffff"
       }
     ]
   }

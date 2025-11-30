@@ -17,29 +17,43 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
     return (
         <div
-            className={`pointer-events-auto flex items-center p-3 rounded-xl shadow-xl border backdrop-blur-md min-w-[320px] max-w-[420px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-y-2 scale-95' : 'animate-in slide-in-from-bottom-5 fade-in zoom-in-95'
+            className={`pointer-events-auto flex items-center p-3 rounded-xl shadow-lg border backdrop-blur-md min-w-[320px] max-w-[420px] transition-all duration-300 ${isExiting ? 'opacity-0 translate-y-2 scale-95' : 'animate-in slide-in-from-bottom-5 fade-in zoom-in-95'
                 }`}
             style={{
-                backgroundColor: 'var(--color-bg-tertiary)',
-                borderColor: 'var(--color-border-light)',
+                backgroundColor: 'var(--color-bg-secondary)',
+                borderColor: 'var(--color-border-medium)',
                 color: 'var(--color-text-primary)'
             }}
         >
-            {toast.type === 'success' && <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full mr-3"><CheckCircle size={16} className="text-green-600 dark:text-green-400" /></div>}
-            {toast.type === 'error' && <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded-full mr-3"><AlertCircle size={16} className="text-red-600 dark:text-red-400" /></div>}
-            {toast.type === 'info' && <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-full mr-3"><Info size={16} className="text-blue-600 dark:text-blue-400" /></div>}
+            {toast.type === 'success' && (
+                <div className="p-1.5 rounded-lg mr-3" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+                    <CheckCircle size={18} strokeWidth={2} />
+                </div>
+            )}
+            {toast.type === 'error' && (
+                <div className="p-1.5 rounded-lg mr-3" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                    <AlertCircle size={18} strokeWidth={2} />
+                </div>
+            )}
+            {toast.type === 'info' && (
+                <div className="p-1.5 rounded-lg mr-3" style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}>
+                    <Info size={18} strokeWidth={2} />
+                </div>
+            )}
             <div className="flex-1 mr-2">
-                <div className="text-sm font-medium">{toast.title}</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{toast.title}</div>
                 {toast.description && (
-                    <div className="text-xs mt-0.5 opacity-80">{toast.description}</div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{toast.description}</div>
                 )}
             </div>
             <button
                 onClick={() => { setIsExiting(true); setTimeout(() => onDismiss(toast.id), 300); }}
-                className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                className="p-1 rounded-md transition-colors"
                 style={{ color: 'var(--color-text-tertiary)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-                <X size={14} />
+                <X size={14} strokeWidth={2} />
             </button>
         </div>
     );

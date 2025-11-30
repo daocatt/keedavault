@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Lock, Key, FileKey, AlertCircle, HardDrive, X, FolderOpen, PlusCircle } from 'lucide-react';
+import { Lock, Key, FileKey, AlertCircle, HardDrive, X, FolderOpen, PlusCircle, Fingerprint } from 'lucide-react';
 import { FileSystemFileHandle } from '../types';
 import { SavedVaultInfo } from '../services/storageService';
 import { fileSystem } from '../services/fileSystemAdapter';
+import { biometricService } from '../services/biometricService';
+import { getUISettings } from '../services/uiSettingsService';
 
 interface VaultAuthFormProps {
     onSuccess?: () => void;
@@ -21,6 +23,9 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
     const [password, setPassword] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [formError, setFormError] = useState<string | null>(null);
+    const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [hasSavedPassword, setHasSavedPassword] = useState(false);
+    const [touchIdEnabled, setTouchIdEnabled] = useState(false);
 
     const { addVault, isUnlocking, unlockError, clearError } = useVault();
 
@@ -36,6 +41,23 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             clearError();
         }
     }, [initialVaultInfo?.path]);
+
+    // Check biometric availability and settings
+    useEffect(() => {
+        const checkBiometric = async () => {
+            const available = await biometricService.isAvailable();
+            setBiometricAvailable(available);
+
+            const settings = await getUISettings();
+            setTouchIdEnabled(settings.security?.quickUnlockTouchId ?? false);
+
+            if (path && available) {
+                const hasSaved = await biometricService.hasStoredPassword(path);
+                setHasSavedPassword(hasSaved);
+            }
+        };
+        checkBiometric();
+    }, [path]);
 
     const resetForm = () => {
         setFile(null);
@@ -60,10 +82,44 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
         try {
             await addVault(path || fileHandle || file!, password, keyFile || undefined);
+
+            // Save password for Touch ID if enabled
+            if (touchIdEnabled && biometricAvailable && path && password) {
+                try {
+                    await biometricService.storePassword(path, password);
+                } catch (err) {
+                    console.error('Failed to save password for Touch ID:', err);
+                }
+            }
+
             resetForm();
             onSuccess?.();
         } catch (err) {
             // Error is handled in the VaultContext
+        }
+    };
+
+    const handleTouchIdUnlock = async () => {
+        if (!path) return;
+
+        try {
+            const authenticated = await biometricService.authenticate('Unlock ' + (file?.name || 'database'));
+            if (!authenticated) {
+                setFormError('Touch ID authentication failed');
+                return;
+            }
+
+            const savedPassword = await biometricService.getPassword(path);
+            if (!savedPassword) {
+                setFormError('No saved password found. Please unlock with password first.');
+                return;
+            }
+
+            await addVault(path, savedPassword, keyFile || undefined);
+            resetForm();
+            onSuccess?.();
+        } catch (err) {
+            setFormError('Touch ID unlock failed');
         }
     };
 
@@ -137,8 +193,15 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
 
             {(unlockError || formError) && (
-                <div className="mb-5 p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl flex items-start border border-red-200 dark:border-red-800 shadow-sm animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0 text-red-600 dark:text-red-400" />
+                <div
+                    className="mb-5 p-3 text-sm font-medium rounded-xl flex items-start border shadow-sm animate-in fade-in slide-in-from-top-2"
+                    style={{
+                        backgroundColor: '#fee2e2',
+                        color: '#991b1b',
+                        borderColor: '#fecaca'
+                    }}
+                >
+                    <AlertCircle size={18} className="mt-0.5 mr-2.5 flex-shrink-0" style={{ color: '#dc2626' }} />
                     <span>{unlockError || formError}</span>
                 </div>
             )}
@@ -263,7 +326,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                     </div>
                 )}
 
-                <div className="pt-4">
+                <div className="pt-4 space-y-2">
                     <button
                         type="submit"
                         disabled={isUnlocking || (!file && !fileHandle && !path)}
@@ -280,6 +343,24 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                         {isUnlocking && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />}
                         {isUnlocking ? 'Decrypting...' : 'Unlock Vault'}
                     </button>
+
+                    {/* Touch ID Button */}
+                    {biometricAvailable && touchIdEnabled && hasSavedPassword && path && (
+                        <button
+                            type="button"
+                            onClick={handleTouchIdUnlock}
+                            disabled={isUnlocking}
+                            className="w-full py-3 text-[13px] font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center border-2 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{
+                                borderColor: 'var(--color-border-medium)',
+                                backgroundColor: 'var(--color-bg-secondary)',
+                                color: 'var(--color-text-primary)'
+                            }}
+                        >
+                            <Fingerprint size={16} className="mr-2" />
+                            Unlock with Touch ID
+                        </button>
+                    )}
                 </div>
             </form>
         </div>
