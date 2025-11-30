@@ -5,6 +5,7 @@ mod biometric;
 mod secure_storage;
 
 use tauri::{Manager, Emitter};
+use tauri::window::Color;
 
 #[tauri::command]
 fn reveal_in_finder(path: String) -> Result<(), String> {
@@ -229,6 +230,8 @@ fn main() {
                     .hidden_title(true)
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .center()
+                    .visible(false)
+                    .background_color(Color(28, 28, 30, 255))
                     .build()
                     .unwrap();
                 }
@@ -281,6 +284,8 @@ fn main() {
                     .hidden_title(true)
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .center()
+                    .visible(false)
+                    .background_color(Color(28, 28, 30, 255))
                     .build()
                     .unwrap();
                 }
