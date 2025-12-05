@@ -24,12 +24,12 @@ import { VaultGroup, EntryFormData } from '../types';
 
 export const VaultWorkspace: React.FC = () => {
     const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
-    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, saveVault, onAddEntry, lockVault } = useVault();
+    const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, onMoveEntries, saveVault, onAddEntry, lockVault } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
 
     // UI Settings - Ensure both sidebars are visible by default
-    const [leftSidebarVisible, setLeftSidebarVisible] = useState(false);
+    const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
     const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
 
     useEffect(() => {
@@ -669,7 +669,10 @@ export const VaultWorkspace: React.FC = () => {
     }, [activeVault]);
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden text-sm select-none" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+        <div
+            className="flex h-screen w-screen overflow-hidden text-sm select-none"
+            style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+        >
             <Toaster />
 
 
@@ -683,7 +686,9 @@ export const VaultWorkspace: React.FC = () => {
                         borderColor: 'var(--color-border-light)',
                         backgroundColor: 'var(--color-bg-sidebar)',
                         backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)'
+                        WebkitBackdropFilter: 'blur(20px)',
+                        position: 'relative',
+                        zIndex: 1
                     }}
                 >
                     <Sidebar
@@ -692,15 +697,16 @@ export const VaultWorkspace: React.FC = () => {
                         onNewGroup={handleNewGroup}
                         onEditGroup={handleEditGroup}
                         onMoveEntry={onMoveEntry}
+                        onMoveEntries={onMoveEntries}
                         onOpenDbProperties={() => setShowDbProperties(true)}
                     />
                 </div>
             )}
 
             {/* Main Content Area - EntryList with flexible width */}
-            <div className="flex-1 flex flex-col relative z-0" style={{ minWidth: 300, backgroundColor: 'var(--color-bg-primary)' }}>
+            <div className="flex-1 flex flex-col" style={{ minWidth: 300, backgroundColor: 'var(--color-bg-primary)' }}>
                 {/* Entry List */}
-                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
                     <EntryList
                         onSelectEntry={(ids) => setSelectedEntryIds(ids)}
                         selectedEntryIds={selectedEntryIds}

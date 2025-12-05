@@ -46,14 +46,15 @@ const AppContent: React.FC = () => {
   });
 
   // Show window after content is ready to prevent flash
-  // Only for modes that don't handle their own show logic
   useEffect(() => {
+    // About, Settings, and Generator windows handle their own show() calls with RAF
+    // Only launcher needs a timeout because it's the initial window with more setup
     console.log('[App] Mode:', mode, 'Initializing window show');
 
-    // Use a reliable timeout approach for ALL windows as a safety net
-    // Components (Settings, About, etc.) try to show themselves via RAF for speed
-    // This effect ensures they definitely get shown if that fails
-    const delay = mode === 'launcher' ? 200 : 150;
+    // For launcher, use minimal delay to ensure theme is applied
+    // For others (Settings, About, etc.), use a small delay as safety net
+    // in case component-level RAF fails
+    const delay = mode === 'launcher' ? 50 : 100;
 
     const timer = setTimeout(async () => {
       try {
