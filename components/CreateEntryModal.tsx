@@ -5,14 +5,13 @@ import { DateTimePicker } from './DateTimePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useVault } from '../context/VaultContext';
 import { PasswordGenerator } from './PasswordGenerator';
-import { VaultEntry, VaultGroup, ProtectedValue } from '../types';
+import { VaultEntry, VaultGroup } from '../types';
 import { auditPassword } from '../utils/passwordAudit';
 import { getEntryIconColor, getNeutralIconColor } from '../utils/iconColor';
 import { GroupSelector } from './GroupSelector';
 import { getUISettings } from '../services/uiSettingsService';
 import { IconSelector } from './IconSelector';
 import { ICONS_MAP } from '../constants';
-import { PasswordStrength } from './PasswordStrength';
 
 interface CreateEntryModalProps {
     isOpen: boolean;

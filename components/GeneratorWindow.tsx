@@ -4,17 +4,12 @@ import { PasswordGenerator } from './PasswordGenerator';
 
 export const GeneratorWindow: React.FC = () => {
     useEffect(() => {
-        // Show window after content is ready - use RAF for optimal timing
-        const showWindow = () => {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(async () => {
-                    const window = getCurrentWebviewWindow();
-                    await window.show();
-                    await window.setFocus();
-                });
-            });
-        };
-        showWindow();
+        // Show window immediately after first paint
+        requestAnimationFrame(async () => {
+            const window = getCurrentWebviewWindow();
+            await window.show();
+            await window.setFocus();
+        });
     }, []);
 
     return (

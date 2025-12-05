@@ -17,10 +17,14 @@ import { listen } from '@tauri-apps/api/event';
 export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
     const [recentCount, setRecentCount] = useState(5);
+    const [isOpening, setIsOpening] = useState(false);
 
     useEffect(() => {
         const fetchAndSetVaults = async () => {
-            setRecentVaults(await getRecentVaults());
+            console.log('🔄 Fetching recent vaults...');
+            const vaults = await getRecentVaults();
+            console.log('📚 Recent vaults loaded:', vaults);
+            setRecentVaults(vaults);
 
             const settings = await getUISettings();
             if (settings?.general?.recentFileCount) {
@@ -47,7 +51,17 @@ export const Launcher: React.FC = () => {
         win.setTitle('KeedaVault - Home');
     }, []);
 
-    const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock') => {
+    const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock'): Promise<boolean> => {
+        console.log('🪟 openVaultWindow called with:', { path, action });
+        
+        // Check if we're running in Tauri
+        // @ts-ignore
+        if (typeof window.__TAURI__ === 'undefined') {
+            console.error('❌ Not running in Tauri environment - cannot create windows');
+            alert('This feature requires running the app with "npm run tauri dev"');
+            return false;
+        }
+        
         let label: string;
 
         if (path) {
@@ -63,16 +77,19 @@ export const Launcher: React.FC = () => {
             label = `vault-${Date.now()}`;
         }
 
+        console.log('🏷️ Window label:', label);
+
         // Check if window exists
         try {
             const existingWindow = await WebviewWindow.getByLabel(label);
             if (existingWindow) {
-                // console.log("Focusing existing window:", label);
+                console.log("✅ Focusing existing window:", label);
                 await existingWindow.setFocus();
-                return;
+                return true;
             }
         } catch (e) {
             // Window doesn't exist, continue to create new one
+            console.log("📝 No existing window, creating new one");
         }
 
         const mode = action === 'create' ? 'create' : 'auth';
@@ -91,6 +108,7 @@ export const Launcher: React.FC = () => {
         }
 
         try {
+            console.log('🔨 Creating new webview window...');
             const webview = new WebviewWindow(label, {
                 url,
                 title: initialTitle,
@@ -105,66 +123,106 @@ export const Launcher: React.FC = () => {
                 visible: false, // Start hidden to prevent flash
             });
 
+            console.log('✅ WebviewWindow constructor called');
+
+            // Set a timeout in case the created event doesn't fire
+            const createdTimeout = setTimeout(() => {
+                console.warn('⚠️ Window creation timeout - forcing window show');
+                webview.show().catch(e => console.error('Failed to force show:', e));
+                getCurrentWebviewWindow().close().catch(e => console.error('Failed to close launcher:', e));
+            }, 3000);
+
             webview.once('tauri://created', async function () {
-                console.log("Window created successfully");
+                clearTimeout(createdTimeout);
+                console.log("✅ Window created successfully");
                 // Safety: Ensure window is shown after a timeout if component fails to show it
                 setTimeout(async () => {
                     try {
+                        console.log('👁️ Showing and focusing new window');
                         await webview.show();
                         await webview.setFocus();
 
                         // Close the launcher window after opening the new one
                         setTimeout(() => {
+                            console.log('🚪 Closing launcher window');
                             getCurrentWebviewWindow().close();
                         }, 100);
                     } catch (e) {
-                        // Ignore if window is already destroyed
+                        console.error("❌ Error showing/focusing window:", e);
                     }
                 }, 500);
             });
 
             webview.once('tauri://error', function (e: any) {
-                console.error("Window creation error:", e);
+                clearTimeout(createdTimeout);
+                console.error("❌ Window creation error:", e);
             });
+
+            return true;
         } catch (e) {
-            console.error("Failed to open window", e);
+            console.error("❌ Failed to open window:", e);
+            return false;
         }
     };
 
     const handleOpenRecent = async (vault: SavedVaultInfo) => {
+        if (isOpening) {
+            console.log('⏸️ Already opening a vault, ignoring click');
+            return;
+        }
+
         try {
-            console.log('handleOpenRecent called with:', vault);
+            setIsOpening(true);
+            console.log('🚀 handleOpenRecent called with:', vault);
 
             if (!vault.path) {
+                console.error('❌ No path in vault info');
                 await message(
                     `Invalid vault path. The entry may be corrupted.`,
                     { title: 'Invalid Vault', kind: 'error' }
                 );
                 await removeRecentVault(vault.path || '', vault.filename);
                 setRecentVaults(await getRecentVaults());
+                setIsOpening(false);
                 return;
             }
 
-            console.log('Checking if file exists:', vault.path);
+            console.log('📁 Checking if file exists:', vault.path);
             const fileExists = await exists(vault.path);
-            console.log('File exists:', fileExists);
+            console.log('✅ File exists:', fileExists);
 
             if (!fileExists) {
+                console.error('❌ File not found:', vault.path);
                 await message(
                     `The file "${vault.path}" no longer exists.\nIt may have been moved or deleted.`,
                     { title: 'File Not Found', kind: 'error' }
                 );
+                setIsOpening(false);
                 // removeRecentVault(vault.path, vault.filename);
                 // setRecentVaults(getRecentVaults());
                 return;
             }
 
-            console.log('Opening vault window for:', vault.path);
+            console.log('💾 Saving recent vault update...');
             await saveRecentVault({ ...vault, lastOpened: Date.now() });
-            setRecentVaults(await getRecentVaults());
-            openVaultWindow(vault.path, 'unlock');
+            console.log('🪟 Opening vault window for:', vault.path);
+            // Don't update the list here - it will update when the launcher reopens
+            const success = await openVaultWindow(vault.path, 'unlock');
+            console.log('✅ openVaultWindow result:', success);
+            
+            if (!success) {
+                setIsOpening(false);
+                await message('Failed to open vault window', { title: 'Error', kind: 'error' });
+            } else {
+                // Reset opening state after a brief delay in case window doesn't close
+                // This prevents the UI from staying stuck if the launcher window somehow stays open
+                setTimeout(() => {
+                    setIsOpening(false);
+                }, 2000);
+            }
         } catch (e) {
-            console.error("Error checking file or opening vault", e);
+            console.error("❌ Error in handleOpenRecent:", e);
+            setIsOpening(false);
             await message(
                 `Error accessing file: ${e}`,
                 { title: 'Error', kind: 'error' }
@@ -300,11 +358,17 @@ export const Launcher: React.FC = () => {
                                     recentVaults.slice(0, recentCount).map((vault, idx) => (
                                         <button
                                             key={idx}
-                                            onDoubleClick={() => handleOpenRecent(vault)}
+                                            onClick={() => {
+                                                console.log('🖱️ Button clicked for:', vault.filename);
+                                                handleOpenRecent(vault);
+                                            }}
+                                            disabled={isOpening}
                                             className="w-full text-left px-3 py-2 rounded-lg transition-all flex items-center group relative"
                                             style={{
                                                 backgroundColor: 'var(--color-bg-primary)',
-                                                border: '1px solid var(--color-border-light)'
+                                                border: '1px solid var(--color-border-light)',
+                                                opacity: isOpening ? 0.5 : 1,
+                                                cursor: isOpening ? 'wait' : 'pointer'
                                             }}
                                             onMouseEnter={(e) => {
                                                 e.currentTarget.style.backgroundColor = 'var(--color-accent-light)';
