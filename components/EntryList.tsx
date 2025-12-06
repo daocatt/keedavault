@@ -11,7 +11,7 @@ import { useToast } from './ui/Toaster';
 import { VaultEntry, VaultGroup } from '../types';
 import { ICONS_MAP } from '../constants';
 import { EntryIcon } from './EntryIcon';
-import { DraggableEntryRow } from './DraggableEntryRow';
+import { usePointerDrag } from '../hooks/usePointerDrag';
 
 interface EntryListProps {
     onSelectEntry: (ids: Set<string>) => void;
@@ -29,7 +29,7 @@ interface ContextMenuState {
 }
 
 export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEntryIds, leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar, toggleRightSidebar }) => {
-    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin, vaults } = useVault();
+    const { activeEntries, searchQuery, setSearchQuery, onDeleteEntry, activeVaultId, getEntry, saveVault, onAddEntry, activeGroupId, getActiveGroup, onEmptyRecycleBin, vaults, onMoveEntries } = useVault();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
@@ -40,6 +40,27 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     const [toolbarContextMenu, setToolbarContextMenu] = useState<{ x: number; y: number } | null>(null);
     const [columnMenuOpen, setColumnMenuOpen] = useState(false);
     const [showPassGen, setShowPassGen] = useState(false);
+
+    // Pointer drag hook for drag-and-drop
+    const { handlePointerDown, handlePointerMove, handlePointerUp, dragState, createDragPreview, wasDragging } = usePointerDrag({
+        onDragStart: (entryIds) => {
+            console.log('🎯 Drag started:', entryIds.length, 'entries');
+        },
+        onDragEnd: async (entryIds, targetGroupId) => {
+            console.log('🎯 Drag ended:', entryIds, 'to group:', targetGroupId);
+            if (targetGroupId && entryIds.length > 0) {
+                try {
+                    await onMoveEntries(entryIds, targetGroupId);
+                    // Clear selection after successful move
+                    onSelectEntry(new Set());
+                } catch (err) {
+                    console.error('Failed to move entries:', err);
+                    addToast({ title: 'Failed to move entries', type: 'error' });
+                }
+            }
+        }
+    });
+
     // Column visibility state persisted in UI settings
     const defaultVisibleColumns = { group: true, title: true, username: true, email: true, password: false, url: false, created: false, modified: true };
     const [visibleColumns, setVisibleColumns] = useState<any>(defaultVisibleColumns);
@@ -256,6 +277,12 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
     }, [selectedEntryIds, isModalOpen, sortedEntries]);
 
     const handleEntryClick = (e: React.MouseEvent, entry: VaultEntry) => {
+        // Ignore click if it was actually a drag operation
+        if (wasDragging()) {
+            console.log('🚫 Ignoring click - was dragging');
+            return;
+        }
+
         // Prevent default text selection behavior
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
             e.preventDefault();
@@ -814,112 +841,124 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )}
 
                 <div className="">
-                    {sortedEntries.map(entry => (
-                        <DraggableEntryRow
-                            key={entry.uuid}
-                            entry={entry}
-                            isSelected={selectedEntryIds.has(entry.uuid)}
-                            selectedEntryIds={selectedEntryIds}
-                            onClick={(e) => { e.stopPropagation(); handleEntryClick(e, entry); }}
-                            onContextMenu={(e) => handleContextMenu(e, entry)}
-                            onMouseEnter={(e) => {
-                                if (!selectedEntryIds.has(entry.uuid)) {
-                                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-hover)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!selectedEntryIds.has(entry.uuid)) {
-                                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                }
-                            }}
-                            className={`py-1.5 flex items-center cursor-grab active:cursor-grabbing transition-colors group select-none ${selectedEntryIds.has(entry.uuid) ? 'font-medium' : ''}`}
-                            style={{
-                                userSelect: 'none',
-                                WebkitUserSelect: 'none',
-                                backgroundColor: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent-light)' : 'transparent',
-                                color: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent)' : 'var(--color-text-primary)'
-                            } as React.CSSProperties}
-                        >
-                            {/* Group Column */}
-                            {visibleColumns.group && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.group}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>
-                                    <span className="truncate" title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>{entryGroupMap.get(entry.uuid)?.name || 'Unknown'}</span>
-                                </div>
-                            )}
+                    {sortedEntries.map(entry => {
+                        const entriesToDrag = selectedEntryIds.has(entry.uuid)
+                            ? Array.from(selectedEntryIds)
+                            : [entry.uuid];
 
-                            {/* Title Column */}
-                            {visibleColumns.title && (
-                                <div className="flex items-center min-w-0 justify-start text-left px-2 text-sm overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
-                                    title={entry.title}>
-                                    <EntryIcon entry={entry} group={entryGroupMap.get(entry.uuid)} size={16} className="mr-2 flex-shrink-0 text-gray-400" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm truncate whitespace-nowrap" style={{ color: 'inherit' }} title={entry.title}>
-                                            {entry.title}
-                                        </p>
+                        return (
+                            <div
+                                key={entry.uuid}
+                                onClick={(e) => { e.stopPropagation(); handleEntryClick(e, entry); }}
+                                onContextMenu={(e) => handleContextMenu(e, entry)}
+                                onPointerDown={(e) => {
+                                    // 只响应左键
+                                    if (e.button === 0) {
+                                        handlePointerDown(e, entriesToDrag);
+                                    }
+                                }}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onMouseEnter={(e) => {
+                                    if (!selectedEntryIds.has(entry.uuid)) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-hover)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!selectedEntryIds.has(entry.uuid)) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                    }
+                                }}
+                                className={`py-1.5 flex items-center cursor-pointer transition-colors group select-none ${selectedEntryIds.has(entry.uuid) ? 'font-medium' : ''}`}
+                                style={{
+                                    userSelect: 'none',
+                                    WebkitUserSelect: 'none',
+                                    touchAction: 'none', // 防止触摸滚动干扰拖拽
+                                    backgroundColor: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent-light)' : 'transparent',
+                                    color: selectedEntryIds.has(entry.uuid) ? 'var(--color-accent)' : 'var(--color-text-primary)'
+                                } as React.CSSProperties}
+                            >
+                                {/* Group Column */}
+                                {visibleColumns.group && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.group}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>
+                                        <span className="truncate" title={entryGroupMap.get(entry.uuid)?.name || 'Unknown'}>{entryGroupMap.get(entry.uuid)?.name || 'Unknown'}</span>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Username Column */}
-                            {visibleColumns.username && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.username}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={entry.username}>
-                                    <span className="truncate" title={entry.username}>{entry.username}</span>
-                                </div>
-                            )}
+                                {/* Title Column */}
+                                {visibleColumns.title && (
+                                    <div className="flex items-center min-w-0 justify-start text-left px-2 text-sm overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.title}px`, minWidth: '80px' }}
+                                        title={entry.title}>
+                                        <EntryIcon entry={entry} group={entryGroupMap.get(entry.uuid)} size={16} className="mr-2 flex-shrink-0 text-gray-400" />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm truncate whitespace-nowrap" style={{ color: 'inherit' }} title={entry.title}>
+                                                {entry.title}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Email Column */}
-                            {visibleColumns.email && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.email}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={entry.email || entry.fields?.Email || ''}>
-                                    <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
-                                </div>
-                            )}
+                                {/* Username Column */}
+                                {visibleColumns.username && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.username}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={entry.username}>
+                                        <span className="truncate" title={entry.username}>{entry.username}</span>
+                                    </div>
+                                )}
 
-                            {/* Password Column */}
-                            {visibleColumns.password && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.password}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={entry.password ? '••••••' : ''}>
-                                    <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
-                                </div>
-                            )}
+                                {/* Email Column */}
+                                {visibleColumns.email && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.email}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={entry.email || entry.fields?.Email || ''}>
+                                        <span className="truncate" title={entry.email || entry.fields?.Email || ''}>{entry.email || entry.fields?.Email || ''}</span>
+                                    </div>
+                                )}
 
-                            {/* URL Column */}
-                            {visibleColumns.url && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.url}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={entry.url}>
-                                    <span className="truncate" title={entry.url}>{entry.url}</span>
-                                </div>
-                            )}
+                                {/* Password Column */}
+                                {visibleColumns.password && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.password}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={entry.password ? '••••••' : ''}>
+                                        <span className="truncate" title={entry.password ? '••••••' : ''}>{entry.password ? '••••••' : ''}</span>
+                                    </div>
+                                )}
 
-                            {/* Created Column */}
-                            {visibleColumns.created && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.created}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
-                                    <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
-                                </div>
-                            )}
+                                {/* URL Column */}
+                                {visibleColumns.url && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.url}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={entry.url}>
+                                        <span className="truncate" title={entry.url}>{entry.url}</span>
+                                    </div>
+                                )}
 
-                            {/* Modified Column */}
-                            {visibleColumns.modified && (
-                                <div className="hidden sm:flex items-center justify-start text-left text-sm px-2 overflow-hidden whitespace-nowrap"
-                                    style={{ width: `${columnWidths.modified}px`, minWidth: '80px', color: 'inherit' }}
-                                    title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
-                                    <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
-                                        {formatDistanceToNow(entry.lastModTime, { addSuffix: true })}
-                                    </span>
-                                </div>
-                            )}
-                        </DraggableEntryRow>
-                    ))}
+                                {/* Created Column */}
+                                {visibleColumns.created && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm truncate px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.created}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>
+                                        <span className="truncate" title={formatDistanceToNow(entry.creationTime, { addSuffix: true })}>{formatDistanceToNow(entry.creationTime, { addSuffix: true })}</span>
+                                    </div>
+                                )}
+
+                                {/* Modified Column */}
+                                {visibleColumns.modified && (
+                                    <div className="hidden sm:flex items-center justify-start text-left text-sm px-2 overflow-hidden whitespace-nowrap"
+                                        style={{ width: `${columnWidths.modified}px`, minWidth: '80px', color: 'inherit' }}
+                                        title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
+                                        <span className="truncate" title={formatDistanceToNow(entry.lastModTime, { addSuffix: true })}>
+                                            {formatDistanceToNow(entry.lastModTime, { addSuffix: true })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -1006,11 +1045,98 @@ export const EntryList: React.FC<EntryListProps> = ({ onSelectEntry, selectedEnt
                 )
             }
 
+
             <CreateEntryModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 editEntry={editingEntry}
             />
+
+            {/* Drag Preview - Shows when dragging entries */}
+            {dragState.isDragging && (() => {
+                const draggedEntries = dragState.entryIds
+                    .map(id => activeEntries.find(e => e.uuid === id))
+                    .filter(Boolean) as VaultEntry[];
+
+                const isSingleEntry = draggedEntries.length === 1;
+                const firstEntry = draggedEntries[0];
+
+                return (
+                    <div
+                        className="fixed pointer-events-none z-[10000] rounded-lg shadow-xl border-2 flex items-center gap-3 max-w-xs"
+                        style={{
+                            left: dragState.currentX + 15,
+                            top: dragState.currentY + 15,
+                            backgroundColor: 'var(--color-bg-primary)',
+                            borderColor: 'var(--color-accent)',
+                            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.1)',
+                            padding: '10px 14px',
+                        }}
+                    >
+                        {/* Icon */}
+                        <div
+                            className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
+                            style={{
+                                backgroundColor: 'var(--color-accent-light)',
+                            }}
+                        >
+                            <Key size={16} style={{ color: 'var(--color-accent)' }} />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                            {isSingleEntry && firstEntry ? (
+                                <>
+                                    <div
+                                        className="text-sm font-semibold truncate"
+                                        style={{ color: 'var(--color-text-primary)' }}
+                                        title={firstEntry.title}
+                                    >
+                                        {firstEntry.title}
+                                    </div>
+                                    {firstEntry.username && (
+                                        <div
+                                            className="text-xs truncate mt-0.5"
+                                            style={{ color: 'var(--color-text-tertiary)' }}
+                                            title={firstEntry.username}
+                                        >
+                                            {firstEntry.username}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <div
+                                        className="text-sm font-semibold"
+                                        style={{ color: 'var(--color-text-primary)' }}
+                                    >
+                                        {draggedEntries.length} entries
+                                    </div>
+                                    <div
+                                        className="text-xs"
+                                        style={{ color: 'var(--color-text-tertiary)' }}
+                                    >
+                                        Move to group
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Badge for multiple items */}
+                        {!isSingleEntry && (
+                            <div
+                                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                                style={{
+                                    backgroundColor: 'var(--color-accent)',
+                                    color: 'white',
+                                }}
+                            >
+                                {draggedEntries.length}
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
         </div >
     );
 };
