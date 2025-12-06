@@ -11,8 +11,7 @@ import { VaultGroup } from '../types';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { ICONS_MAP } from '../constants';
-import { DropTargetGroupItem } from './DropTargetGroupItem';
-import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { useDropTarget } from '../hooks/useDropTarget';
 
 import { Info, ShieldAlert } from 'lucide-react';
 import { auditPassword } from '../utils/passwordAudit';
@@ -124,94 +123,89 @@ const GroupItem: React.FC<{
         const isAddingChild = actionState?.type === 'add' && actionState.nodeId === group.uuid;
         const isRootGroup = depth === 1;
 
+        // Drop target hook for drag-and-drop highlighting
+        const { isHovered: isDragOver } = useDropTarget({
+            groupUuid: group.uuid,
+            onDrop: async (entryIds, groupUuid) => {
+                try {
+                    if (group.isRecycleBin) {
+                        for (const entryId of entryIds) {
+                            await onMoveToRecycleBin(entryId);
+                        }
+                        addToast({ title: 'Moved to Recycle Bin', type: 'success' });
+                    } else {
+                        await onMoveEntries(entryIds, groupUuid);
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to move entries:', err);
+                    addToast({ title: 'Failed to move entries', type: 'error' });
+                }
+            }
+        });
+
         return (
             <div>
-                <DropTargetGroupItem
-                    groupUuid={group.uuid}
-                    groupName={group.name}
-                    isRecycleBin={group.isRecycleBin || false}
-                    onDrop={async (entryIds, targetGroupId) => {
-                        try {
-                            if (group.isRecycleBin) {
-                                for (const entryId of entryIds) {
-                                    await onMoveToRecycleBin(entryId);
-                                }
-                                addToast({ title: 'Moved to Recycle Bin', type: 'success' });
-                            } else {
-                                await onMoveEntries(entryIds, targetGroupId);
-                            }
-                        } catch (err) {
-                            console.error('❌ Failed to move entries:', err);
-                            addToast({ title: 'Failed to move entries', type: 'error' });
-                        }
+                <div
+                    data-group-uuid={group.uuid}
+                    data-drop-target="group"
+                    className={`flex items-center px-0 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
+                    style={{
+                        paddingLeft: `${depth * 12 + 8}px`,
+                        backgroundColor: isDragOver
+                            ? 'var(--color-accent-light)'
+                            : isActive
+                                ? 'var(--color-accent-light)'
+                                : isHovered
+                                    ? 'var(--color-bg-hover)'
+                                    : 'transparent',
+                        color: isDragOver ? 'var(--color-accent)' : (isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'),
+                        border: isDragOver ? '2px solid var(--color-accent)' : '1px solid transparent',
+                        boxShadow: isDragOver ? '0 0 0 2px var(--color-accent-light)' : 'none',
+                        pointerEvents: 'auto',
+                        minHeight: '32px'
                     }}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    onClick={() => onSelect(group.uuid)}
+                    onContextMenu={(e) => onContextMenu(e, group, parentId)}
+                    title={`Drop entries here to move to ${group.name}`}
                 >
-                    {(isDragOverPragmatic, dropTargetRef) => (
-                        <div
-                            ref={dropTargetRef}
-                            className={`flex items-center px-0 py-1 my-0.5 rounded-md cursor-pointer text-sm transition-all duration-200 group relative pr-2 ${isActive ? 'font-medium' : ''}`}
-                            style={{
-                                paddingLeft: `${depth * 12 + 8}px`,
-                                backgroundColor: isDragOverPragmatic
-                                    ? 'var(--color-accent-light)'
-                                    : isActive
-                                        ? 'var(--color-accent-light)'
-                                        : isHovered
-                                            ? 'var(--color-bg-hover)'
-                                            : 'transparent',
-                                color: isDragOverPragmatic ? 'var(--color-accent)' : (isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)'),
-                                border: isDragOverPragmatic ? '2px solid var(--color-accent)' : '1px solid transparent',
-                                boxShadow: isDragOverPragmatic ? '0 0 0 2px var(--color-accent-light)' : 'none',
-                                pointerEvents: 'auto',
-                                minHeight: '32px'
-                            }}
-                            onMouseEnter={() => setIsHovered(true)}
-                            onMouseLeave={() => setIsHovered(false)}
-                            onClick={() => onSelect(group.uuid)}
-                            data-group-uuid={group.uuid}
-                            data-drop-target="group"
-                            onContextMenu={(e) => onContextMenu(e, group, parentId)}
-                            title={`Drop entries here to move to ${group.name}`}
-                        >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                        className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
+                        style={{ color: 'inherit', pointerEvents: 'none' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        {expanded ? <ChevronDown size={12} strokeWidth={1.5} /> : <ChevronRight size={12} strokeWidth={1.5} />}
+                    </button>
 
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                                className={`p-0.5 rounded mr-1 transition-colors ${hasChildren || isAddingChild ? '' : 'invisible'}`}
-                                style={{ color: 'inherit', pointerEvents: 'none' }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-active)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {expanded ? <ChevronDown size={12} strokeWidth={1.5} /> : <ChevronRight size={12} strokeWidth={1.5} />}
-                            </button>
-
-                            {group.isRecycleBin ? (
-                                <Trash2 size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30', pointerEvents: 'none' }} />
-                            ) : (
-                                (() => {
-                                    const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
-                                    return <IconComponent size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }} />;
-                                })()
-                            )}
-
-                            {isRenaming ? (
-                                <GroupInput
-                                    initialValue={group.name}
-                                    onSubmit={onSubmitAction}
-                                    onCancel={onCancelAction}
-                                />
-                            ) : (
-                                <span className="truncate select-none flex-1" style={{ pointerEvents: 'none' }}>{group.name}</span>
-                            )}
-
-                            {!isRenaming && !isHovered && (
-                                <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }}>{entryCount}</span>
-                            )}
-
-                            {/* Action Buttons - Removed in favor of Context Menu */}
-
-                        </div>
+                    {group.isRecycleBin ? (
+                        <Trash2 size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0" style={{ color: '#ff3b30', pointerEvents: 'none' }} />
+                    ) : (
+                        (() => {
+                            const IconComponent = ICONS_MAP[group.icon] || (expanded ? FolderOpen : Folder);
+                            return <IconComponent size={16} strokeWidth={1.5} className="mr-2 flex-shrink-0" style={{ color: expanded ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }} />;
+                        })()
                     )}
-                </DropTargetGroupItem>
+
+                    {isRenaming ? (
+                        <GroupInput
+                            initialValue={group.name}
+                            onSubmit={onSubmitAction}
+                            onCancel={onCancelAction}
+                        />
+                    ) : (
+                        <span className="truncate select-none flex-1" style={{ pointerEvents: 'none' }}>{group.name}</span>
+                    )}
+
+                    {!isRenaming && !isHovered && (
+                        <span className="text-[10px] ml-2" style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)', pointerEvents: 'none' }}>{entryCount}</span>
+                    )}
+
+                    {/* Action Buttons - Removed in favor of Context Menu */}
+
+                </div>
 
                 {/* Render Subgroups */}
                 {expanded && (
@@ -258,7 +252,7 @@ const GroupItem: React.FC<{
                         )}
                     </>
                 )}
-            </div>
+            </div >
         );
     };
 
@@ -291,18 +285,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenVault, onNewGroup, onEdi
     const [showDbMenu, setShowDbMenu] = useState(false);
 
     const dbMenuRef = useRef<HTMLDivElement>(null);
-
-    // DEBUG: Monitor all Pragmatic drag-and-drop events
-    useEffect(() => {
-        return monitorForElements({
-            onDragStart: ({ source }: any) => {
-                console.log('🌍 MONITOR: Drag started', source.data);
-            },
-            onDrop: ({ source, location }: any) => {
-                console.log('🌍 MONITOR: Drop', { source: source.data, location });
-            }
-        });
-    }, []);
 
 
     // Close context menu on click elsewhere

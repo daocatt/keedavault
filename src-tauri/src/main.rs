@@ -287,26 +287,32 @@ fn main() {
                     "open_vault" => {
                         // Open the Launcher window
                         if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                             let _ = window.emit("open-file-picker", ());
                         } else {
-                            let _window = create_main_window(app_handle, "/?action=browse");
+                            let window = create_main_window(app_handle, "/?action=browse");
+                            let _ = window.show();
                         }
                     }
                     "create_vault" => {
                         // Open the Launcher window
                         if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                             let _ = window.emit("create-new-vault", ());
                         } else {
-                            let _window = create_main_window(app_handle, "/?action=create");
+                            let window = create_main_window(app_handle, "/?action=create");
+                            let _ = window.show();
                         }
                     }
                     "open_launcher" => {
                         if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let _window = create_main_window(app_handle, "index.html");
+                            let window = create_main_window(app_handle, "index.html");
+                            let _ = window.show();
                         }
                     }
                     "import_database" => {
@@ -320,9 +326,10 @@ fn main() {
                     }
                     "password_generator" => {
                         if let Some(window) = app_handle.get_webview_window("password-generator") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let _window = tauri::WebviewWindowBuilder::new(
+                            let window = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "password-generator",
                                 tauri::WebviewUrl::App("/?mode=generator".into()),
@@ -338,6 +345,7 @@ fn main() {
                             .disable_drag_drop_handler()
                             .build()
                             .unwrap();
+                            let _ = window.show();
                         }
                     }
                     "create_entry" => {
@@ -355,9 +363,10 @@ fn main() {
                     "about" => {
                         // Open About window
                         if let Some(window) = app_handle.get_webview_window("about") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let _window = tauri::WebviewWindowBuilder::new(
+                            let window = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "about",
                                 tauri::WebviewUrl::App("/?mode=about".into()),
@@ -373,14 +382,16 @@ fn main() {
                             .disable_drag_drop_handler()
                             .build()
                             .unwrap();
+                            let _ = window.show();
                         }
                     }
                     "settings" => {
                         // Open Settings window
                         if let Some(window) = app_handle.get_webview_window("settings") {
+                            let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let _window = tauri::WebviewWindowBuilder::new(
+                            let window = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "settings",
                                 tauri::WebviewUrl::App("/?mode=settings".into()),
@@ -396,6 +407,7 @@ fn main() {
                             .disable_drag_drop_handler()
                             .build()
                             .unwrap();
+                            let _ = window.show();
                         }
                     }
                     "center_window" => {
@@ -442,25 +454,53 @@ fn main() {
         .run(|app_handle, event| {
             match event {
                 tauri::RunEvent::WindowEvent { label, event, .. } => {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        // On macOS, hide the window instead of closing it
-                        // This keeps the app running in the dock
-                        #[cfg(target_os = "macos")]
-                        {
-                            if let Some(window) = app_handle.get_webview_window(&label) {
-                                let _ = window.hide();
-                                api.prevent_close();
-                            }
-                        }
+                    if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
+                        // Let all windows close normally (destroy)
+                        // This allows the app to quit when all windows are closed
+                        // or stay in dock if there are other windows still open
                     }
                 }
                 tauri::RunEvent::Reopen { .. } => {
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                    // Priority order when clicking dock icon:
+                    // 1. If any vault window is VISIBLE, show all vault windows on top of launcher
+                    // 2. If no vault windows are visible (closed/hidden), show only launcher
+
+                    let mut visible_vault_windows = Vec::new();
+
+                    // Collect all VISIBLE vault windows
+                    for (label, window) in app_handle.webview_windows() {
+                        if label.starts_with("vault-") {
+                            // Check if window is visible
+                            if let Ok(is_visible) = window.is_visible() {
+                                if is_visible {
+                                    visible_vault_windows.push(window);
+                                }
+                            }
+                        }
+                    }
+
+                    if !visible_vault_windows.is_empty() {
+                        // Has visible vault windows - show them on top of launcher
+
+                        // First, show launcher if it exists (it will be in background)
+                        if let Some(launcher) = app_handle.get_webview_window("main") {
+                            let _ = launcher.show();
+                        }
+
+                        // Then show and focus all vault windows (they will be on top)
+                        for vault_window in visible_vault_windows {
+                            let _ = vault_window.show();
+                            let _ = vault_window.set_focus();
+                        }
                     } else {
-                        let window = create_main_window(app_handle, "index.html");
-                        let _ = window.show();
+                        // No visible vault windows - show only launcher
+                        if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        } else {
+                            let window = create_main_window(app_handle, "index.html");
+                            let _ = window.show();
+                        }
                     }
                 }
                 _ => {}
