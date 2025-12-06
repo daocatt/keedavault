@@ -53,7 +53,7 @@ export const Launcher: React.FC = () => {
 
     const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock'): Promise<boolean> => {
         console.log('🪟 openVaultWindow called with:', { path, action });
-        
+
         // Check if we're running in Tauri
         // @ts-ignore
         if (typeof window.__TAURI__ === 'undefined') {
@@ -61,7 +61,7 @@ export const Launcher: React.FC = () => {
             alert('This feature requires running the app with "npm run tauri dev"');
             return false;
         }
-        
+
         let label: string;
 
         if (path) {
@@ -79,17 +79,19 @@ export const Launcher: React.FC = () => {
 
         console.log('🏷️ Window label:', label);
 
-        // Check if window exists
+        // Try to get and close any existing window with this label
         try {
             const existingWindow = await WebviewWindow.getByLabel(label);
             if (existingWindow) {
-                console.log("✅ Focusing existing window:", label);
-                await existingWindow.setFocus();
-                return true;
+                console.log("🔍 Found existing window, closing it:", label);
+                await existingWindow.close();
+                // Wait for window to be destroyed
+                await new Promise(resolve => setTimeout(resolve, 200));
+                console.log("✅ Existing window closed");
             }
         } catch (e) {
-            // Window doesn't exist, continue to create new one
-            console.log("📝 No existing window, creating new one");
+            // Window doesn't exist, which is fine
+            console.log("📝 No existing window found");
         }
 
         const mode = action === 'create' ? 'create' : 'auth';
@@ -123,34 +125,37 @@ export const Launcher: React.FC = () => {
                 visible: false, // Start hidden to prevent flash
             });
 
-            console.log('✅ WebviewWindow constructor called');
+            console.log('✅ WebviewWindow constructor called, label:', label);
+            console.log('📍 Window URL:', url);
+
+            // Immediately try to show the window after a very short delay
+            setTimeout(async () => {
+                try {
+                    console.log('👁️ Attempting to show window immediately');
+                    await webview.show();
+                    await webview.setFocus();
+                    console.log('✅ Window shown and focused');
+                } catch (e) {
+                    console.error('❌ Error showing window immediately:', e);
+                }
+            }, 100);
 
             // Set a timeout in case the created event doesn't fire
             const createdTimeout = setTimeout(() => {
-                console.warn('⚠️ Window creation timeout - forcing window show');
-                webview.show().catch(e => console.error('Failed to force show:', e));
-                getCurrentWebviewWindow().close().catch(e => console.error('Failed to close launcher:', e));
-            }, 3000);
+                console.warn('⚠️ Window creation timeout - hiding launcher');
+                getCurrentWebviewWindow().hide().catch(e => console.error('Failed to hide launcher:', e));
+            }, 2000);
 
             webview.once('tauri://created', async function () {
                 clearTimeout(createdTimeout);
-                console.log("✅ Window created successfully");
-                // Safety: Ensure window is shown after a timeout if component fails to show it
-                setTimeout(async () => {
-                    try {
-                        console.log('👁️ Showing and focusing new window');
-                        await webview.show();
-                        await webview.setFocus();
+                console.log("✅ Window created event received, label:", label);
 
-                        // Close the launcher window after opening the new one
-                        setTimeout(() => {
-                            console.log('🚪 Closing launcher window');
-                            getCurrentWebviewWindow().close();
-                        }, 100);
-                    } catch (e) {
-                        console.error("❌ Error showing/focusing window:", e);
-                    }
-                }, 500);
+                // Hide the launcher window instead of closing it
+                // This keeps the app running if the vault window is closed
+                setTimeout(() => {
+                    console.log('🙈 Hiding launcher window');
+                    getCurrentWebviewWindow().hide();
+                }, 100);
             });
 
             webview.once('tauri://error', function (e: any) {
@@ -158,6 +163,7 @@ export const Launcher: React.FC = () => {
                 console.error("❌ Window creation error:", e);
             });
 
+            console.log('⏳ Waiting for window creation event...');
             return true;
         } catch (e) {
             console.error("❌ Failed to open window:", e);
@@ -209,7 +215,7 @@ export const Launcher: React.FC = () => {
             // Don't update the list here - it will update when the launcher reopens
             const success = await openVaultWindow(vault.path, 'unlock');
             console.log('✅ openVaultWindow result:', success);
-            
+
             if (!success) {
                 setIsOpening(false);
                 await message('Failed to open vault window', { title: 'Error', kind: 'error' });
@@ -358,8 +364,15 @@ export const Launcher: React.FC = () => {
                                     recentVaults.slice(0, recentCount).map((vault, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={() => {
+                                            onClick={(e) => {
                                                 console.log('🖱️ Button clicked for:', vault.filename);
+                                                console.log('📊 Event details:', {
+                                                    button: e.button,
+                                                    clientX: e.clientX,
+                                                    clientY: e.clientY,
+                                                    isOpening,
+                                                    vaultPath: vault.path
+                                                });
                                                 handleOpenRecent(vault);
                                             }}
                                             disabled={isOpening}
@@ -380,10 +393,10 @@ export const Launcher: React.FC = () => {
                                             }}
                                             title={`${vault.filename}\n${vault.path}`}
                                         >
-                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors flex-shrink-0" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}>
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors flex-shrink-0" style={{ backgroundColor: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)', pointerEvents: 'none' }}>
                                                 <HardDrive size={16} />
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div className="flex-1 min-w-0" style={{ pointerEvents: 'none' }}>
                                                 <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{vault.filename}</div>
                                                 <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
                                                     Opened {formatDistanceToNow(vault.lastOpened, { addSuffix: true })}
