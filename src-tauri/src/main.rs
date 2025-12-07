@@ -3,6 +3,7 @@
 
 mod biometric;
 mod secure_storage;
+mod native_keychain;
 
 use tauri::window::Color;
 use tauri::{Emitter, Manager};
@@ -148,7 +149,11 @@ fn main() {
             secure_storage::secure_store_password,
             secure_storage::secure_get_password,
             secure_storage::secure_delete_password,
-            secure_storage::secure_has_password
+            secure_storage::secure_has_password,
+            native_keychain::secure_store_password_native,
+            native_keychain::secure_get_password_native,
+            native_keychain::secure_delete_password_native,
+            native_keychain::secure_has_password_native
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

@@ -95,7 +95,11 @@ export const Launcher: React.FC = () => {
         }
 
         const mode = action === 'create' ? 'create' : 'auth';
+        console.log('[Launcher] Creating vault window with path:', path);
+        console.log('[Launcher] Path type:', typeof path);
+        console.log('[Launcher] Path starts with quote?', path?.startsWith('"'));
         const url = `/?mode=${mode}&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
+        console.log('[Launcher] Created URL:', url);
 
         let initialTitle = 'KeedaVault';
         if (action === 'create') {
@@ -180,6 +184,11 @@ export const Launcher: React.FC = () => {
         try {
             setIsOpening(true);
             console.log('🚀 handleOpenRecent called with:', vault);
+            console.log('🔍 vault.path value:', vault.path);
+            console.log('🔍 vault.path type:', typeof vault.path);
+            console.log('🔍 vault.path length:', vault.path?.length);
+            console.log('🔍 vault.path charCodeAt(0):', vault.path?.charCodeAt(0));
+            console.log('🔍 vault.path charCodeAt(last):', vault.path?.charCodeAt(vault.path.length - 1));
 
             if (!vault.path) {
                 console.error('❌ No path in vault info');
