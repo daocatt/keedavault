@@ -36,7 +36,13 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
     useEffect(() => {
         if (initialVaultInfo?.path) {
-            setPath(initialVaultInfo.path);
+            // Normalize path by removing surrounding quotes if present
+            let normalizedPath = initialVaultInfo.path;
+            if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
+                normalizedPath = normalizedPath.slice(1, -1);
+                console.log('[VaultAuthForm] Stripped quotes from path:', initialVaultInfo.path, '→', normalizedPath);
+            }
+            setPath(normalizedPath);
             // Don't create a dummy File object - we'll use the path directly
             clearError();
         }
@@ -48,6 +54,9 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             console.log('=== Touch ID Debug Start ===');
             console.log('Touch ID Debug - Path value:', path);
             console.log('Touch ID Debug - Path type:', typeof path);
+            console.log('Touch ID Debug - Path is null?', path === null);
+            console.log('Touch ID Debug - Path is undefined?', path === undefined);
+            console.log('Touch ID Debug - Path is empty string?', path === '');
 
             const available = await biometricService.isAvailable();
             setBiometricAvailable(available);
@@ -59,23 +68,34 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             console.log('Touch ID Debug - Enabled in settings:', enabled);
             console.log('Touch ID Debug - Settings object:', settings.security);
 
+            let hasSaved = false;
             if (path && available) {
+                // Normalize path by removing surrounding quotes if present
+                let normalizedPath = path;
+                if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
+                    normalizedPath = normalizedPath.slice(1, -1);
+                    console.log('🔧 Stripped quotes from path before checking:', path, '→', normalizedPath);
+                }
+
                 console.log('Touch ID Debug - Checking for saved password...');
-                const hasSaved = await biometricService.hasStoredPassword(path);
+                console.log('Touch ID Debug - Calling hasStoredPassword with path:', normalizedPath);
+                hasSaved = await biometricService.hasStoredPassword(normalizedPath);
                 setHasSavedPassword(hasSaved);
-                console.log('Touch ID Debug - Has saved password for', path, ':', hasSaved);
+                console.log('Touch ID Debug - Has saved password for', normalizedPath, ':', hasSaved);
             } else {
-                console.log('Touch ID Debug - Skipping password check. Path:', path, 'Available:', available);
+                console.log('Touch ID Debug - Skipping password check.');
+                console.log('Touch ID Debug - Reason: path =', path, ', available =', available);
                 setHasSavedPassword(false);
             }
 
-            const willShow = available && enabled && hasSavedPassword && !!path;
+            const willShow = available && enabled && hasSaved && !!path;
             console.log('Touch ID Debug - Button will show:', willShow);
             console.log('Touch ID Debug - Conditions:', {
                 available,
                 enabled,
-                hasSavedPassword,
-                hasPath: !!path
+                hasSavedPassword: hasSaved,
+                hasPath: !!path,
+                pathValue: path
             });
             console.log('=== Touch ID Debug End ===');
         };
@@ -107,13 +127,31 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
             await addVault(path || fileHandle || file!, password, keyFile || undefined);
 
             // Save password for Touch ID if enabled
+            console.log('=== Touch ID Password Save Debug ===');
+            console.log('touchIdEnabled:', touchIdEnabled);
+            console.log('biometricAvailable:', biometricAvailable);
+            console.log('path:', path);
+            console.log('password length:', password?.length);
+
             if (touchIdEnabled && biometricAvailable && path && password) {
                 try {
-                    await biometricService.storePassword(path, password);
+                    // Normalize path by removing surrounding quotes if present
+                    let normalizedPath = path;
+                    if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
+                        normalizedPath = normalizedPath.slice(1, -1);
+                        console.log('🔧 Stripped quotes from path before saving:', path, '→', normalizedPath);
+                    }
+
+                    console.log('🔐 Saving password to Keychain for path:', normalizedPath);
+                    await biometricService.storePassword(normalizedPath, password);
+                    console.log('✅ Password saved successfully!');
                 } catch (err) {
-                    console.error('Failed to save password for Touch ID:', err);
+                    console.error('❌ Failed to save password for Touch ID:', err);
                 }
+            } else {
+                console.log('⏭️ Skipping password save. Conditions not met.');
             }
+            console.log('=== Touch ID Password Save Debug End ===');
 
             resetForm();
             onSuccess?.();

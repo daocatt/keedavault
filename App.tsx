@@ -18,7 +18,9 @@ import { GeneratorWindow } from './components/GeneratorWindow';
 const AppContent: React.FC = () => {
   const [authPath, setAuthPath] = useState<string | undefined>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('path') || undefined;
+    const pathParam = params.get('path');
+    console.log('[App] authPath initialization - path param:', pathParam);
+    return pathParam || undefined;
   });
 
   const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator' | 'settings'>(() => {
