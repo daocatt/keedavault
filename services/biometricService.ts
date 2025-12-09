@@ -1,6 +1,24 @@
 // Biometric Authentication Service
 import { invoke } from '@tauri-apps/api/core';
 
+/**
+ * Encode vault path to Base64 for consistent keychain storage
+ * This ensures that paths with special characters, quotes, or different formats
+ * are always stored and retrieved consistently
+ */
+function encodeVaultPath(vaultPath: string): string {
+    // Remove surrounding quotes if present
+    let normalizedPath = vaultPath.trim();
+    if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
+        normalizedPath = normalizedPath.slice(1, -1);
+    }
+
+    // Encode to Base64
+    const encoded = btoa(normalizedPath);
+    console.log(`[BiometricService] Path encoding: "${vaultPath}" → "${encoded}"`);
+    return encoded;
+}
+
 export const biometricService = {
     /**
      * Check if biometric authentication is available on this device
@@ -28,11 +46,14 @@ export const biometricService = {
 
     /**
      * Store password for biometric unlock
-     * Uses system keychain via secure_storage commands
+     * Uses native macOS keychain via Security Framework
      */
     async storePassword(vaultPath: string, password: string): Promise<void> {
         try {
-            await invoke('secure_store_password', { vaultPath, password });
+            const encodedPath = encodeVaultPath(vaultPath);
+            console.log('[BiometricService] Calling secure_store_password_native with encoded path');
+            await invoke('secure_store_password_native', { vaultPath: encodedPath, password });
+            console.log('[BiometricService] Password stored successfully');
         } catch (error) {
             console.error('Failed to store password securely:', error);
             throw error;
@@ -44,10 +65,12 @@ export const biometricService = {
      */
     async getPassword(vaultPath: string): Promise<string | null> {
         try {
-            return await invoke<string>('secure_get_password', { vaultPath });
+            const encodedPath = encodeVaultPath(vaultPath);
+            console.log('[BiometricService] Calling secure_get_password_native with encoded path');
+            return await invoke<string>('secure_get_password_native', { vaultPath: encodedPath });
         } catch (error) {
             // It's normal to fail if password not found
-            // console.error('Failed to retrieve password:', error);
+            console.log('[BiometricService] Password not found or error:', error);
             return null;
         }
     },
@@ -57,7 +80,9 @@ export const biometricService = {
      */
     async removePassword(vaultPath: string): Promise<void> {
         try {
-            await invoke('secure_delete_password', { vaultPath });
+            const encodedPath = encodeVaultPath(vaultPath);
+            console.log('[BiometricService] Calling secure_delete_password_native with encoded path');
+            await invoke('secure_delete_password_native', { vaultPath: encodedPath });
         } catch (error) {
             console.error('Failed to remove password:', error);
         }
@@ -68,7 +93,11 @@ export const biometricService = {
      */
     async hasStoredPassword(vaultPath: string): Promise<boolean> {
         try {
-            return await invoke<boolean>('secure_has_password', { vaultPath });
+            const encodedPath = encodeVaultPath(vaultPath);
+            console.log('[BiometricService] Calling secure_has_password_native with encoded path');
+            const result = await invoke<boolean>('secure_has_password_native', { vaultPath: encodedPath });
+            console.log('[BiometricService] Has password result:', result);
+            return result;
         } catch (error) {
             console.error('Failed to check stored password:', error);
             return false;

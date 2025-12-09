@@ -58,6 +58,8 @@ pub async fn secure_has_password(vault_path: String) -> Result<bool, String> {
         vault_path
     );
     println!("[Secure Storage] Using service name: {}", SERVICE_NAME);
+    println!("[Secure Storage] Path length: {}", vault_path.len());
+    println!("[Secure Storage] Path bytes: {:?}", vault_path.as_bytes());
 
     let entry = Entry::new(SERVICE_NAME, &vault_path).map_err(|e| {
         println!("[Secure Storage] Failed to create entry: {}", e);
@@ -79,6 +81,11 @@ pub async fn secure_has_password(vault_path: String) -> Result<bool, String> {
             );
             println!("[Secure Storage] Error: {}", e);
             println!("[Secure Storage] Error type: {:?}", e);
+
+            // Try to list what's actually in the keychain for debugging
+            println!("[Secure Storage] This might be a keyring crate issue on macOS");
+            println!("[Secure Storage] Consider using native_keychain instead");
+
             Ok(false)
         }
     }
