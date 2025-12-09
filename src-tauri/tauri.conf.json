@@ -27,7 +27,7 @@
   "productName": "KeedaVault",
   "mainBinaryName": "KeedaVault",
   "version": "0.1.0",
-  "identifier": "com.keedavault.app",
+  "identifier": "com.bsdev.keedavault",
   "plugins": {},
   "app": {
     "withGlobalTauri": true,
