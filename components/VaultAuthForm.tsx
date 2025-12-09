@@ -36,13 +36,7 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
     useEffect(() => {
         if (initialVaultInfo?.path) {
-            // Normalize path by removing surrounding quotes if present
-            let normalizedPath = initialVaultInfo.path;
-            if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
-                normalizedPath = normalizedPath.slice(1, -1);
-                console.log('[VaultAuthForm] Stripped quotes from path:', initialVaultInfo.path, '→', normalizedPath);
-            }
-            setPath(normalizedPath);
+            setPath(initialVaultInfo.path);
             // Don't create a dummy File object - we'll use the path directly
             clearError();
         }
@@ -70,18 +64,11 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
             let hasSaved = false;
             if (path && available) {
-                // Normalize path by removing surrounding quotes if present
-                let normalizedPath = path;
-                if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
-                    normalizedPath = normalizedPath.slice(1, -1);
-                    console.log('🔧 Stripped quotes from path before checking:', path, '→', normalizedPath);
-                }
-
                 console.log('Touch ID Debug - Checking for saved password...');
-                console.log('Touch ID Debug - Calling hasStoredPassword with path:', normalizedPath);
-                hasSaved = await biometricService.hasStoredPassword(normalizedPath);
+                console.log('Touch ID Debug - Calling hasStoredPassword with path:', path);
+                hasSaved = await biometricService.hasStoredPassword(path);
                 setHasSavedPassword(hasSaved);
-                console.log('Touch ID Debug - Has saved password for', normalizedPath, ':', hasSaved);
+                console.log('Touch ID Debug - Has saved password for', path, ':', hasSaved);
             } else {
                 console.log('Touch ID Debug - Skipping password check.');
                 console.log('Touch ID Debug - Reason: path =', path, ', available =', available);
@@ -135,15 +122,8 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
 
             if (touchIdEnabled && biometricAvailable && path && password) {
                 try {
-                    // Normalize path by removing surrounding quotes if present
-                    let normalizedPath = path;
-                    if (normalizedPath.startsWith('"') && normalizedPath.endsWith('"')) {
-                        normalizedPath = normalizedPath.slice(1, -1);
-                        console.log('🔧 Stripped quotes from path before saving:', path, '→', normalizedPath);
-                    }
-
-                    console.log('🔐 Saving password to Keychain for path:', normalizedPath);
-                    await biometricService.storePassword(normalizedPath, password);
+                    console.log('🔐 Saving password to Keychain for path:', path);
+                    await biometricService.storePassword(path, password);
                     console.log('✅ Password saved successfully!');
                 } catch (err) {
                     console.error('❌ Failed to save password for Touch ID:', err);
@@ -427,22 +407,32 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                     </button>
 
                     {/* Touch ID Button */}
-                    {biometricAvailable && touchIdEnabled && hasSavedPassword && path && (
-                        <button
-                            type="button"
-                            onClick={handleTouchIdUnlock}
-                            disabled={isUnlocking}
-                            className="w-full py-3 text-[13px] font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center border-2 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{
-                                borderColor: 'var(--color-border-medium)',
-                                backgroundColor: 'var(--color-bg-secondary)',
-                                color: 'var(--color-text-primary)'
-                            }}
-                        >
-                            <Fingerprint size={16} className="mr-2" />
-                            Unlock with Touch ID
-                        </button>
-                    )}
+                    {(() => {
+                        const shouldShow = !!(biometricAvailable && touchIdEnabled && hasSavedPassword && path);
+                        console.log('🔍 [RENDER] Touch ID Button Check:', {
+                            biometricAvailable,
+                            touchIdEnabled,
+                            hasSavedPassword,
+                            path: path ? `"${path}"` : null,
+                            shouldShow
+                        });
+                        return shouldShow;
+                    })() && (
+                            <button
+                                type="button"
+                                onClick={handleTouchIdUnlock}
+                                disabled={isUnlocking}
+                                className="w-full py-3 text-[13px] font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center border-2 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    borderColor: 'var(--color-border-medium)',
+                                    backgroundColor: 'var(--color-bg-secondary)',
+                                    color: 'var(--color-text-primary)'
+                                }}
+                            >
+                                <Fingerprint size={16} className="mr-2" />
+                                Unlock with Touch ID
+                            </button>
+                        )}
                 </div>
             </form>
         </div>
