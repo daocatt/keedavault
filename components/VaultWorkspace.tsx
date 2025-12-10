@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { LogicalSize } from '@tauri-apps/api/dpi';
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { writeFile, readFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
@@ -20,6 +19,7 @@ import { PasswordGenerator } from './PasswordGenerator';
 import { CreateEntryModal } from './CreateEntryModal';
 import { ChangeCredentialsModal } from './ChangeCredentialsModal';
 import { DatabasePropertiesModal } from './DatabasePropertiesModal';
+import { updateWindowMenu } from '../services/windowMenuService';
 import { VaultGroup, EntryFormData } from '../types';
 
 export const VaultWorkspace: React.FC = () => {
@@ -27,6 +27,7 @@ export const VaultWorkspace: React.FC = () => {
     const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, onMoveEntries, saveVault, onAddEntry, lockVault } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
+
 
     // UI Settings - Ensure both sidebars are visible by default
     const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
@@ -49,11 +50,14 @@ export const VaultWorkspace: React.FC = () => {
         win.setTitle(title);
     }, [vaultName]);
 
-    // Enable database menu items when vault is unlocked
+    // Enable database menu items when vault is unlocked and update window menu
     useEffect(() => {
         invoke('set_database_menu_state', { unlocked: true });
+        updateWindowMenu(); // Update Window menu to show this vault
         return () => {
             invoke('set_database_menu_state', { unlocked: false });
+            // Update menu again when component unmounts (vault closes)
+            updateWindowMenu();
         };
     }, []);
 
@@ -469,65 +473,21 @@ export const VaultWorkspace: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [activeVaultId, groupModal.isOpen, exportModal.isOpen, importModalOpen, passwordPrompt.isOpen, saveVault]);
 
-    // Resize window on mount
+    // Window initialization - just focus the search input
+    // Window resize and show is handled by App.tsx when switching from auth to vault mode
     useEffect(() => {
-        const initWindow = async () => {
-            try {
-                const win = getCurrentWebviewWindow();
-                console.log('VaultWorkspace: Initializing window...');
-
-                // First, make window resizable and maximizable
-                await win.setResizable(true);
-                await win.setMaximizable(true);
-                await win.setMinimizable(true);
-
-                // Try multiple approaches to force the size
-                console.log('VaultWorkspace: Attempting to resize window...');
-
-                // Approach 1: Set min/max size constraints
-                await win.setMinSize(new LogicalSize(650, 600));
-                await win.setMaxSize(null); // Remove max size constraint
-
-                // Approach 2: Set the actual size
-                await win.setSize(new LogicalSize(1200, 700));
-
-                // Approach 3: Force a second resize after a tiny delay
-                setTimeout(async () => {
-                    try {
-                        await win.setSize(new LogicalSize(1200, 700));
-                        console.log('VaultWorkspace: Second resize attempt completed');
-                    } catch (e) {
-                        console.error('Second resize failed:', e);
-                    }
-                }, 50);
-
-                // Center the window
-                await win.center();
-
-                // Ensure visible and focused
-                await win.show();
-                await win.setFocus();
-
-                // Focus the search input to prevent sidebar buttons from stealing focus
-                setTimeout(() => {
-                    const searchInput = document.getElementById('entry-search-input');
-                    if (searchInput) {
-                        searchInput.focus();
-                    }
-                }, 100);
-
-                console.log("VaultWorkspace: Window initialized successfully");
-            } catch (e) {
-                console.error("VaultWorkspace: Failed to init window", e);
+        // Focus the search input to prevent sidebar buttons from stealing focus
+        const timer = setTimeout(() => {
+            const searchInput = document.getElementById('entry-search-input');
+            if (searchInput) {
+                searchInput.focus();
             }
-        };
+        }, 100);
 
-        // Execute immediately - no delay
-        initWindow();
+        return () => clearTimeout(timer);
     }, []);
 
     const toggleLeftSidebar = () => {
-        console.log('Toggling left sidebar', !leftSidebarVisible);
         setLeftSidebarVisible(!leftSidebarVisible);
     };
 

@@ -23,21 +23,34 @@
           (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
         // Apply theme immediately BEFORE CSS loads
+        const root = document.documentElement;
         if (isDark) {
-          document.documentElement.classList.add('dark');
+          root.classList.add('dark');
+          root.style.backgroundColor = '#1c1c1e';
+          // Also set body background immediately
+          document.body && (document.body.style.backgroundColor = '#1c1c1e');
+        } else {
+          root.classList.remove('dark');
+          root.style.backgroundColor = '#ffffff';
+          document.body && (document.body.style.backgroundColor = '#ffffff');
         }
 
-        // Update background color to match theme
-        document.documentElement.style.backgroundColor = isDark ? '#1c1c1e' : '#ffffff';
+        // Store the applied theme for debugging
+        window.__INITIAL_THEME__ = isDark ? 'dark' : 'light';
       } catch (e) {
         // Fallback to system preference
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const root = document.documentElement;
         if (isDark) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.backgroundColor = '#1c1c1e';
+          root.classList.add('dark');
+          root.style.backgroundColor = '#1c1c1e';
+          document.body && (document.body.style.backgroundColor = '#1c1c1e');
         } else {
-          document.documentElement.style.backgroundColor = '#ffffff';
+          root.classList.remove('dark');
+          root.style.backgroundColor = '#ffffff';
+          document.body && (document.body.style.backgroundColor = '#ffffff');
         }
+        window.__INITIAL_THEME__ = isDark ? 'dark' : 'light';
       }
     })();
   </script>

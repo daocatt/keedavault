@@ -2,9 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod biometric;
-mod secure_storage;
 mod native_keychain;
+mod secure_storage;
 
+use tauri::menu::IsMenuItem;
 use tauri::window::Color;
 use tauri::{Emitter, Manager};
 
@@ -88,6 +89,206 @@ fn set_database_menu_state(app_handle: tauri::AppHandle, unlocked: bool) {
     }
 }
 
+#[tauri::command]
+fn update_window_menu(app_handle: tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        #[allow(unused_imports)]
+        use tauri::menu::{MenuItemBuilder, SubmenuBuilder};
+
+        if let Some(menu) = app_handle.menu() {
+            let items = menu.items().unwrap_or_default();
+
+            // Find the Window menu
+            for item in items {
+                if let tauri::menu::MenuItemKind::Submenu(submenu) = item {
+                    let text = submenu.text().unwrap_or_default();
+                    if text == "Window" {
+                        // Rebuild the Window menu with current windows
+                        let handle = &app_handle;
+
+                        // Get all vault windows
+                        let mut vault_windows: Vec<(String, String)> = Vec::new();
+                        for (label, window) in app_handle.webview_windows() {
+                            if label.starts_with("vault-") {
+                                if let Ok(title) = window.title() {
+                                    vault_windows.push((label.clone(), title));
+                                }
+                            }
+                        }
+
+                        // Build new Window menu
+                        let mut window_menu_builder = SubmenuBuilder::new(handle, "Window")
+                            .minimize()
+                            .maximize()
+                            .separator()
+                            .item(
+                                &MenuItemBuilder::with_id("center_window", "Center Window")
+                                    .build(handle)
+                                    .unwrap(),
+                            )
+                            .item(
+                                &MenuItemBuilder::with_id("zoom_window", "Zoom")
+                                    .build(handle)
+                                    .unwrap(),
+                            )
+                            .separator()
+                            .item(
+                                &tauri::menu::CheckMenuItemBuilder::with_id(
+                                    "always_on_top",
+                                    "Keep on Top",
+                                )
+                                .checked(false)
+                                .build(handle)
+                                .unwrap(),
+                            )
+                            .separator()
+                            .item(
+                                &MenuItemBuilder::with_id(
+                                    "bring_all_to_front",
+                                    "Bring All to Front",
+                                )
+                                .build(handle)
+                                .unwrap(),
+                            );
+
+                        // Add vault windows if any exist
+                        if !vault_windows.is_empty() {
+                            window_menu_builder = window_menu_builder.separator();
+
+                            for (label, title) in vault_windows {
+                                let menu_id = format!("focus_window_{}", label);
+                                window_menu_builder = window_menu_builder.item(
+                                    &MenuItemBuilder::with_id(&menu_id, &title)
+                                        .build(handle)
+                                        .unwrap(),
+                                );
+                            }
+                        }
+
+                        window_menu_builder = window_menu_builder.separator().item(
+                            &MenuItemBuilder::with_id("close", "Close")
+                                .accelerator("CmdOrCtrl+W")
+                                .build(handle)
+                                .unwrap(),
+                        );
+
+                        if let Ok(new_window_menu) = window_menu_builder.build() {
+                            // Rebuild entire menu with updated Window menu
+                            let _ = rebuild_menu_with_window_menu(handle, new_window_menu);
+                        }
+
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn rebuild_menu_with_window_menu(
+    handle: &tauri::AppHandle,
+    window_menu: tauri::menu::Submenu<tauri::Wry>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+
+        // Rebuild all menus (we need to keep the same structure)
+        let app_menu = SubmenuBuilder::new(handle, "App")
+            .item(&MenuItemBuilder::with_id("about", "About").build(handle)?)
+            .item(
+                &MenuItemBuilder::with_id("settings", "Settings...")
+                    .accelerator("CmdOrCtrl+,")
+                    .build(handle)?,
+            )
+            .separator()
+            .item(&MenuItemBuilder::with_id("check_updates", "Check for Updates...").build(handle)?)
+            .separator()
+            .quit()
+            .build()?;
+
+        let file_menu = SubmenuBuilder::new(handle, "File")
+            .item(
+                &MenuItemBuilder::with_id("open_vault", "Open Vault...")
+                    .accelerator("CmdOrCtrl+O")
+                    .build(handle)?,
+            )
+            .item(
+                &MenuItemBuilder::with_id("create_vault", "New Vault...")
+                    .accelerator("CmdOrCtrl+N")
+                    .build(handle)?,
+            )
+            .separator()
+            .item(
+                &MenuItemBuilder::with_id("open_launcher", "Launcher")
+                    .accelerator("CmdOrCtrl+Shift+L")
+                    .build(handle)?,
+            )
+            .separator()
+            .item(&MenuItemBuilder::with_id("import_database", "Import...").build(handle)?)
+            .item(&MenuItemBuilder::with_id("export_database", "Export Database...").build(handle)?)
+            .item(&MenuItemBuilder::with_id("export_selected", "Export Selected...").build(handle)?)
+            .separator()
+            .close_window()
+            .build()?;
+
+        let edit_menu = SubmenuBuilder::new(handle, "Edit")
+            .undo()
+            .redo()
+            .separator()
+            .cut()
+            .copy()
+            .paste()
+            .select_all()
+            .build()?;
+
+        let database_menu = SubmenuBuilder::new(handle, "Database")
+            .item(
+                &MenuItemBuilder::with_id("password_generator", "Password Generator")
+                    .build(handle)?,
+            )
+            .item(
+                &MenuItemBuilder::with_id("create_entry", "Create Entry")
+                    .accelerator("CmdOrCtrl+I")
+                    .enabled(false)
+                    .build(handle)?,
+            )
+            .separator()
+            .item(
+                &MenuItemBuilder::with_id("lock_database", "Lock Database")
+                    .accelerator("CmdOrCtrl+L")
+                    .enabled(false)
+                    .build(handle)?,
+            )
+            .item(
+                &MenuItemBuilder::with_id("change_credentials", "Change Credentials")
+                    .enabled(false)
+                    .build(handle)?,
+            )
+            .item(
+                &MenuItemBuilder::with_id("database_setting", "Database Settings")
+                    .enabled(false)
+                    .build(handle)?,
+            )
+            .build()?;
+
+        let menu = MenuBuilder::new(handle)
+            .items(&[
+                &app_menu,
+                &file_menu,
+                &edit_menu,
+                &database_menu,
+                &window_menu,
+            ])
+            .build()?;
+
+        handle.set_menu(menu)?;
+    }
+
+    Ok(())
+}
+
 // Helper function to get background color based on system theme
 fn get_background_color() -> Color {
     #[cfg(target_os = "macos")]
@@ -144,6 +345,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             reveal_in_finder,
             set_database_menu_state,
+            update_window_menu,
             biometric::check_biometric_available,
             biometric::authenticate_biometric,
             secure_storage::secure_store_password,
@@ -174,6 +376,11 @@ fn main() {
                     .item(
                         &MenuItemBuilder::with_id("settings", "Settings...")
                             .accelerator("CmdOrCtrl+,")
+                            .build(handle)?,
+                    )
+                    .separator()
+                    .item(
+                        &MenuItemBuilder::with_id("check_updates", "Check for Updates...")
                             .build(handle)?,
                     )
                     .separator()
@@ -234,7 +441,16 @@ fn main() {
                     )
                     .item(&MenuItemBuilder::with_id("zoom_window", "Zoom").build(handle)?)
                     .separator()
-                    .item(&MenuItemBuilder::with_id("always_on_top", "Keep on Top").build(handle)?)
+                    .item(
+                        &tauri::menu::CheckMenuItemBuilder::with_id("always_on_top", "Keep on Top")
+                            .checked(false)
+                            .build(handle)?,
+                    )
+                    .separator()
+                    .item(
+                        &MenuItemBuilder::with_id("bring_all_to_front", "Bring All to Front")
+                            .build(handle)?,
+                    )
                     .separator()
                     .item(
                         &MenuItemBuilder::with_id("close", "Close")
@@ -415,6 +631,10 @@ fn main() {
                             let _ = window.show();
                         }
                     }
+                    "check_updates" => {
+                        // Emit event to frontend to check for updates
+                        let _ = app_handle.emit("check-updates", ());
+                    }
                     "center_window" => {
                         // Center all visible windows
                         for (_, window) in app_handle.webview_windows() {
@@ -434,9 +654,27 @@ fn main() {
                     }
                     "always_on_top" => {
                         // Toggle always on top for all visible windows
+                        let mut new_state = false;
                         for (_, window) in app_handle.webview_windows() {
                             let is_on_top = window.is_always_on_top().unwrap_or(false);
-                            let _ = window.set_always_on_top(!is_on_top);
+                            new_state = !is_on_top;
+                            let _ = window.set_always_on_top(new_state);
+                        }
+
+                        // Update the menu item checkmark
+                        if let Some(menu) = app_handle.menu() {
+                            if let Some(item) = menu.get("always_on_top") {
+                                if let tauri::menu::MenuItemKind::Check(check_item) = item.kind() {
+                                    let _ = check_item.set_checked(new_state);
+                                }
+                            }
+                        }
+                    }
+                    "bring_all_to_front" => {
+                        // Bring all windows to front (standard macOS behavior)
+                        for (_, window) in app_handle.webview_windows() {
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
                     "close" => {
@@ -448,6 +686,15 @@ fn main() {
                     "quit" => {
                         app_handle.exit(0);
                     }
+                    id if id.starts_with("focus_window_") => {
+                        // Extract window label from menu ID
+                        let window_label = id.strip_prefix("focus_window_").unwrap_or("");
+                        if let Some(window) = app_handle.get_webview_window(window_label) {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.unminimize();
+                        }
+                    }
                     _ => {}
                 }
             });
@@ -458,7 +705,11 @@ fn main() {
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             match event {
-                tauri::RunEvent::WindowEvent { label, event, .. } => {
+                tauri::RunEvent::WindowEvent {
+                    label: _label,
+                    event,
+                    ..
+                } => {
                     if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
                         // Let all windows close normally (destroy)
                         // This allows the app to quit when all windows are closed
