@@ -27,7 +27,21 @@ const Toggle: React.FC<{ checked: boolean; onChange: (checked: boolean) => void;
     </div>
 );
 
-const Select: React.FC<{ value: any; onChange: (val: any) => void; options: { label: string; value: any }[]; label: string; icon?: React.ElementType }> = ({ value, onChange, options, label, icon: Icon }) => (
+
+interface SelectOption {
+    label: string;
+    value: string;
+}
+
+interface SelectProps {
+    value: string;
+    onChange: (val: string) => void;
+    options: SelectOption[];
+    label: string;
+    icon?: React.ElementType;
+}
+
+const Select: React.FC<SelectProps> = ({ value, onChange, options, label, icon: Icon }) => (
     <div className="flex items-center justify-between py-3 group">
         <div className="flex items-center">
             {Icon && <div className="mr-3 text-gray-400 group-hover:text-indigo-500 transition-colors"><Icon size={18} strokeWidth={1.5} /></div>}
@@ -41,7 +55,7 @@ const Select: React.FC<{ value: any; onChange: (val: any) => void; options: { la
                 style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' }}
             >
                 {options.map(opt => (
-                    <option key={String(opt.value)} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
@@ -81,7 +95,7 @@ export const SettingsWindow: React.FC = () => {
         setSettings(s);
     };
 
-    const updateSetting = async (section: 'general' | 'security', key: string, value: any) => {
+    const updateSetting = async (section: 'general' | 'security', key: string, value: string | number | boolean) => {
         if (!settings) return;
 
         const newSettings = {
@@ -194,9 +208,9 @@ export const SettingsWindow: React.FC = () => {
                                         <Select
                                             label="Recent Databases"
                                             icon={Clock}
-                                            value={settings.general.recentFileCount}
+                                            value={String(settings.general.recentFileCount)}
                                             onChange={(v) => updateSetting('general', 'recentFileCount', parseInt(v))}
-                                            options={[1, 2, 3, 4, 5, 10].map(n => ({ label: `${n} files`, value: n }))}
+                                            options={[1, 2, 3, 4, 5, 10].map(n => ({ label: `${n} files`, value: String(n) }))}
                                         />
                                         <Toggle
                                             label="Markdown Notes"
@@ -328,30 +342,16 @@ export const SettingsWindow: React.FC = () => {
                                         <Select
                                             label="Lock on Inactivity"
                                             icon={Clock}
-                                            value={settings.security.lockOnInactivity}
+                                            value={String(settings.security.lockOnInactivity)}
                                             onChange={(v) => updateSetting('security', 'lockOnInactivity', parseInt(v))}
-                                            options={[
-                                                { label: 'Never', value: 0 },
-                                                { label: '1 minute', value: 60 },
-                                                { label: '5 minutes', value: 300 },
-                                                { label: '10 minutes', value: 600 },
-                                                { label: '30 minutes', value: 1800 },
-                                                { label: '1 hour', value: 3600 },
-                                            ]}
+                                            options={[0, 60, 300, 600, 1800, 3600].map(n => ({ label: n === 0 ? 'Never' : `${n / 60} minutes`, value: String(n) }))}
                                         />
                                         <Select
                                             label="Lock in Background"
                                             icon={Eye}
-                                            value={settings.security.lockOnBackgroundDelay}
+                                            value={String(settings.security.lockOnBackgroundDelay)}
                                             onChange={(v) => updateSetting('security', 'lockOnBackgroundDelay', parseInt(v))}
-                                            options={[
-                                                { label: 'Never', value: 0 },
-                                                { label: 'Immediately', value: 1 }, // Using 1 for immediate to distinguish from 0 (disabled)
-                                                { label: '10 seconds', value: 10 },
-                                                { label: '30 seconds', value: 30 },
-                                                { label: '1 minute', value: 60 },
-                                                { label: '5 minutes', value: 300 },
-                                            ]}
+                                            options={[0, 1, 10, 30, 60, 300].map(n => ({ label: n === 0 ? 'Never' : (n === 1 ? 'Immediately' : `${n} seconds`), value: String(n) }))}
                                         />
                                         <Toggle
                                             label="Lock on Window Close"

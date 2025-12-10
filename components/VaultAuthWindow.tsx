@@ -13,15 +13,12 @@ interface VaultAuthWindowProps {
 export const VaultAuthWindow: React.FC<VaultAuthWindowProps> = ({ mode, path, onSuccess }) => {
     const { addVault, createVault } = useVault();
 
-    // Ensure window is fixed size for auth and visible
+    // Ensure window is fixed size for auth
     useEffect(() => {
         const win = getCurrentWebviewWindow();
         win.setResizable(false);
         win.center();
-        win.show();
-        win.setFocus();
-        // Size is set by Launcher/Main, but we can enforce it here if needed
-        // win.setSize(new PhysicalSize(500, 640));
+        // Don't show/focus here - App.tsx handles it after theme is applied
     }, []);
 
     const handleUnlock = async (password: string) => {
