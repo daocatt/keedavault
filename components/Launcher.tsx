@@ -21,9 +21,7 @@ export const Launcher: React.FC = () => {
 
     useEffect(() => {
         const fetchAndSetVaults = async () => {
-            console.log('🔄 Fetching recent vaults...');
             const vaults = await getRecentVaults();
-            console.log('📚 Recent vaults loaded:', vaults);
             setRecentVaults(vaults);
 
             const settings = await getUISettings();
@@ -49,10 +47,18 @@ export const Launcher: React.FC = () => {
     useEffect(() => {
         const win = getCurrentWebviewWindow();
         win.setTitle('KeedaVault - Home');
+
+        // Ensure window is visible (important when showing from hidden state)
+        setTimeout(async () => {
+            const isVisible = await win.isVisible();
+            if (!isVisible) {
+                await win.show();
+                await win.setFocus();
+            }
+        }, 50);
     }, []);
 
     const openVaultWindow = async (path?: string, action: 'unlock' | 'create' = 'unlock'): Promise<boolean> => {
-        console.log('🪟 openVaultWindow called with:', { path, action });
 
         // Check if we're running in Tauri
         // @ts-ignore
@@ -77,29 +83,22 @@ export const Launcher: React.FC = () => {
             label = `vault-${Date.now()}`;
         }
 
-        console.log('🏷️ Window label:', label);
+
 
         // Try to get and close any existing window with this label
         try {
             const existingWindow = await WebviewWindow.getByLabel(label);
             if (existingWindow) {
-                console.log("🔍 Found existing window, closing it:", label);
                 await existingWindow.close();
                 // Wait for window to be destroyed
                 await new Promise(resolve => setTimeout(resolve, 200));
-                console.log("✅ Existing window closed");
             }
         } catch (e) {
             // Window doesn't exist, which is fine
-            console.log("📝 No existing window found");
         }
 
         const mode = action === 'create' ? 'create' : 'auth';
-        console.log('[Launcher] Creating vault window with path:', path);
-        console.log('[Launcher] Path type:', typeof path);
-        console.log('[Launcher] Path starts with quote?', path?.startsWith('"'));
-        const url = `/?mode=${mode}&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
-        console.log('[Launcher] Created URL:', url);
+        const url = `/?mode=${mode}&action=${action}${path ? `&path=${encodeURIComponent(path)}` : ''}`
 
         let initialTitle = 'KeedaVault';
         if (action === 'create') {
@@ -114,7 +113,6 @@ export const Launcher: React.FC = () => {
         }
 
         try {
-            console.log('🔨 Creating new webview window...');
             const webview = new WebviewWindow(label, {
                 url,
                 title: initialTitle,
@@ -129,20 +127,8 @@ export const Launcher: React.FC = () => {
                 visible: false, // Start hidden to prevent flash
             });
 
-            console.log('✅ WebviewWindow constructor called, label:', label);
-            console.log('📍 Window URL:', url);
-
-            // Immediately try to show the window after a very short delay
-            setTimeout(async () => {
-                try {
-                    console.log('👁️ Attempting to show window immediately');
-                    await webview.show();
-                    await webview.setFocus();
-                    console.log('✅ Window shown and focused');
-                } catch (e) {
-                    console.error('❌ Error showing window immediately:', e);
-                }
-            }, 100);
+            // Don't show window here - let App.tsx show it after theme is applied
+            // This prevents flash of wrong background color
 
             // Set a timeout in case the created event doesn't fire
             const createdTimeout = setTimeout(() => {
@@ -152,22 +138,19 @@ export const Launcher: React.FC = () => {
 
             webview.once('tauri://created', async function () {
                 clearTimeout(createdTimeout);
-                console.log("✅ Window created event received, label:", label);
+
 
                 // Hide the launcher window instead of closing it
                 // This keeps the app running if the vault window is closed
                 setTimeout(() => {
-                    console.log('🙈 Hiding launcher window');
                     getCurrentWebviewWindow().hide();
                 }, 100);
             });
 
             webview.once('tauri://error', function (e: any) {
                 clearTimeout(createdTimeout);
-                console.error("❌ Window creation error:", e);
             });
 
-            console.log('⏳ Waiting for window creation event...');
             return true;
         } catch (e) {
             console.error("❌ Failed to open window:", e);
@@ -183,12 +166,6 @@ export const Launcher: React.FC = () => {
 
         try {
             setIsOpening(true);
-            console.log('🚀 handleOpenRecent called with:', vault);
-            console.log('🔍 vault.path value:', vault.path);
-            console.log('🔍 vault.path type:', typeof vault.path);
-            console.log('🔍 vault.path length:', vault.path?.length);
-            console.log('🔍 vault.path charCodeAt(0):', vault.path?.charCodeAt(0));
-            console.log('🔍 vault.path charCodeAt(last):', vault.path?.charCodeAt(vault.path.length - 1));
 
             if (!vault.path) {
                 console.error('❌ No path in vault info');
@@ -202,9 +179,7 @@ export const Launcher: React.FC = () => {
                 return;
             }
 
-            console.log('📁 Checking if file exists:', vault.path);
             const fileExists = await exists(vault.path);
-            console.log('✅ File exists:', fileExists);
 
             if (!fileExists) {
                 console.error('❌ File not found:', vault.path);
@@ -218,12 +193,9 @@ export const Launcher: React.FC = () => {
                 return;
             }
 
-            console.log('💾 Saving recent vault update...');
             await saveRecentVault({ ...vault, lastOpened: Date.now() });
-            console.log('🪟 Opening vault window for:', vault.path);
             // Don't update the list here - it will update when the launcher reopens
             const success = await openVaultWindow(vault.path, 'unlock');
-            console.log('✅ openVaultWindow result:', success);
 
             if (!success) {
                 setIsOpening(false);
@@ -277,7 +249,6 @@ export const Launcher: React.FC = () => {
 
     const handleBrowse = async () => {
         try {
-            console.log('handleBrowse: Opening file picker...');
             const selected = await open({
                 multiple: false,
                 filters: [{
@@ -285,8 +256,6 @@ export const Launcher: React.FC = () => {
                     extensions: ['kdbx', 'kdb']
                 }]
             });
-
-            console.log('File selected:', selected);
 
             if (selected && typeof selected === 'string') {
                 const filename = selected.split(/[/\\]/).pop() || selected;
@@ -374,14 +343,6 @@ export const Launcher: React.FC = () => {
                                         <button
                                             key={idx}
                                             onClick={(e) => {
-                                                console.log('🖱️ Button clicked for:', vault.filename);
-                                                console.log('📊 Event details:', {
-                                                    button: e.button,
-                                                    clientX: e.clientX,
-                                                    clientY: e.clientY,
-                                                    isOpening,
-                                                    vaultPath: vault.path
-                                                });
                                                 handleOpenRecent(vault);
                                             }}
                                             disabled={isOpening}

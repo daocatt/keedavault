@@ -14,22 +14,27 @@ import { ThemeManager } from './components/ThemeManager';
 
 import { PasswordGenerator } from './components/PasswordGenerator';
 import { GeneratorWindow } from './components/GeneratorWindow';
+import { UpdateModal } from './components/UpdateModal';
+import { checkForUpdates, GitHubRelease } from './services/updateService';
+
+type AppMode = 'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator' | 'settings';
 
 const AppContent: React.FC = () => {
   const [authPath, setAuthPath] = useState<string | undefined>(() => {
     const params = new URLSearchParams(window.location.search);
     const pathParam = params.get('path');
-    console.log('[App] authPath initialization - path param:', pathParam);
     return pathParam || undefined;
   });
 
-  const [mode, setMode] = useState<'launcher' | 'vault' | 'about' | 'auth' | 'create' | 'large-type' | 'markdown-preview' | 'generator' | 'settings'>(() => {
+  const [updateModal, setUpdateModal] = useState<{ isOpen: boolean; release?: GitHubRelease; currentVersion?: string }>({
+    isOpen: false
+  });
+
+  const [mode, setMode] = useState<AppMode>(() => {
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
     const actionParam = params.get('action');
     const pathParam = params.get('path');
-
-    console.log('App initializing, params:', Object.fromEntries(params.entries()));
 
     if (modeParam === 'vault') return 'vault';
     if (modeParam === 'auth') return 'auth';
@@ -47,33 +52,31 @@ const AppContent: React.FC = () => {
     return 'launcher';
   });
 
+
+
   // Show window after content is ready to prevent flash
   useEffect(() => {
     // About, Settings, and Generator windows handle their own show() calls with RAF
     // Only launcher needs a timeout because it's the initial window with more setup
-    console.log('[App] Mode:', mode, 'Initializing window show');
 
-    // For launcher, use minimal delay to ensure theme is applied
-    // For others (Settings, About, etc.), use a small delay as safety net
-    // in case component-level RAF fails
-    const delay = mode === 'launcher' ? 50 : 100;
+    // Optimized delays for fast but reliable window showing:
+    // - Auth/create: 20ms (simple forms, minimal rendering)
+    // - Launcher: 30ms (moderate complexity)
+    // - Vault: 150ms (complex data loading and rendering)
+    // - Others: 50ms (settings, about, etc.)
+    const delay = (mode === 'auth' || mode === 'create') ? 20 : (mode === 'launcher' ? 30 : (mode === 'vault' ? 150 : 50));
 
     const timer = setTimeout(async () => {
       try {
-        console.log(`[App] Showing window for mode: ${mode}`);
         const window = getCurrentWebviewWindow();
 
-        // Ensure window is ready
         const isVisible = await window.isVisible();
-        console.log(`[App] Window visible before show: ${isVisible}`);
 
         if (!isVisible) {
           await window.show();
-          console.log('[App] Window.show() called');
         }
 
         await window.setFocus();
-        console.log('[App] Window shown and focused successfully');
       } catch (error) {
         console.error(`[App] Failed to show window for mode ${mode}:`, error);
         // Try one more time after a delay
@@ -82,7 +85,6 @@ const AppContent: React.FC = () => {
             const window = getCurrentWebviewWindow();
             await window.show();
             await window.setFocus();
-            console.log('[App] Window shown on retry');
           } catch (retryError) {
             console.error('[App] Retry failed:', retryError);
           }
@@ -92,6 +94,32 @@ const AppContent: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [mode]);
+
+  // Listen for check-updates event from menu
+  useEffect(() => {
+    const unlisten = getCurrentWebviewWindow().listen('check-updates', async () => {
+      try {
+        const result = await checkForUpdates();
+        if (result.hasUpdate && result.latestRelease) {
+          setUpdateModal({
+            isOpen: true,
+            release: result.latestRelease,
+            currentVersion: result.currentVersion
+          });
+        } else {
+          // Show "You're up to date" message
+          alert(`You're up to date!\n\nCurrent version: ${result.currentVersion}`);
+        }
+      } catch (error) {
+        console.error('Failed to check for updates:', error);
+        alert('Failed to check for updates. Please try again later.');
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
 
   // If in about mode, only show AboutWindow
   if (mode === 'about') {
@@ -124,15 +152,15 @@ const AppContent: React.FC = () => {
           // Resize window BEFORE switching to vault mode
           try {
             const win = getCurrentWebviewWindow();
-            console.log('App: Resizing window for vault mode...');
-            await win.hide(); // Hide window to prevent flash during resize
+            // Don't hide - just resize
             await win.setResizable(true);
             await win.setSize(new LogicalSize(1200, 700));
             await win.center();
-            console.log('App: Window resized to 1200x700');
           } catch (e) {
             console.error('App: Failed to resize window:', e);
           }
+
+          // Switch to vault mode - useEffect will show the window
           setMode('vault');
         }}
       />
@@ -142,6 +170,14 @@ const AppContent: React.FC = () => {
   return (
     <>
       <AboutModal />
+      {updateModal.isOpen && updateModal.release && updateModal.currentVersion && (
+        <UpdateModal
+          isOpen={updateModal.isOpen}
+          onClose={() => setUpdateModal({ isOpen: false })}
+          release={updateModal.release}
+          currentVersion={updateModal.currentVersion}
+        />
+      )}
       {mode === 'vault' ? <VaultWorkspace /> : <Launcher />}
     </>
   );

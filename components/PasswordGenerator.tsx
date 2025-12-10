@@ -159,13 +159,14 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
             </div>
 
             {/* Generated Password Display */}
-            <div className="p-2 rounded-lg mb-2 flex items-start justify-between group relative" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+            <div className="p-3 rounded-lg mb-2 flex items-start justify-between group relative border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}>
                 <textarea
                     value={generatedPassword}
                     onChange={(e) => setGeneratedPassword(e.target.value)}
                     className="font-mono text-sm bg-transparent border-none focus:ring-0 flex-1 mr-2 outline-none min-w-0 resize-none h-16 leading-tight"
                     style={{ color: 'var(--color-text-primary)' }}
                     spellCheck={false}
+                    placeholder="Generated password will appear here..."
                 />
                 <div className="flex flex-col space-y-1">
                     <button
@@ -210,8 +211,11 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                                 max="64"
                                 value={length}
                                 onChange={(e) => setLength(parseInt(e.target.value))}
-                                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-indigo-600 block"
-                                style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer block"
+                                style={{
+                                    background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${((length - 8) / (64 - 8)) * 100}%, var(--color-bg-tertiary) ${((length - 8) / (64 - 8)) * 100}%, var(--color-bg-tertiary) 100%)`,
+                                    accentColor: '#4f46e5'
+                                }}
                             />
                         </div>
 
@@ -278,7 +282,7 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                             </div>
 
                             {useSymbols && (
-                                <div className="flex flex-wrap gap-1 p-2 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderColor: 'var(--color-border-light)' }}>
+                                <div className="flex flex-wrap gap-1 p-2 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-medium)' }}>
                                     {AVAILABLE_SPECIAL_CHARS.split('').map(char => (
                                         <button
                                             key={char}
@@ -289,11 +293,11 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                                                     : specialChars + char;
                                                 saveSpecialChars(newChars);
                                             }}
-                                            className={`w-5 h-5 flex items-center justify-center text-[10px] rounded font-mono transition-all ${specialChars.includes(char)
-                                                ? 'bg-indigo-600 text-white shadow-sm border border-indigo-600'
-                                                : 'border hover:border-gray-300 dark:hover:border-gray-500'
+                                            className={`w-6 h-6 flex items-center justify-center text-xs rounded font-mono transition-all font-semibold ${specialChars.includes(char)
+                                                ? 'bg-indigo-600 text-white shadow-sm border-2 border-indigo-600'
+                                                : 'border-2 hover:border-indigo-400'
                                                 }`}
-                                            style={!specialChars.includes(char) ? { backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-tertiary)', borderColor: 'var(--color-border-medium)' } : {}}
+                                            style={!specialChars.includes(char) ? { backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-medium)' } : {}}
                                         >
                                             {char}
                                         </button>
@@ -315,8 +319,11 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ isOpen, on
                                 max="8"
                                 value={wordCount}
                                 onChange={(e) => setWordCount(parseInt(e.target.value))}
-                                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-indigo-600 block"
-                                style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer block"
+                                style={{
+                                    background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${((wordCount - 3) / (8 - 3)) * 100}%, var(--color-bg-tertiary) ${((wordCount - 3) / (8 - 3)) * 100}%, var(--color-bg-tertiary) 100%)`,
+                                    accentColor: '#4f46e5'
+                                }}
                             />
                         </div>
 
