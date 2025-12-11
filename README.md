@@ -1,14 +1,14 @@
 # KeedaVault
 
-[![Release](https://img.shields.io/github/v/release/YOUR_USERNAME/keedavault)](https://github.com/YOUR_USERNAME/keedavault/releases)
-[![License](https://img.shields.io/github/license/YOUR_USERNAME/keedavault)](LICENSE)
-[![macOS](https://img.shields.io/badge/macOS-10.15+-blue)](https://github.com/YOUR_USERNAME/keedavault/releases)
+[![Release](https://img.shields.io/github/v/release/daocatt/keedavault)](https://github.com/daocatt/keedavault/releases)
+[![License](https://img.shields.io/github/license/daocatt/keedavault)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-10.15+-blue)](https://github.com/daocatt/keedavault/releases)
 
 A secure, modern password manager for macOS with native Touch ID support.
 
 ## 📥 Download
 
-**Latest Release**: [v0.1.0](https://github.com/YOUR_USERNAME/keedavault/releases/latest)
+**Latest Release**: [v0.1.0](https://github.com/daocatt/keedavault/releases/latest)
 
 - **Universal Binary** (Intel & Apple Silicon): `KeedaVault_0.1.0_universal.dmg`
 - **Requirements**: macOS 10.15 (Catalina) or later
