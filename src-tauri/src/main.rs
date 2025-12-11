@@ -737,6 +737,7 @@ fn main() {
                         // or stay in dock if there are other windows still open
                     }
                 }
+                #[cfg(target_os = "macos")]
                 tauri::RunEvent::Reopen { .. } => {
                     // Priority order when clicking dock icon:
                     // 1. If any vault window is VISIBLE, show all vault windows on top of launcher
