@@ -322,19 +322,23 @@ fn get_background_color() -> Color {
 }
 
 fn create_main_window(app_handle: &tauri::AppHandle, url: &str) -> tauri::WebviewWindow {
-    tauri::WebviewWindowBuilder::new(app_handle, "main", tauri::WebviewUrl::App(url.into()))
-        .title("KeedaVault")
-        .inner_size(700.0, 580.0)
-        .min_inner_size(700.0, 450.0)
-        .resizable(false)
-        .center()
-        .visible(false) // Start hidden, React will show after theme applied
-        .hidden_title(true)
-        .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .background_color(get_background_color())
-        .accept_first_mouse(true)
-        .build()
-        .unwrap()
+    let mut builder =
+        tauri::WebviewWindowBuilder::new(app_handle, "main", tauri::WebviewUrl::App(url.into()))
+            .title("KeedaVault")
+            .inner_size(700.0, 580.0)
+            .min_inner_size(700.0, 450.0)
+            .resizable(false)
+            .center()
+            .visible(false) // Start hidden, React will show after theme applied
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .background_color(get_background_color());
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.hidden_title(true).accept_first_mouse(true);
+    }
+
+    builder.build().unwrap()
 }
 
 fn main() {
@@ -555,7 +559,7 @@ fn main() {
                             let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let window = tauri::WebviewWindowBuilder::new(
+                            let mut builder = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "password-generator",
                                 tauri::WebviewUrl::App("/?mode=generator".into()),
@@ -563,14 +567,18 @@ fn main() {
                             .title("Password Generator")
                             .inner_size(400.0, 500.0)
                             .resizable(false)
-                            .hidden_title(true)
                             .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
-                            .disable_drag_drop_handler()
-                            .build()
-                            .unwrap();
+                            .disable_drag_drop_handler();
+
+                            #[cfg(target_os = "macos")]
+                            {
+                                builder = builder.hidden_title(true);
+                            }
+
+                            let window = builder.build().unwrap();
                             let _ = window.show();
                         }
                     }
@@ -592,7 +600,7 @@ fn main() {
                             let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let window = tauri::WebviewWindowBuilder::new(
+                            let mut builder = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "about",
                                 tauri::WebviewUrl::App("/?mode=about".into()),
@@ -600,14 +608,18 @@ fn main() {
                             .title("About KeedaVault")
                             .inner_size(360.0, 480.0)
                             .resizable(false)
-                            .hidden_title(true)
                             .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
-                            .disable_drag_drop_handler()
-                            .build()
-                            .unwrap();
+                            .disable_drag_drop_handler();
+
+                            #[cfg(target_os = "macos")]
+                            {
+                                builder = builder.hidden_title(true);
+                            }
+
+                            let window = builder.build().unwrap();
                             let _ = window.show();
                         }
                     }
@@ -617,7 +629,7 @@ fn main() {
                             let _ = window.show();
                             let _ = window.set_focus();
                         } else {
-                            let window = tauri::WebviewWindowBuilder::new(
+                            let mut builder = tauri::WebviewWindowBuilder::new(
                                 app_handle,
                                 "settings",
                                 tauri::WebviewUrl::App("/?mode=settings".into()),
@@ -625,14 +637,18 @@ fn main() {
                             .title("Settings")
                             .inner_size(750.0, 600.0)
                             .resizable(false)
-                            .hidden_title(true)
                             .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
-                            .disable_drag_drop_handler()
-                            .build()
-                            .unwrap();
+                            .disable_drag_drop_handler();
+
+                            #[cfg(target_os = "macos")]
+                            {
+                                builder = builder.hidden_title(true);
+                            }
+
+                            let window = builder.build().unwrap();
                             let _ = window.show();
                         }
                     }
