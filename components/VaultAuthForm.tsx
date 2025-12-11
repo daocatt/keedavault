@@ -4,7 +4,7 @@ import { Lock, Key, FileKey, AlertCircle, HardDrive, X, FolderOpen, PlusCircle, 
 import { FileSystemFileHandle } from '../types';
 import { SavedVaultInfo } from '../services/storageService';
 import { fileSystem } from '../services/fileSystemAdapter';
-import { biometricService } from '../services/biometricService';
+import { modernBiometricService as biometricService } from '../services/modernBiometricService';
 import { getUISettings } from '../services/uiSettingsService';
 
 interface VaultAuthFormProps {

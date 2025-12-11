@@ -3,6 +3,7 @@
 
 mod biometric;
 mod native_keychain;
+mod native_keychain_modern;
 mod secure_storage;
 
 use tauri::menu::IsMenuItem;
@@ -355,7 +356,11 @@ fn main() {
             native_keychain::secure_store_password_native,
             native_keychain::secure_get_password_native,
             native_keychain::secure_delete_password_native,
-            native_keychain::secure_has_password_native
+            native_keychain::secure_has_password_native,
+            native_keychain_modern::secure_store_password_modern,
+            native_keychain_modern::secure_get_password_modern,
+            native_keychain_modern::secure_delete_password_modern,
+            native_keychain_modern::secure_has_password_modern
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
