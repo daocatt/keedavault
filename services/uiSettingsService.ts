@@ -51,6 +51,7 @@ export interface UISettings {
         lockOnSystemSleep: boolean;
         quickUnlockTouchId: boolean;
         rememberKeyFiles: boolean;
+        autoBackup: boolean; // Auto backup before saving
     };
 }
 
@@ -104,6 +105,7 @@ const defaultSettings: UISettings = {
         lockOnSystemSleep: true,
         quickUnlockTouchId: false,
         rememberKeyFiles: false,
+        autoBackup: true,
     },
 };
 

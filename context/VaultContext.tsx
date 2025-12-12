@@ -186,7 +186,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }));
     }, []);
 
-    // Persist changes to disk
+    // Persist changes to disk with integrity protection
     const saveVault = async (id: string, isAutoSave = false) => {
         const vault = vaults.find(v => v.id === id);
         if (!vault) return;
@@ -198,9 +198,48 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const data = await vault.db.save();
 
             if (vault.path) {
-                // Native Tauri Save
-                await writeFile(vault.path, new Uint8Array(data));
-                if (!isAutoSave) addToast({ title: "Saved to file", type: "success" });
+                // Native Tauri Save with integrity protection
+                const { safeSaveDatabase } = await import('../services/databaseIntegrityService');
+                const { getUISettings } = await import('../services/uiSettingsService');
+
+                // Get auto backup setting
+                const settings = await getUISettings();
+                const autoBackupEnabled = settings.security?.autoBackup ?? true;
+
+                const result = await safeSaveDatabase(vault.path, vault.db, {
+                    createBackup: autoBackupEnabled,
+                    maxBackups: 2,
+                    verifyAfterWrite: true,
+                    silent: isAutoSave
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to save database');
+                }
+
+                if (!isAutoSave) {
+                    if (result.verified) {
+                        addToast({
+                            title: "Saved and verified",
+                            description: result.backupPath ? "Backup created" : undefined,
+                            type: "success"
+                        });
+                    } else {
+                        addToast({
+                            title: "Saved to file",
+                            description: "Verification skipped",
+                            type: "success"
+                        });
+                    }
+                }
+
+                console.log('Save result:', {
+                    success: result.success,
+                    verified: result.verified,
+                    backup: result.backupPath,
+                    autoBackupEnabled
+                });
+
             } else if (vault.fileHandle) {
                 const writable = await vault.fileHandle.createWritable();
                 await writable.write(data);
@@ -466,6 +505,11 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // Explicitly set credentials to ensure they are available for verification later
             db.credentials = credentials;
 
+            // Apply compatibility fixes to ensure KeePassXC compatibility
+            // This fixes AutoType fields that may have null/undefined values
+            const { applyCompatibilityFixes } = await import('../services/kdbxService');
+            applyCompatibilityFixes(db);
+
             const parsedStructure = parseKdbxStructure(db);
 
             const newVault: Vault = {
@@ -518,22 +562,28 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                                 await biometricService.storePassword(path, password);
                                 console.log('Touch ID: Password saved successfully');
                                 addToast({ title: "Touch ID enabled for this vault", type: "success" });
-                                // Explicitly tell user it worked (for debugging)
-                                // await message('Touch ID has been enabled for this vault.', { title: 'Touch ID Setup', kind: 'info' });
                             } catch (saveErr) {
                                 console.error('Touch ID: Failed to save password:', saveErr);
-                                await message(`Failed to enable Touch ID: ${saveErr}`, { title: 'Touch ID Error', kind: 'error' });
+                                // Don't show error dialog, just log it
+                                // Touch ID is optional, failure shouldn't block vault access
+                                console.warn('Touch ID setup failed, but vault is still accessible with password');
                             }
+                        } else {
+                            console.log('Touch ID: Biometric not available, skipping password save');
                         }
                     }
                 } catch (err) {
                     console.error('Touch ID: Error in setup:', err);
-                    await message(`Touch ID setup error: ${err}`, { title: 'Touch ID Error', kind: 'error' });
+                    // Don't show error dialog for Touch ID failures
+                    console.warn('Touch ID setup failed, but vault is still accessible with password');
                 }
             } else {
                 console.log('VaultContext: Path is missing, skipping Touch ID save.');
                 // await message('Touch ID skipped: No file path available.', { title: 'Touch ID Skipped', kind: 'warning' });
             }
+
+            // Emit event to enable menu items
+            emit('vault-unlocked').catch(console.error);
 
             addToast({ title: "Vault unlocked successfully", type: "success" });
         } catch (error: any) {

@@ -133,6 +133,63 @@
                   "path": "$LOCALDATA/**"
                 }
               ]
+            },
+            {
+              "identifier": "fs:allow-remove",
+              "allow": [
+                {
+                  "path": "$HOME/**"
+                },
+                {
+                  "path": "$DESKTOP/**"
+                },
+                {
+                  "path": "$DOCUMENT/**"
+                },
+                {
+                  "path": "$DOWNLOAD/**"
+                },
+                {
+                  "path": "$APPDATA/**"
+                },
+                {
+                  "path": "$LOCALDATA/**"
+                }
+              ]
+            },
+            {
+              "identifier": "fs:allow-read-dir",
+              "allow": [
+                {
+                  "path": "$HOME/**"
+                },
+                {
+                  "path": "$DESKTOP/**"
+                },
+                {
+                  "path": "$DOCUMENT/**"
+                },
+                {
+                  "path": "$DOWNLOAD/**"
+                },
+                {
+                  "path": "$APPDATA/**"
+                },
+                {
+                  "path": "$LOCALDATA/**"
+                }
+              ]
+            },
+            {
+              "identifier": "fs:allow-mkdir",
+              "allow": [
+                {
+                  "path": "$APPDATA/**"
+                },
+                {
+                  "path": "$LOCALDATA/**"
+                }
+              ]
             }
           ]
         },
