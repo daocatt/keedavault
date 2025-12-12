@@ -195,6 +195,10 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // Only block UI for manual saves
             if (!isAutoSave) setIsUnlocking(true);
 
+            // Apply compatibility fixes before saving to ensure KeePassXC can open the database
+            const { applyCompatibilityFixes } = await import('../services/kdbxService');
+            applyCompatibilityFixes(vault.db);
+
             const data = await vault.db.save();
 
             if (vault.path) {

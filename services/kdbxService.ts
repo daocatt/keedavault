@@ -39,8 +39,51 @@ export const initializeArgon2 = () => {
         }
     });
 
+    // Patch KdbxGroup.prototype.write to skip EnableSearching/EnableAutoType
+    // This fixes KeePassXC compatibility issues where it rejects null/empty values
+    patchKdbxGroupWrite();
+
     argon2Initialized = true;
 };
+
+// --- KeePassXC Compatibility Patch ---
+let groupWritePatched = false;
+
+function patchKdbxGroupWrite() {
+    if (groupWritePatched) return;
+
+    const KdbxGroup = (kdbxweb as any).KdbxGroup;
+    if (!KdbxGroup?.prototype?.write) {
+        console.warn('Cannot patch KdbxGroup.write - not available');
+        return;
+    }
+
+    const originalWrite = KdbxGroup.prototype.write;
+
+    KdbxGroup.prototype.write = function (parentNode: Node, ctx: any) {
+        // Call original write
+        originalWrite.call(this, parentNode, ctx);
+
+        // Find and remove the EnableSearching and EnableAutoType elements from the written XML
+        // They are written with values that KeePassXC doesn't accept
+        const groupNode = parentNode.lastChild as Element;
+        if (groupNode && groupNode.tagName === 'Group') {
+            const toRemove: Element[] = [];
+            for (let i = 0; i < groupNode.childNodes.length; i++) {
+                const child = groupNode.childNodes[i] as Element;
+                if (child.tagName === 'EnableSearching' || child.tagName === 'EnableAutoType') {
+                    toRemove.push(child);
+                }
+            }
+            for (const elem of toRemove) {
+                groupNode.removeChild(elem);
+            }
+        }
+    };
+
+    groupWritePatched = true;
+    console.log('KdbxGroup.write patched for KeePassXC compatibility');
+}
 
 // --- Helper: Robust UUID Comparison ---
 const uuidsEqual = (a: any, b: any): boolean => {
@@ -63,20 +106,16 @@ export const createDatabase = (name: string, password: string, keyFile?: ArrayBu
     db.header.cipherUuid = kdbxweb.Consts.CipherId.ChaCha20;
 
     // Create standard default groups
+    // Note: We don't set enableSearching to avoid KeePassXC compatibility issues
+    // Groups will inherit the default behavior (enabled)
     const root = db.getDefaultGroup();
     if (root) {
-        const g1 = db.createGroup(root, 'General');
-        g1.enableSearching = true;
-        const g2 = db.createGroup(root, 'Windows');
-        g2.enableSearching = true;
-        const g3 = db.createGroup(root, 'Network');
-        g3.enableSearching = true;
-        const g4 = db.createGroup(root, 'Internet');
-        g4.enableSearching = true;
-        const g5 = db.createGroup(root, 'eMail');
-        g5.enableSearching = true;
-        const g6 = db.createGroup(root, 'Homebanking');
-        g6.enableSearching = true;
+        db.createGroup(root, 'General');
+        db.createGroup(root, 'Windows');
+        db.createGroup(root, 'Network');
+        db.createGroup(root, 'Internet');
+        db.createGroup(root, 'eMail');
+        db.createGroup(root, 'Homebanking');
     }
 
     return db;
@@ -146,13 +185,34 @@ const fixAutoTypeFields = (group: kdbxweb.KdbxGroup): void => {
 };
 
 /**
- * Apply compatibility fixes to database after loading
+ * Fix EnableSearching and EnableAutoType fields for KeePassXC compatibility
+ * KeePassXC doesn't accept "null", "", "true", "false" as written by kdbxweb
+ * We delete these properties entirely so kdbxweb won't write them to XML
+ */
+const fixGroupSearchingFields = (group: kdbxweb.KdbxGroup): void => {
+    // Delete the properties entirely to prevent kdbxweb from writing them
+    // This is the only reliable way to prevent the Invalid EnableSearching value error
+    // @ts-ignore - Deleting optional properties for compatibility
+    delete group.enableSearching;
+    // @ts-ignore - Deleting optional properties for compatibility
+    delete (group as any).enableAutoType;
+
+    // Recursively fix subgroups
+    for (const subgroup of group.groups) {
+        fixGroupSearchingFields(subgroup);
+    }
+};
+
+/**
+ * Apply compatibility fixes before saving database
  * This ensures the database can be saved in a format compatible with KeePassXC
  */
 export const applyCompatibilityFixes = (db: kdbxweb.Kdbx): void => {
     const root = db.getDefaultGroup();
     if (root) {
         fixAutoTypeFields(root);
+        // Delete enableSearching/enableAutoType to prevent KeePassXC errors
+        fixGroupSearchingFields(root);
     }
 };
 
