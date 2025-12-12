@@ -8,6 +8,7 @@ mod secure_storage;
 
 use tauri::menu::IsMenuItem;
 use tauri::window::Color;
+use tauri::Listener;
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
@@ -69,6 +70,8 @@ fn set_database_menu_state(app_handle: tauri::AppHandle, unlocked: bool) {
                 if let tauri::menu::MenuItemKind::Submenu(submenu) = item {
                     let text = submenu.text().unwrap_or_default();
                     if text == "Database" {
+                        // Items to enable/disable based on vault state
+                        // Note: password_generator is NOT in this list, so it stays enabled
                         let db_items = [
                             "create_entry",
                             "lock_database",
@@ -334,7 +337,10 @@ fn create_main_window(app_handle: &tauri::AppHandle, url: &str) -> tauri::Webvie
 
     #[cfg(target_os = "macos")]
     {
-        builder = builder.hidden_title(true).accept_first_mouse(true);
+        builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
+            .accept_first_mouse(true);
     }
 
     builder.build().unwrap()
@@ -573,7 +579,9 @@ fn main() {
 
                             #[cfg(target_os = "macos")]
                             {
-                                builder = builder.hidden_title(true);
+                                builder = builder
+                                    .title_bar_style(tauri::TitleBarStyle::Overlay)
+                                    .hidden_title(true);
                             }
 
                             let window = builder.build().unwrap();
@@ -641,7 +649,9 @@ fn main() {
 
                             #[cfg(target_os = "macos")]
                             {
-                                builder = builder.hidden_title(true);
+                                builder = builder
+                                    .title_bar_style(tauri::TitleBarStyle::Overlay)
+                                    .hidden_title(true);
                             }
 
                             let window = builder.build().unwrap();
@@ -714,6 +724,18 @@ fn main() {
                     }
                     _ => {}
                 }
+            });
+
+            // Listen for vault unlock/lock events to update menu state
+            let app_handle = app.handle().clone();
+            let app_handle_unlock = app_handle.clone();
+            let _unlock_listener = app_handle.listen("vault-unlocked", move |_event| {
+                set_database_menu_state(app_handle_unlock.clone(), true);
+            });
+
+            let app_handle_lock = app_handle.clone();
+            let _lock_listener = app_handle.listen("vault-locked", move |_event| {
+                set_database_menu_state(app_handle_lock.clone(), false);
             });
 
             Ok(())
