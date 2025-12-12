@@ -156,6 +156,9 @@ fn update_window_menu(app_handle: tauri::AppHandle) {
                                 .unwrap(),
                             );
 
+                        // Check unlocked state before moving vault_windows
+                        let is_unlocked = !vault_windows.is_empty();
+
                         // Add vault windows if any exist
                         if !vault_windows.is_empty() {
                             window_menu_builder = window_menu_builder.separator();
@@ -179,7 +182,9 @@ fn update_window_menu(app_handle: tauri::AppHandle) {
 
                         if let Ok(new_window_menu) = window_menu_builder.build() {
                             // Rebuild entire menu with updated Window menu
-                            let _ = rebuild_menu_with_window_menu(handle, new_window_menu);
+                            // If there are vault windows, we consider the database unlocked
+                            let _ =
+                                rebuild_menu_with_window_menu(handle, new_window_menu, is_unlocked);
                         }
 
                         return;
@@ -193,6 +198,7 @@ fn update_window_menu(app_handle: tauri::AppHandle) {
 fn rebuild_menu_with_window_menu(
     handle: &tauri::AppHandle,
     window_menu: tauri::menu::Submenu<tauri::Wry>,
+    is_unlocked: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "macos")]
     {
@@ -255,24 +261,24 @@ fn rebuild_menu_with_window_menu(
             .item(
                 &MenuItemBuilder::with_id("create_entry", "Create Entry")
                     .accelerator("CmdOrCtrl+I")
-                    .enabled(false)
+                    .enabled(is_unlocked)
                     .build(handle)?,
             )
             .separator()
             .item(
                 &MenuItemBuilder::with_id("lock_database", "Lock Database")
                     .accelerator("CmdOrCtrl+L")
-                    .enabled(false)
+                    .enabled(is_unlocked)
                     .build(handle)?,
             )
             .item(
                 &MenuItemBuilder::with_id("change_credentials", "Change Credentials")
-                    .enabled(false)
+                    .enabled(is_unlocked)
                     .build(handle)?,
             )
             .item(
                 &MenuItemBuilder::with_id("database_setting", "Database Settings")
-                    .enabled(false)
+                    .enabled(is_unlocked)
                     .build(handle)?,
             )
             .build()?;

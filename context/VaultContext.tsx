@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { save, ask, message } from '@tauri-apps/plugin-dialog';
 import { emit } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import * as kdbxweb from 'kdbxweb';
 import { Vault, VaultGroup, VaultEntry, FileSystemFileHandle, EntryFormData } from '../types';
+// ... rest of imports unchanged
 import {
     parseKdbxStructure,
     createDatabase,
@@ -589,6 +591,9 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // Emit event to enable menu items
             emit('vault-unlocked').catch(console.error);
 
+            // Directly update macOS menu state
+            invoke('set_database_menu_state', { unlocked: true }).catch(console.error);
+
             addToast({ title: "Vault unlocked successfully", type: "success" });
         } catch (error: any) {
             console.error("Failed to unlock vault:", error);
@@ -881,6 +886,9 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (vault) {
                     // Emit event to close child windows
                     emit('vault-locked').catch(console.error);
+
+                    // Directly update macOS menu state
+                    invoke('set_database_menu_state', { unlocked: false }).catch(console.error);
 
                     // Trigger the unlock modal with current vault info
                     document.dispatchEvent(new CustomEvent('open-unlock-modal', {
