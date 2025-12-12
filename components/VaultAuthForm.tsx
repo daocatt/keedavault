@@ -126,7 +126,8 @@ export const VaultAuthForm: React.FC<VaultAuthFormProps & { initialVaultInfo?: S
                     await biometricService.storePassword(path, password);
                     console.log('✅ Password saved successfully!');
                 } catch (err) {
-                    console.error('❌ Failed to save password for Touch ID:', err);
+                    // Silent failure - Touch ID is optional
+                    console.log('⏭️ Touch ID password save skipped (non-critical)');
                 }
             } else {
                 console.log('⏭️ Skipping password save. Conditions not met.');

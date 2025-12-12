@@ -18,10 +18,11 @@ jobs:
             args: '--target aarch64-apple-darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-          - platform: 'windows-latest'
-            args: ''
-          - platform: 'ubuntu-22.04'
-            args: ''
+          # Temporarily disabled - will re-enable later
+          # - platform: 'windows-latest'
+          #   args: ''
+          # - platform: 'ubuntu-22.04'
+          #   args: ''
 
     runs-on: ${{ matrix.platform }}
     steps:

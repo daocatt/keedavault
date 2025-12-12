@@ -84,6 +84,35 @@ export const createDatabase = (name: string, password: string, keyFile?: ArrayBu
 
 // --- CRUD Operations ---
 
+/**
+ * Detect if a file path is in cloud storage
+ * Cloud storage includes: iCloud Drive, Dropbox, Google Drive, OneDrive
+ */
+export const isInCloudStorage = (filePath: string): boolean => {
+    // Normalize path separators
+    const normalizedPath = filePath.replace(/\\/g, '/');
+
+    // Cloud storage path patterns
+    const cloudPatterns = [
+        // macOS
+        '/Library/Mobile Documents/com~apple~CloudDocs',  // iCloud Drive
+        '/Dropbox/',
+        '/Google Drive/',
+        '/OneDrive/',
+
+        // Windows
+        '/OneDrive/',
+        '/Dropbox/',
+        '/Google Drive/',
+
+        // Linux
+        '/Dropbox/',
+        '/gdrive/',
+    ];
+
+    return cloudPatterns.some(pattern => normalizedPath.includes(pattern));
+};
+
 // Helper: Generate otpauth URL
 const generateOtpUrl = (secret: string, label: string, issuer: string = 'KeedaVault'): string | undefined => {
     const clean = secret.replace(/\s/g, '').toUpperCase();
@@ -91,6 +120,40 @@ const generateOtpUrl = (secret: string, label: string, issuer: string = 'KeedaVa
     // Simple validation for Base32
     if (!/^[A-Z2-7=]+$/.test(clean)) return undefined;
     return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(label)}?secret=${clean}&issuer=${encodeURIComponent(issuer)}`;
+};
+
+/**
+ * Fix AutoType fields for KeePassXC compatibility
+ * KeePassXC requires explicit boolean value for AutoType.enabled
+ * This function ensures all entries have valid AutoType settings
+ */
+const fixAutoTypeFields = (group: kdbxweb.KdbxGroup): void => {
+    // Fix entries in current group
+    for (const entry of group.entries) {
+        if (!entry.autoType || entry.autoType.enabled === null || entry.autoType.enabled === undefined) {
+            entry.autoType = {
+                enabled: true,
+                obfuscation: 0,
+                items: []
+            };
+        }
+    }
+
+    // Recursively fix entries in subgroups
+    for (const subgroup of group.groups) {
+        fixAutoTypeFields(subgroup);
+    }
+};
+
+/**
+ * Apply compatibility fixes to database after loading
+ * This ensures the database can be saved in a format compatible with KeePassXC
+ */
+export const applyCompatibilityFixes = (db: kdbxweb.Kdbx): void => {
+    const root = db.getDefaultGroup();
+    if (root) {
+        fixAutoTypeFields(root);
+    }
 };
 
 export const findGroup = (group: kdbxweb.KdbxGroup, uuid: string): kdbxweb.KdbxGroup | null => {
@@ -250,6 +313,14 @@ export const addEntryToDb = (db: kdbxweb.Kdbx, groupUuid: string, data: EntryFor
     if (data.icon !== undefined) {
         entry.icon = data.icon;
     }
+
+    // Set AutoType to ensure KeePassXC compatibility
+    // KeePassXC requires explicit boolean value for enabled field
+    entry.autoType = {
+        enabled: true,
+        obfuscation: 0,
+        items: []
+    };
 
     if (data.email) {
         entry.fields.set('Email', data.email);
