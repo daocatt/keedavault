@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Shield, Globe, Terminal, Check, Moon, Sun, Monitor, ChevronRight, Clock, Lock, FileText as FileTextIcon, Hash, Eye, Fingerprint, Save, XCircle, Power, Info } from 'lucide-react';
 import { getUISettings, saveUISettings, UISettings } from '../services/uiSettingsService';
 import { Image } from '@tauri-apps/api/image';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 type Tab = 'general' | 'security' | 'browser' | 'ssh';
@@ -132,20 +131,28 @@ export const SettingsWindow: React.FC = () => {
             await saveUISettings(newSettings);
 
             // Update window icon (titlebar only - dock icon requires app restart)
-            const response = await fetch(icon.path);
-            const blob = await response.blob();
-            const buffer = await blob.arrayBuffer();
-            const image = await Image.fromBytes(new Uint8Array(buffer));
+            try {
+                const response = await fetch(icon.path);
+                const blob = await response.blob();
+                const buffer = await blob.arrayBuffer();
+                const image = await Image.fromBytes(new Uint8Array(buffer));
 
-            // Set icon for current window
-            await getCurrentWindow().setIcon(image);
+                // Set icon for current window using Tauri v2 API
+                const window = getCurrentWebviewWindow();
+                await window.setIcon(image);
+
+                console.log('Window icon updated successfully');
+            } catch (iconError) {
+                console.warn('Failed to update window icon (non-critical):', iconError);
+                // Continue even if window icon update fails
+            }
 
             // Show notification
             document.dispatchEvent(new CustomEvent('show-toast', {
                 detail: {
                     id: crypto.randomUUID(),
-                    type: 'info',
-                    title: 'Window Icon Updated',
+                    type: 'success',
+                    title: 'App Icon Changed',
                     description: 'Restart the app to see the new dock icon'
                 }
             }));
