@@ -1,8 +1,8 @@
 [package]
 name = "keedavault"
-version = "0.2.1"
+version = "0.2.3"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["bsdev"]
 edition = "2021"
 
 [build-dependencies]
