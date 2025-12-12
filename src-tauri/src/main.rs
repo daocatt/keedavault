@@ -330,7 +330,6 @@ fn create_main_window(app_handle: &tauri::AppHandle, url: &str) -> tauri::Webvie
             .resizable(false)
             .center()
             .visible(false) // Start hidden, React will show after theme applied
-            .title_bar_style(tauri::TitleBarStyle::Overlay)
             .background_color(get_background_color());
 
     #[cfg(target_os = "macos")]
@@ -567,7 +566,6 @@ fn main() {
                             .title("Password Generator")
                             .inner_size(400.0, 500.0)
                             .resizable(false)
-                            .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
@@ -608,7 +606,6 @@ fn main() {
                             .title("About KeedaVault")
                             .inner_size(360.0, 480.0)
                             .resizable(false)
-                            .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
@@ -637,7 +634,6 @@ fn main() {
                             .title("Settings")
                             .inner_size(750.0, 600.0)
                             .resizable(false)
-                            .title_bar_style(tauri::TitleBarStyle::Overlay)
                             .center()
                             .visible(false)
                             .background_color(get_background_color())
