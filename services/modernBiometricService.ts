@@ -57,8 +57,10 @@ export const modernBiometricService = {
             await invoke('secure_store_password_modern', { vaultPath: encodedPath, password });
             console.log('[ModernBiometricService] Password stored successfully (NO password prompt!)');
         } catch (error) {
-            console.error('Failed to store password securely:', error);
-            throw error;
+            console.error('[ModernBiometricService] Failed to store password securely:', error);
+            console.warn('[ModernBiometricService] This is non-critical - vault can still be accessed with password');
+            // Re-throw to let caller handle it
+            throw new Error(`Touch ID password storage failed: ${error}`);
         }
     },
 
