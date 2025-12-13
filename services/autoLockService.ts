@@ -1,0 +1,183 @@
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getUISettings } from './uiSettingsService';
+
+/**
+ * Auto-Lock Service
+ * Handles automatic locking of vaults based on various security settings:
+ * - Lock on inactivity (idle timer)
+ * - Lock in background (window blur/minimize)
+ * - Lock on database switch
+ * - Lock on system sleep/screensaver
+ */
+
+let inactivityTimer: number | null = null;
+let backgroundTimer: number | null = null;
+let lastActivityTime: number = Date.now();
+let isInBackground: boolean = false;
+
+/**
+ * Reset the inactivity timer
+ */
+export const resetInactivityTimer = () => {
+    lastActivityTime = Date.now();
+};
+
+/**
+ * Initialize auto-lock listeners
+ * Call this when a vault is unlocked
+ */
+export const initializeAutoLock = async (lockCallback: () => void) => {
+    const settings = await getUISettings();
+
+    // Clear any existing timers
+    cleanup();
+
+    // 1. Lock on Inactivity
+    if (settings.security?.lockOnInactivity && settings.security.lockOnInactivity > 0) {
+        startInactivityMonitoring(settings.security.lockOnInactivity, lockCallback);
+    }
+
+    // 2. Lock in Background
+    if (settings.security?.lockOnBackgroundDelay && settings.security.lockOnBackgroundDelay > 0) {
+        startBackgroundMonitoring(settings.security.lockOnBackgroundDelay, lockCallback);
+    }
+
+    // 3. Lock on System Sleep (macOS)
+    if (settings.security?.lockOnSystemSleep) {
+        startSystemSleepMonitoring(lockCallback);
+    }
+};
+
+/**
+ * Start monitoring user activity for inactivity timeout
+ */
+const startInactivityMonitoring = (timeoutSeconds: number, lockCallback: () => void) => {
+    // Reset activity time
+    lastActivityTime = Date.now();
+
+    // Add activity listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+        document.addEventListener(event, resetInactivityTimer, { passive: true });
+    });
+
+    // Check inactivity every second
+    inactivityTimer = window.setInterval(() => {
+        const idleTime = (Date.now() - lastActivityTime) / 1000;
+
+        if (idleTime >= timeoutSeconds) {
+            console.log(`Auto-lock: Inactivity timeout (${timeoutSeconds}s) reached`);
+            lockCallback();
+            cleanup();
+        }
+    }, 1000);
+
+    console.log(`Auto-lock: Inactivity monitoring started (${timeoutSeconds}s)`);
+};
+
+/**
+ * Start monitoring window focus for background timeout
+ */
+const startBackgroundMonitoring = (delaySeconds: number, lockCallback: () => void) => {
+    const tauriWindow = getCurrentWebviewWindow();
+
+    // Listen for window blur (goes to background)
+    const handleBlur = async () => {
+        isInBackground = true;
+        console.log('Auto-lock: Window went to background');
+
+        // If delay is 1 second or "immediately", lock right away
+        if (delaySeconds <= 1) {
+            console.log('Auto-lock: Locking immediately on background');
+            lockCallback();
+            return;
+        }
+
+        // Otherwise, start a timer
+        backgroundTimer = window.setTimeout(() => {
+            if (isInBackground) {
+                console.log(`Auto-lock: Background timeout (${delaySeconds}s) reached`);
+                lockCallback();
+            }
+        }, delaySeconds * 1000);
+    };
+
+    // Listen for window focus (comes back to foreground)
+    const handleFocus = () => {
+        isInBackground = false;
+        console.log('Auto-lock: Window came to foreground');
+
+        // Cancel background timer if it exists
+        if (backgroundTimer !== null) {
+            window.clearTimeout(backgroundTimer);
+            backgroundTimer = null;
+            console.log('Auto-lock: Background timer cancelled');
+        }
+    };
+
+    tauriWindow.listen('tauri://blur', handleBlur);
+    tauriWindow.listen('tauri://focus', handleFocus);
+
+    console.log(`Auto-lock: Background monitoring started (${delaySeconds}s)`);
+};
+
+/**
+ * Start monitoring for system sleep/screensaver (macOS only)
+ * This requires Tauri backend support
+ */
+const startSystemSleepMonitoring = (lockCallback: () => void) => {
+    const window = getCurrentWebviewWindow();
+
+    // Listen for system sleep event from Tauri backend
+    window.listen('system-sleep', () => {
+        console.log('Auto-lock: System sleep detected');
+        lockCallback();
+    });
+
+    // Listen for screensaver start event from Tauri backend
+    window.listen('screensaver-start', () => {
+        console.log('Auto-lock: Screensaver detected');
+        lockCallback();
+    });
+
+    console.log('Auto-lock: System sleep monitoring started');
+};
+
+/**
+ * Cleanup all auto-lock timers and listeners
+ * Call this when a vault is locked or closed
+ */
+export const cleanup = () => {
+    // Clear inactivity timer
+    if (inactivityTimer !== null) {
+        window.clearInterval(inactivityTimer);
+        inactivityTimer = null;
+    }
+
+    // Clear background timer
+    if (backgroundTimer !== null) {
+        window.clearTimeout(backgroundTimer);
+        backgroundTimer = null;
+    }
+
+    // Remove activity listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer);
+    });
+
+    console.log('Auto-lock: Cleanup complete');
+};
+
+/**
+ * Handle database switch
+ * Call this when switching between vaults
+ */
+export const handleDatabaseSwitch = async (lockCallback: () => void) => {
+    const settings = await getUISettings();
+
+    if (settings.security?.lockOnSwitchDatabase) {
+        console.log('Auto-lock: Database switch detected, locking previous vault');
+        lockCallback();
+    }
+};
