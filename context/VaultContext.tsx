@@ -847,6 +847,45 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addToast({ title: "Credentials updated", type: "success" });
     };
 
+    // Wrapper for setActiveVault that handles lock-on-database-switch
+    const handleSetActiveVault = async (newVaultId: string) => {
+        // Check if we're switching vaults (not just setting the first vault)
+        if (activeVaultId && activeVaultId !== newVaultId) {
+            const settings = await import('../services/uiSettingsService').then(m => m.getUISettings());
+
+            if (settings.security?.lockOnSwitchDatabase) {
+                console.log('Auto-lock: Database switch detected, locking current vault');
+                // Lock the current vault before switching
+                lockVault(activeVaultId);
+            }
+        }
+
+        // Set the new active vault
+        setActiveVaultId(newVaultId);
+    };
+
+    const lockVault = (id: string) => {
+        const vault = vaults.find(v => v.id === id);
+        if (vault) {
+            // Emit event to close child windows
+            emit('vault-locked').catch(console.error);
+
+            // Directly update macOS menu state
+            invoke('set_database_menu_state', { unlocked: false }).catch(console.error);
+
+            // Trigger the unlock modal with current vault info
+            document.dispatchEvent(new CustomEvent('open-unlock-modal', {
+                detail: {
+                    path: vault.path,
+                    filename: vault.filename,
+                    lastOpened: Date.now()
+                }
+            }));
+            // Remove the vault from active state (effectively locking it)
+            removeVault(id);
+        }
+    };
+
     return (
         <VaultContext.Provider value={{
             vaults,
@@ -857,7 +896,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             createVault,
             saveVault,
             removeVault,
-            setActiveVault: setActiveVaultId,
+            setActiveVault: handleSetActiveVault,
             setActiveGroup: setActiveGroupId,
             setSearchQuery,
             activeEntries,
@@ -881,27 +920,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             isEntryInRecycleBin,
             onEmptyRecycleBin,
             changeCredentials,
-            lockVault: (id: string) => {
-                const vault = vaults.find(v => v.id === id);
-                if (vault) {
-                    // Emit event to close child windows
-                    emit('vault-locked').catch(console.error);
-
-                    // Directly update macOS menu state
-                    invoke('set_database_menu_state', { unlocked: false }).catch(console.error);
-
-                    // Trigger the unlock modal with current vault info
-                    document.dispatchEvent(new CustomEvent('open-unlock-modal', {
-                        detail: {
-                            path: vault.path,
-                            filename: vault.filename,
-                            lastOpened: Date.now()
-                        }
-                    }));
-                    // Remove the vault from active state (effectively locking it)
-                    removeVault(id);
-                }
-            }
+            lockVault
         }}>
             {children}
         </VaultContext.Provider>
