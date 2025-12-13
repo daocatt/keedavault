@@ -86,8 +86,8 @@ const startBackgroundMonitoring = (delaySeconds: number, lockCallback: () => voi
         isInBackground = true;
         console.log('Auto-lock: Window went to background');
 
-        // If delay is 1 second or "immediately", lock right away
-        if (delaySeconds <= 1) {
+        // If delay is 1 second (Immediately option), lock right away
+        if (delaySeconds === 1) {
             console.log('Auto-lock: Locking immediately on background');
             lockCallback();
             return;
