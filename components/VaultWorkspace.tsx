@@ -21,6 +21,7 @@ import { ChangeCredentialsModal } from './ChangeCredentialsModal';
 import { DatabasePropertiesModal } from './DatabasePropertiesModal';
 import { updateWindowMenu } from '../services/windowMenuService';
 import { VaultGroup, EntryFormData } from '../types';
+import { initializeAutoLock, cleanup as cleanupAutoLock } from '../services/autoLockService';
 
 export const VaultWorkspace: React.FC = () => {
     const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
@@ -51,15 +52,30 @@ export const VaultWorkspace: React.FC = () => {
     }, [vaultName]);
 
     // Enable database menu items when vault is unlocked and update window menu
+    // Also initialize auto-lock monitoring
     useEffect(() => {
         invoke('set_database_menu_state', { unlocked: true });
         updateWindowMenu(); // Update Window menu to show this vault
+
+        // Initialize auto-lock monitoring
+        if (activeVaultId) {
+            initializeAutoLock(() => {
+                // Lock callback
+                if (activeVaultId) {
+                    console.log('Auto-lock: Locking vault', activeVaultId);
+                    lockVault(activeVaultId);
+                }
+            });
+        }
+
         return () => {
             invoke('set_database_menu_state', { unlocked: false });
             // Update menu again when component unmounts (vault closes)
             updateWindowMenu();
+            // Cleanup auto-lock monitoring
+            cleanupAutoLock();
         };
-    }, []);
+    }, [activeVaultId, lockVault]);
 
     const { addToast } = useToast();
 
