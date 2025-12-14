@@ -351,26 +351,38 @@ export const SettingsWindow: React.FC = () => {
                                             icon={Clock}
                                             value={String(settings.security.lockOnInactivity)}
                                             onChange={(v) => updateSetting('security', 'lockOnInactivity', parseInt(v))}
-                                            options={[0, 60, 300, 600, 1800, 3600].map(n => ({ label: n === 0 ? 'Never' : `${n / 60} minutes`, value: String(n) }))}
+                                            options={[
+                                                { label: 'Never', value: '0' },
+                                                { label: 'Immediately', value: '1' },
+                                                { label: '30 seconds', value: '30' },
+                                                { label: '1 minute', value: '60' },
+                                                { label: '5 minutes', value: '300' },
+                                                { label: '10 minutes', value: '600' },
+                                                { label: '15 minutes', value: '900' },
+                                                { label: '30 minutes', value: '1800' }
+                                            ]}
                                         />
                                         <Select
                                             label="Lock in Background"
                                             icon={Eye}
                                             value={String(settings.security.lockOnBackgroundDelay)}
                                             onChange={(v) => updateSetting('security', 'lockOnBackgroundDelay', parseInt(v))}
-                                            options={[0, 1, 10, 30, 60, 300].map(n => ({ label: n === 0 ? 'Never' : (n === 1 ? 'Immediately' : `${n} seconds`), value: String(n) }))}
+                                            options={[
+                                                { label: 'Never', value: '0' },
+                                                { label: 'Immediately', value: '1' },
+                                                { label: '30 seconds', value: '30' },
+                                                { label: '1 minute', value: '60' },
+                                                { label: '5 minutes', value: '300' },
+                                                { label: '10 minutes', value: '600' },
+                                                { label: '15 minutes', value: '900' },
+                                                { label: '30 minutes', value: '1800' }
+                                            ]}
                                         />
                                         <Toggle
                                             label="Lock on Window Close"
                                             icon={XCircle}
                                             checked={settings.security.lockOnWindowClose}
                                             onChange={(v) => updateSetting('security', 'lockOnWindowClose', v)}
-                                        />
-                                        <Toggle
-                                            label="Lock on Database Switch"
-                                            icon={Settings}
-                                            checked={settings.security.lockOnSwitchDatabase}
-                                            onChange={(v) => updateSetting('security', 'lockOnSwitchDatabase', v)}
                                         />
                                         <Toggle
                                             label="Lock on System Sleep"
