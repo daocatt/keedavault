@@ -5,6 +5,7 @@ import { open, message } from '@tauri-apps/plugin-dialog';
 import { exists } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { formatDistanceToNow } from 'date-fns';
+import { getVersion } from '@tauri-apps/api/app';
 import { getRecentVaults, saveRecentVault, SavedVaultInfo, removeRecentVault } from '../services/storageService';
 import { HardDrive, Plus, FolderOpen, Clock, ShieldCheck, X } from 'lucide-react';
 import appIcon from '../app-icon.png';
@@ -18,6 +19,7 @@ export const Launcher: React.FC = () => {
     const [recentVaults, setRecentVaults] = useState<SavedVaultInfo[]>([]);
     const [recentCount, setRecentCount] = useState(5);
     const [isOpening, setIsOpening] = useState(false);
+    const [appVersion, setAppVersion] = useState('...');
 
     useEffect(() => {
         const fetchAndSetVaults = async () => {
@@ -40,6 +42,19 @@ export const Launcher: React.FC = () => {
         return () => {
             unlisten.then(f => f());
         };
+    }, []);
+
+    useEffect(() => {
+        const fetchVersion = async () => {
+            try {
+                const v = await getVersion();
+                setAppVersion(v);
+            } catch (e) {
+                console.error('Failed to get app version:', e);
+                setAppVersion('0.2.6'); // Fallback
+            }
+        };
+        fetchVersion();
     }, []);
 
 
@@ -457,7 +472,7 @@ export const Launcher: React.FC = () => {
 
             {/* Footer */}
             <div className="absolute bottom-4 left-0 right-0 text-center text-[10px]" style={{ color: 'var(--color-text-placeholder)' }}>
-                <p>KeedaVault v0.1.0 • Local Storage Only</p>
+                <p>KeedaVault v{appVersion} • Local Storage Only</p>
             </div>
         </div>
     );
