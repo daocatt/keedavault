@@ -1788,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "keedavault"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "block",
  "chrono",
