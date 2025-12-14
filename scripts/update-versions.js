@@ -34,9 +34,20 @@ cargoToml = cargoToml.replace(/^version = "[^"]+"/m, `version = "${version}"`);
 writeFileSync(cargoTomlPath, cargoToml);
 console.log('✓ Updated src-tauri/Cargo.toml');
 
-// 3. Git add the changed files
+// 3. Update Cargo.lock
+// We need to run cargo check to update the lock file with the new version
 try {
-    execSync(`git add "${tauriConfPath}" "${cargoTomlPath}"`);
+    console.log('Running cargo check to update Cargo.lock...');
+    execSync('cargo check', { cwd: join(rootDir, 'src-tauri'), stdio: 'ignore' });
+    console.log('✓ Updated src-tauri/Cargo.lock');
+} catch (e) {
+    console.warn('⚠️ Failed to update Cargo.lock (is cargo installed?). Proceeding without it.');
+}
+
+// 4. Git add the changed files
+const cargoLockPath = join(rootDir, 'src-tauri', 'Cargo.lock');
+try {
+    execSync(`git add "${tauriConfPath}" "${cargoTomlPath}" "${cargoLockPath}"`);
     console.log('✓ Staged changes for commit');
 } catch (e) {
     console.error('Failed to git add files:', e);
