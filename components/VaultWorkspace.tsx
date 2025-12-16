@@ -22,12 +22,31 @@ import { DatabasePropertiesModal } from './DatabasePropertiesModal';
 import { updateWindowMenu } from '../services/windowMenuService';
 import { VaultGroup, EntryFormData } from '../types';
 import { initializeAutoLock, cleanup as cleanupAutoLock } from '../services/autoLockService';
+import { saveVaultState, getVaultState } from '../services/vaultStateService';
 
 export const VaultWorkspace: React.FC = () => {
     const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
     const { vaults, activeVaultId, activeGroupId, activeEntries, onAddGroup, onUpdateGroup, onMoveEntry, onMoveEntries, saveVault, onAddEntry, lockVault } = useVault();
     const activeVault = vaults.find(v => v.id === activeVaultId);
     const vaultName = activeVault ? activeVault.name : 'KeedaVault';
+
+    // Safety ref to prevent overwriting state during restoration
+    const isRestoringSelection = useRef(false);
+
+    // Persist UI state (Group & Selection)
+    useEffect(() => {
+        if (!activeVault?.path) return;
+        const timer = setTimeout(() => {
+            // Don't save if we are currently in the process of restoring state
+            if (isRestoringSelection.current) return;
+
+            saveVaultState(activeVault.path!, {
+                lastGroupId: activeGroupId || undefined,
+                lastSelectedEntryIds: Array.from(selectedEntryIds)
+            });
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [activeGroupId, selectedEntryIds, activeVault]);
 
 
     // UI Settings - Ensure both sidebars are visible by default
@@ -615,18 +634,58 @@ export const VaultWorkspace: React.FC = () => {
         document.dispatchEvent(new CustomEvent('open-unlock-modal'));
     };
 
-    // Auto-select first entry when group changes
+    // Auto-select first entry when group changes or restore state
     const prevGroupIdRef = useRef<string | null | undefined>(undefined);
+    const lastVaultIdRef = useRef<string | null>(activeVaultId);
+
     useEffect(() => {
-        if (activeGroupId !== prevGroupIdRef.current) {
+        const handleSelection = async () => {
+            const vaultChanged = activeVaultId !== lastVaultIdRef.current;
+            const groupChanged = activeGroupId !== prevGroupIdRef.current;
+
+            if (!vaultChanged && !groupChanged) return;
+
+            // Update refs
+            if (vaultChanged) lastVaultIdRef.current = activeVaultId;
             prevGroupIdRef.current = activeGroupId;
-            if (activeEntries.length > 0) {
-                setSelectedEntryIds(new Set([activeEntries[0].uuid]));
-            } else {
-                setSelectedEntryIds(new Set());
+
+            let restored = false;
+
+            // Try to restore if vault changed or it's the initial empty state
+            if ((vaultChanged || groupChanged) && activeVault?.path) {
+                isRestoringSelection.current = true;
+                try {
+                    const state = await getVaultState(activeVault.path);
+
+                    // Only restore if the current group matches the saved group
+                    if (state?.lastGroupId === activeGroupId && state?.lastSelectedEntryIds) {
+                        const validIds = state.lastSelectedEntryIds.filter(id => activeEntries.some(e => e.uuid === id));
+                        if (validIds.length > 0) {
+                            setSelectedEntryIds(new Set(validIds));
+                            restored = true;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to restore selection", e);
+                } finally {
+                    // Small delay to ensure render cycle catches up before allowing saves
+                    setTimeout(() => {
+                        isRestoringSelection.current = false;
+                    }, 100);
+                }
             }
-        }
-    }, [activeGroupId, activeEntries]);
+
+            if (!restored) {
+                if (activeEntries.length > 0) {
+                    setSelectedEntryIds(new Set([activeEntries[0].uuid]));
+                } else {
+                    setSelectedEntryIds(new Set());
+                }
+            }
+        };
+
+        handleSelection();
+    }, [activeGroupId, activeEntries, activeVault, activeVaultId]);
 
     // Calculate stats for DatabasePropertiesModal
     const stats = React.useMemo(() => {
