@@ -641,10 +641,11 @@ export const CreateEntryModal: React.FC<CreateEntryModalProps> = ({ isOpen, onCl
                     <button
                         form="entry-form"
                         type="submit"
-                        className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md shadow-sm transition-all flex items-center transform active:scale-95"
+                        disabled={isSaving}
+                        className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md shadow-sm transition-all flex items-center transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save size={14} strokeWidth={1.5} className="mr-1.5" />
-                        {editEntry ? 'Update' : 'Save'}
+                        {isSaving ? 'Saving...' : (editEntry ? 'Update' : 'Save')}
                     </button>
                 </div>
 

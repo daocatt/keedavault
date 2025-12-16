@@ -252,10 +252,10 @@ export const GroupModal: React.FC<GroupModalProps> = ({
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={!name.trim()}
+                        disabled={isSaving || !name.trim()}
                         className="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
-                        {mode === 'add' ? 'Create' : 'Save'}
+                        {isSaving ? 'Saving...' : (mode === 'add' ? 'Create' : 'Save')}
                     </button>
                 </div>
             </div>
