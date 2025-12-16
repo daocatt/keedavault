@@ -27,6 +27,7 @@ import { auditPassword } from '../utils/passwordAudit';
 import { useToast } from '../components/ui/Toaster';
 import { saveRecentVault, getRecentVaults } from '../services/storageService';
 import { fileSystem, FileHandle } from '../services/fileSystemAdapter';
+import { getVaultState } from '../services/vaultStateService';
 
 interface VaultContextType {
     vaults: Vault[];
@@ -536,8 +537,39 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             setVaults(prev => [...prev, newVault]);
             setActiveVaultId(newVault.id);
-            if (newVault.groups.length > 0) {
-                setActiveGroupId(newVault.groups[0].uuid);
+            setActiveVaultId(newVault.id);
+
+            let initialGroupId = newVault.groups[0]?.uuid;
+
+            if (path) {
+                try {
+                    const state = await getVaultState(path);
+                    if (state?.lastGroupId) {
+                        // Check if it's a smart group
+                        if (state.lastGroupId.startsWith('smart-')) {
+                            initialGroupId = state.lastGroupId;
+                        } else {
+                            // Verify group exists in the structure
+                            const findGroup = (groups: VaultGroup[], id: string): boolean => {
+                                for (const g of groups) {
+                                    if (g.uuid === id) return true;
+                                    if (findGroup(g.subgroups, id)) return true;
+                                }
+                                return false;
+                            };
+
+                            if (findGroup(newVault.groups, state.lastGroupId)) {
+                                initialGroupId = state.lastGroupId;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to restore vault state:', e);
+                }
+            }
+
+            if (initialGroupId) {
+                setActiveGroupId(initialGroupId);
             }
 
             // Save to recent vaults
