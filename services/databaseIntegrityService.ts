@@ -294,6 +294,31 @@ export async function safeSaveDatabase(
     db: kdbxweb.Kdbx,
     options: SaveOptions = {}
 ): Promise<SaveResult> {
+    // Serialize database once
+    const data = await db.save();
+
+    // Use optimized version with pre-serialized data
+    return safeSaveDatabaseWithData(path, data, db.credentials, options);
+}
+
+/**
+ * 安全保存 KDBX 数据库（优化版本 - 接受预序列化的数据）
+ * 
+ * 此版本避免了重复调用 db.save()，提高了性能
+ * 
+ * 流程：
+ * 1. 创建备份（如果启用）
+ * 2. 写入到临时文件（使用提供的数据）
+ * 3. 验证临时文件
+ * 4. 如果验证通过，替换原文件
+ * 5. 如果验证失败，恢复备份
+ */
+export async function safeSaveDatabaseWithData(
+    path: string,
+    data: ArrayBuffer,
+    credentials: kdbxweb.Credentials | undefined,
+    options: SaveOptions = {}
+): Promise<SaveResult> {
     const {
         createBackup = true,
         maxBackups = 2,
@@ -308,12 +333,12 @@ export async function safeSaveDatabase(
         // 步骤 1: 创建备份（如果原文件存在）
         if (createBackup && await exists(path)) {
             backupPath = await getBackupPath(path);
-            console.log(`Creating backup: ${backupPath}`);
+            if (!silent) console.log(`Creating backup: ${backupPath}`);
 
             try {
                 const originalData = await readFile(path);
                 await writeFile(backupPath, originalData);
-                console.log('Backup created successfully');
+                if (!silent) console.log('Backup created successfully');
 
                 // 清理旧备份
                 await cleanupOldBackups(path, maxBackups);
@@ -326,49 +351,48 @@ export async function safeSaveDatabase(
             }
         }
 
-        // 步骤 2: 保存到临时文件
-        console.log(`Saving to temporary file: ${tempPath}`);
-        const data = await db.save();
+        // 步骤 2: 保存到临时文件（使用提供的数据，避免重复序列化）
+        if (!silent) console.log(`Saving to temporary file: ${tempPath}`);
         await writeFile(tempPath, new Uint8Array(data));
-        console.log('Temporary file written');
+        if (!silent) console.log('Temporary file written');
 
         // 步骤 3: 验证临时文件（如果启用）
         let verified = false;
         if (verifyAfterWrite) {
-            console.log('Verifying written data...');
+            if (!silent) console.log('Verifying written data...');
 
-            if (!db.credentials) {
+            if (!credentials) {
                 throw new Error('Database credentials not available for verification');
             }
 
-            const verification = await verifyKdbxFile(tempPath, db.credentials);
+            const verification = await verifyKdbxFile(tempPath, credentials);
 
             if (!verification.valid) {
                 throw new Error(`Verification failed: ${verification.error}`);
             }
 
             verified = true;
-            console.log('Verification passed');
+            if (!silent) console.log('Verification passed');
         }
 
         // 步骤 4: 替换原文件
-        console.log(`Replacing original file: ${path}`);
+        if (!silent) console.log(`Replacing original file: ${path}`);
 
         // 如果原文件存在，先删除
         if (await exists(path)) {
             await remove(path);
-            console.log('Original file removed');
+            if (!silent) console.log('Original file removed');
         }
 
         // 复制临时文件到原文件位置
         const tempData = await readFile(tempPath);
         await writeFile(path, tempData);
-        console.log('New file written');
+        if (!silent) console.log('New file written');
 
         // 删除临时文件
         await remove(tempPath);
-        console.log('Temporary file removed');
-        console.log('File replaced successfully');
+        if (!silent) console.log('Temporary file removed');
+        if (!silent) console.log('File replaced successfully');
 
         return {
             success: true,
@@ -399,8 +423,8 @@ export async function safeSaveDatabase(
                     console.log('Restored from backup');
                 } else {
                     // 原文件存在，验证是否损坏
-                    if (db.credentials) {
-                        const verification = await verifyKdbxFile(path, db.credentials);
+                    if (credentials) {
+                        const verification = await verifyKdbxFile(path, credentials);
                         if (!verification.valid) {
                             console.log('Original file corrupted, restoring from backup...');
                             const backupData = await readFile(backupPath);
