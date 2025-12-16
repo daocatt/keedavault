@@ -201,21 +201,24 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const { applyCompatibilityFixes } = await import('../services/kdbxService');
             applyCompatibilityFixes(vault.db);
 
+            // Serialize database once (avoid double serialization)
             const data = await vault.db.save();
 
             if (vault.path) {
                 // Native Tauri Save with integrity protection
-                const { safeSaveDatabase } = await import('../services/databaseIntegrityService');
+                const { safeSaveDatabaseWithData } = await import('../services/databaseIntegrityService');
                 const { getUISettings } = await import('../services/uiSettingsService');
 
                 // Get auto backup setting
                 const settings = await getUISettings();
                 const autoBackupEnabled = settings.security?.autoBackup ?? true;
 
-                const result = await safeSaveDatabase(vault.path, vault.db, {
-                    createBackup: autoBackupEnabled,
+                // For auto-saves (entry add/edit), skip backup and verification for speed
+                // Only do full backup+verification for manual saves (Cmd+S)
+                const result = await safeSaveDatabaseWithData(vault.path, data, vault.db.credentials, {
+                    createBackup: isAutoSave ? false : autoBackupEnabled,
                     maxBackups: 2,
-                    verifyAfterWrite: true,
+                    verifyAfterWrite: isAutoSave ? false : true,
                     silent: isAutoSave
                 });
 
